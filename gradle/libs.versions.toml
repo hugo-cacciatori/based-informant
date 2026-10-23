@@ -1,0 +1,63 @@
+# Versions checked against the official release pages on 2026-10-18.
+# Kotlin 2.4.21 supports Gradle 7.6.3-9.7.0 and AGP 8.5.2-9.3.x (Kotlin multiplatform compatibility guide).
+# kotlinx.serialization 1.11.0 and kotlinx-datetime 0.8.0 are the latest stable releases (GitHub, 2026-10-18).
+# Ktor 3.6.0 is the latest stable release (GitHub, 2026-10-18).
+# AGP 9.3.x needs Gradle 9.5.0+ and supports API level 37.
+# Checked 2026-10-19 (Android release pages, KSP releases): Room 3.0.3 stable, sqlite 2.7.1, DataStore 1.2.1, KSP 2.3.12.
+# Checked 2026-10-19 (Compose Multiplatform releases, Maven Central): Compose Multiplatform 1.12.2, Material 3 1.9.0
+# (latest stable; 1.12.2 pairs with an alpha), material-icons-core 1.7.3, Lifecycle 2.11.0, kotlinx-coroutines 1.11.0 (test only),
+# androidx.activity 1.13.0 (Google Maven, for setContent and the system Back).
+[versions]
+kotlin = "2.4.21"
+agp = "9.3.3"
+jdk = "21"
+android-compileSdk = "37"
+android-minSdk = "26"
+android-targetSdk = "37"
+kotlinx-serialization = "1.11.0"
+kotlinx-datetime = "0.8.0"
+ktor = "3.6.0"
+room3 = "3.0.3"
+sqlite = "2.7.1"
+datastore = "1.2.1"
+ksp = "2.3.12"
+compose-multiplatform = "1.12.2"
+compose-material3 = "1.9.0"
+compose-material-icons = "1.7.3"
+lifecycle = "2.11.0"
+kotlinx-coroutines = "1.11.0"
+androidx-activity = "1.13.0"
+
+[libraries]
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+androidx-room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3" }
+androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
+androidx-room3-testing = { module = "androidx.room3:room3-testing", version.ref = "room3" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
+compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose-multiplatform" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-multiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
+compose-material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "compose-material-icons" }
+androidx-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+androidx-room3 = { id = "androidx.room3", version.ref = "room3" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

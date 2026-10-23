@@ -1,0 +1,152 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Here is a compact digest for this week.",
+  "closing": "That is the roundup for now.",
+  "topics": [
+    {
+      "id": "antarctic-sea-ice-2026-reversal",
+      "continues": null,
+      "new_development": null,
+      "title": "Antarctic sea ice posts third-lowest winter maximum",
+      "summary": "Scientists reported that Antarctic sea ice reached its third-lowest winter maximum in 2026, extending a decline after earlier years of record growth. The result has raised questions about whether the change marks a longer-term shift in the frozen landscape.",
+      "detail": "The article says the 2026 winter peak covered about 17.59 million square kilometers. Researchers are continuing to track the ice each year to see whether the decline is a lasting transformation or within statistical variability.",
+      "keywords": [
+        "Antarctic research"
+      ],
+      "score": 84,
+      "score_parts": {
+        "relevance": 56,
+        "attention": 28,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Antarctica's sea ice has undergone a stunning reversal",
+          "publisher": "ScienceDaily",
+          "url": "https://www.sciencedaily.com/releases/2026/10/261015073210.htm",
+          "language": "en",
+          "published": "2026-10-17"
+        }
+      ]
+    },
+    {
+      "id": "thwaites-glacier-ice-loss-cooling",
+      "continues": null,
+      "new_development": null,
+      "title": "Thwaites Glacier projected to keep losing ice",
+      "summary": "British Antarctic Survey researchers said Thwaites Glacier in West Antarctica will keep losing ice for at least the next 150 years, even under extreme ocean cooling conditions. The study says the glacier continued to lose ice throughout the full simulation period.",
+      "detail": "The research was published in Geophysical Research Letters. The article says the findings add to calls for policymakers to prepare for sea-level rise.",
+      "keywords": [
+        "Antarctic research"
+      ],
+      "score": 80,
+      "score_parts": {
+        "relevance": 55,
+        "attention": 25,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Thwaites Glacier will keep losing ice even if oceans cool",
+          "publisher": "British Antarctic Survey",
+          "url": "https://www.bas.ac.uk/news/thwaites-glacier-will-keep-losing-ice-even-if-oceans-cool/",
+          "language": "en",
+          "published": "2026-10-13"
+        }
+      ]
+    },
+    {
+      "id": "uci-cancels-urban-cycling-world-championships",
+      "continues": null,
+      "new_development": null,
+      "title": "UCI cancels urban cycling world championships in Saudi Arabia",
+      "summary": "The UCI cancelled the 2026 Urban Cycling World Championships in Saudi Arabia after missile strikes on the country's capital. Cycling outlets said the decision came with just over two weeks' notice.",
+      "detail": "Reports said the cancellation was tied to the security situation in Riyadh. The event had been scheduled for Saudi Arabia before the decision was announced.",
+      "keywords": [
+        "urban cycling"
+      ],
+      "score": 76,
+      "score_parts": {
+        "relevance": 55,
+        "attention": 21,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "UCI cancels World Championships in Saudi Arabia after missile strikes on airport",
+          "publisher": "Cycling Weekly",
+          "url": "https://www.cyclingweekly.com/news/uci-cancels-world-championships-in-saudi-arabia-after-missile-strikes-on-airport",
+          "language": "en",
+          "published": "2026-10-16"
+        },
+        {
+          "title": "UCI cancels Urban Cycling World Championships amid missile strikes on host Saudi Arabia",
+          "publisher": "CyclingNews",
+          "url": "https://www.cyclingnews.com/pro-cycling/racing/uci-cancels-urban-cycling-world-championships-amid-missile-strikes-on-host-saudi-arabia/",
+          "language": "en",
+          "published": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "id": "video-game-preservation-wing-commander-source-archive",
+      "continues": null,
+      "new_development": null,
+      "title": "Wing Commander archive work surfaces lost source material",
+      "summary": "A game preservation panel at the Portland Retro Gaming Expo said Electronic Arts found tapes containing high-quality source video for Wing Commander III: Heart of the Tiger. Another report said EA confirmed the return of Wing Commander and that archival assets were digitized.",
+      "detail": "The reports connect the find to preservation work on classic titles. One article says the archival work also included the release of source code for older games.",
+      "keywords": [
+        "video game preservation"
+      ],
+      "score": 71,
+      "score_parts": {
+        "relevance": 50,
+        "attention": 21,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "News of 2026.284 (October 11, 2026)",
+          "publisher": "WCNews",
+          "url": "https://www.wcnews.com/news/2026/10/11",
+          "language": "en",
+          "published": "2026-10-11"
+        },
+        {
+          "title": "EA producer confirms the return of Wing Commander",
+          "publisher": "Technology Inquirer",
+          "url": "https://technology.inquirer.net/149810/ea-producer-confirms-the-return-of-wing-commander",
+          "language": "en",
+          "published": "2026-10-17"
+        }
+      ]
+    },
+    {
+      "id": "antarctic-genetic-diversity-giga-data",
+      "continues": null,
+      "new_development": null,
+      "title": "NSF backs genome project for Antarctic species",
+      "summary": "Arizona State University said a new $18.4 million project will build a genomic resource for life across Antarctica. The project aims to produce reference-quality genomes for more than 250 Antarctic species and analyze 600 environmental samples.",
+      "detail": "The initiative is called GIGA DATA. It is led by Alison Murray of the Desert Research Institute and is meant to create a shared reference resource for scientists.",
+      "keywords": [
+        "Antarctic research"
+      ],
+      "score": 68,
+      "score_parts": {
+        "relevance": 52,
+        "attention": 16,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Mapping the genetic diversity of Antarctic life",
+          "publisher": "Arizona State University",
+          "url": "https://news.asu.edu/20261012-science-and-technology-mapping-genetic-diversity-antarctic-life",
+          "language": "en",
+          "published": "2026-10-12"
+        }
+      ]
+    }
+  ]
+}

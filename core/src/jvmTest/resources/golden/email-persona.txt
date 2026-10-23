@@ -1,0 +1,32 @@
+Subject: News digest · 18 Oct 2026 · 3 topics
+
+News digest · 18 Oct 2026 · 3 topics · Roach King
+
+Alright, let's see what's been going on this week.
+
+1. Test stellarator holds plasma for record 40 minutes
+A research stellarator kept a stable plasma for 40 minutes, four times its previous best, thanks to a new tungsten wall coating. Physicists call it a real but incremental step, with net energy gain still years away.
+Matched: fusion energy
+More: The lab credited the tungsten coating for shedding less material into the plasma. Two outside physicists quoted said it's a genuine improvement but not a breakthrough. The lab plans a campaign next spring aiming for an hour at higher density.
+- Example Science Daily, 16 Oct 2026, en: https://science.example.com/2026/10/stellarator-record
+- Exemple Sciences, 17 Oct 2026, fr: https://sciences.example.org/stellarator-record
+
+2. Seabed body schedules vote on mining moratorium
+New: The council has now scheduled a vote on a 10-year moratorium for its November session, with the agenda setting the vote for 12 November.
+An international seabed council agreed to vote on a 10-year moratorium on commercial deep-sea mining at its November session. Twelve member states back the pause, while two companies with exploration contracts say it would breach existing agreements.
+Matched: deep-sea mining
+More: The published agenda puts the moratorium vote on 12 November, requiring a two-thirds majority to pass. The council's move follows earlier talks that had resumed without a concrete outcome. Companies holding exploration contracts argue a moratorium would violate their agreements.
+- Example Ocean News, 14 Oct 2026, en: https://ocean.example.com/seabed-vote
+- Example Wire, 15 Oct 2026, en: https://wire.example.net/council-agenda
+
+3. Chess federation trials shorter youth time controls
+A national chess federation will trial 45-minute games with a 10-second increment at three youth events this winter, citing shorter attention spans and travel costs. Coaches are split on the change.
+Matched: chess
+More: The federation announced the trial for three youth events this winter. It cited shorter attention spans and travel costs as reasons. Coaches quoted in the report were divided, with some supporting the change and others concerned about its impact on young players' development.
+1 source:
+- Example Board Games Review, 13 Oct 2026, en: https://boardgames.example.org/youth-time-control
+
+That's the rundown, it is what it is.
+
+Model: perplexity:sonar · template v1
+Summaries are written by AI and can be wrong: check the sources.

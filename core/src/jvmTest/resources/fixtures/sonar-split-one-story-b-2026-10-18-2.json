@@ -1,0 +1,86 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Here is a compact news digest for the week.",
+  "closing": "That is the short list for now.",
+  "topics": [
+    {
+      "id": "europe-high-speed-rail-network",
+      "continues": null,
+      "new_development": null,
+      "title": "EU lawmakers back high-speed rail push",
+      "summary": "The European Parliament said MEPs will adopt recommendations to improve the EU’s high-speed rail connectivity and territorial cohesion. The report calls for a network that is interoperable, innovative, accessible and intermodal, and it urges stronger funding in the next EU budget cycle.",
+      "detail": "The Parliament said the plan should connect capitals as well as major urban nodes across European regions and key neighbouring countries. It also said ticket prices should become more affordable through reduced-fare or subscription schemes. The page said the vote is scheduled for 20 October.",
+      "keywords": [
+        "high-speed rail in Europe"
+      ],
+      "score": 84,
+      "score_parts": {
+        "relevance": 56,
+        "attention": 28,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Accelerating the roll-out of Europe's high-speed rail network",
+          "publisher": "European Parliament",
+          "url": "https://www.europarl.europa.eu/news/en/agenda/plenary-news/2026-10-19/16/accelerating-the-roll-out-of-europe-s-high-speed-rail-network",
+          "language": "en",
+          "published": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "id": "coral-reefs-threatened-extinction",
+      "continues": null,
+      "new_development": null,
+      "title": "Study says 44% of reef-building corals are threatened",
+      "summary": "A global study reported that 44% of the world’s reef-building coral species are now threatened with extinction. The researchers said the true figure may be higher because the assessment used data only up to 2020.",
+      "detail": "The study covered 774 species with enough data for classification and found 340 in the highest-risk categories. It said climate change is the main threat to reef-building corals. The authors also warned that the 2026–27 super El Niño could add more pressure.",
+      "keywords": [
+        "coral reefs"
+      ],
+      "score": 83,
+      "score_parts": {
+        "relevance": 55,
+        "attention": 28,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Nearly half of reef-building coral species face higher risk of extinction",
+          "publisher": "Phys.org",
+          "url": "https://phys.org/news/2026-10-reef-coral-species-higher-extinction.html",
+          "language": "en",
+          "published": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "id": "formula-1-race-calendar-break",
+      "continues": null,
+      "new_development": null,
+      "title": "Formula 1 schedules next race after Singapore break",
+      "summary": "Formula 1 coverage said there is no race this weekend, with the championship on a scheduled break after the Singapore Grand Prix. The next round is set for October 23 to 25 in Austin, Texas.",
+      "detail": "The report said the Singapore round ended the previous weekend and the United States Grand Prix is next on the calendar. It also noted the championship’s return to racing after the off weekend.",
+      "keywords": [
+        "Formula 1"
+      ],
+      "score": 72,
+      "score_parts": {
+        "relevance": 48,
+        "attention": 24,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Is there an F1 race this weekend? Here’s when Formula 1 returns",
+          "publisher": "Grande Premio",
+          "url": "https://grandepremio.com/en/f1/is-there-an-f1-race-this-weekend-heres-when-formula-1-returns/",
+          "language": "en",
+          "published": "2026-10-16"
+        }
+      ]
+    }
+  ]
+}

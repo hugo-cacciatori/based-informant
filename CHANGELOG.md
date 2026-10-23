@@ -1,0 +1,64 @@
+# Changelog
+
+## Unreleased
+
+- The lab writer deletes any sentence copying a persona note (owner, 2026-10-23); MiniMax M3 first in the writer order.
+- Call redesign step 1 (lab): draft prompts for the paid search (`search.txt`, persona research) and the free writer (`writer.txt`); lab mode `--write` with article download and a copied-quote check; free tests on five models.
+- Spec: the paid call only searches and free models write the digest; persona research as writer input only; no repeat avoidance; topic tags, topic mode and keyword presets (owner, 2026-10-23).
+- The input check cycles through 13 tested free models (9 privacy-safe first, then 4 `:free`), moving to the next one at once when a model refuses, without retrying it.
+- The input check is also a spellchecker: a misspelled keyword or tag is refused, with the right spelling as the reason (owner, 2026-10-20).
+- Stage 4 step 4: Room schema v2 (runs, calls, input checks, digests, curated topics) with an automatic migration from v1 and its test; raw answers saved as files through a temporary file and a rename.
+- Stage 4 step 3: the free input check in `:core` (request, parser, model rotation, silent fallback, the call-history record) and the lab mode `--check-input`; six free models compared at 0 tokens.
+- Disk space: thresholds and a safe cleanup procedure for the repo folder and `~/.gradle` (`docs/dev-setup.md`).
+- Stage 4 step 2: the run logic in `:core` (snapshot, run states and recovery, outcomes, Read again, the wider-window second call, the call-history record, the confirmation facts), tested on fakes.
+- Stage 4 step 1: no profile description (settings, Settings screen, prompt, lab inputs; an old stored one is erased); a digest takes exactly 5 keywords; Generate says how many are missing.
+- Stage 3 done: the email checked in Thunderbird (`docs/email-clients.md`).
+- Stage 3 step 3: golden email files (HTML, text, MIME) for several topics, a persona, an empty digest and hostile text.
+- Stage 3 step 2: the email size cap (100 KB of HTML): longer texts then topics left out, lowest score first, with a note in the footer.
+- Stage 3 step 1: the digest view model in `:core` (`DigestView`), shared by the email renderer and the future History viewer; email output unchanged.
+- Stage 2 done: the release build checked on the owner's phone.
+- Stage 2 step 6: Settings is the third item of the navigation bar; the balance line above Generate, read each time the main screen opens; internal release builds signed with the debug key until the keystore exists.
+- Stage 2 step 5: `:app` Android host: the screens wired to Room and DataStore, the rfab key sealed with an Android Keystore AES-GCM key in `noBackupFilesDir`, backups and device transfer blocked, R8 release build (6.8 MB), optional signing from `keystore.properties`.
+- Stage 2 step 4: `:ui` module (Compose Multiplatform 1.12.2, Material 3): Keywords tab with the first-run card, add, edit, delete with Undo and Generate with its reason; History placeholder; Settings with key paste, Test key, remove, balance with Refresh and the claim link, profile, tags, attention mode, persona, model and the privacy note; UI tests on the JVM.
+- Stage 2 step 3: `:data` module (Room 3, bundled SQLite, DataStore): the keyword list and the settings stored, limits enforced by the data layer, schema v1 exported, tests on the JVM.
+- Stage 2 step 2: `KeywordStore` and `SettingsStore` interfaces, the Keywords and Settings state logic (saved at once, refusals, undo, key save/test/remove, balance on open), with fakes and tests.
+- Stage 2 planned in six steps. Step 1: `:core` keyword and tag list rules with undo, field counters, settings defaults, Generate block reasons, key shape check and mask, free Test key and balance display, `SecretStore` interface.
+- Product and technical spec written (`docs/spec/`). No code yet.
+- Secret-scan guardrails: `scripts/check-secrets`, git hooks, `setup-dev`, `set-rfab-key`, tests.
+- Gradle scaffold: `:core` (Kotlin Multiplatform, Android + JVM) and `:lab` (JVM command-line stub), version catalog, JDK 21 toolchain, Gradle wrapper 9.6.0. Version source in `gradle.properties`.
+- `:core` basics: input limits, keyword rules, recency window, digest model (preliminary contract), parser with truncated-tail recovery, validator, selection (`MAX_TOPICS` 5), with synthetic fixtures and tests on JVM and Android host.
+- `:core` prompt files as generated Kotlin constants; prompt builder with delimited owner data, voice parts and a golden prompt test; curated memory (pruning, continues, prompt lines); basic HTML and text renderer.
+- rfab client in `:core` (chat, balance, models) with the documented error mapping and retries; digest JSON serialization; basic MIME builder.
+- `:lab` modes: `--fixture`, `--live --dry-run`, `--free` (0x models only, checked against the models list), `--models`, `--balance`; synthetic input file; key loader.
+- Models list checked: typed `ModelCatalog`, the 2026-10-18 catalog saved as a fixture; `--models` prints the free models.
+- Template v1 draft (prompt, JSON schema, neutral voice), checked on free models: 5 valid runs in a row plus one per persona, saved as fixtures. Balance display added to the 0.2.0 plan.
+- Template v1 updated from the owner's review (attention modes, creative openings and closings, persona asides); single-source topics labeled "1 source"; fake 15-keyword lab input.
+- Link checker: a placeholder URL, a redirect to a parent or section page, and an empty 200 page now count as dead (an empty 202, a bot challenge, stays unknown).
+- Model chosen in the lab: sonar, with the app filters; `TemplateConfig.ALLOWED_MODELS`.
+- Source-type filter: sources whose URL looks like a homepage, index, archive, numbered list, event or calendar page are dropped before the link check.
+- Coverage work: the app splits keywords in groups of 5 (`KeywordGroups`) and merges the answers; `:lab` `--group-size N` for `--live` and `--free` (one call per group, one at a time).
+- `:lab` `--probe` mode: one tiny request to see whether a model searches the web, with a verdict from the link and page-date checks.
+- Release rules: no version until an app is ready for public distribution; the planned work is now organized in stages.
+- Link checker in `:core` (dead, alive or unknown per source; dead sources and topics left without one dropped); paid `--live --confirm-paid` lab mode with the stop rule, latency, link report and spend-log line; `--check-links` for saved answers.
+- Paid test calls 1 and 2 logged. The app now computes each topic's score from its parts; the prompt asks for article pages with their own date, `continues` only for the same story, and every keyword searched.
+- Docs reorganized for shorter session starts: a slimmer `CLAUDE.md`, machine details in `docs/dev-setup.md`, the lab history in `docs/lab-log.md`.
+- Model-selection protocol (triggers, benchmark, scoring sheet, decision rule, budget) and accuracy checks (facts, dates) added to the pass bar.
+- Page-date check: the link check reads each live page's own publication date and drops or corrects misdated sources.
+- The user message now starts with a plain search request (window and keywords), after two web-search models returned empty digests from a JSON-only message.
+- Model choice: cheapest first, restarting after prompt changes; web search required and rate up to 0.80x: sonar, sonar-reasoning-pro, Grok 4.5 and possibly Grok 4.20 (list of search models in `ai-call.md`).
+- One ordered model plan (search models up to 0.80x, cheapest first); rfab's limits recorded (no citations, no search filters, no pre-prompt); docs-first rule.
+- Session close 2026-10-18: a "Resume here" status, rules for writing the docs, done/next marked on the step lists.
+- CI on GitHub: offline tests and the secret scan on every push.
+- rfab token facts from the owner's research: the daily 25,000 must be claimed on rfab's dashboard; buying, auto-reload, fail-closed billing with its limit, the transaction list (last 10 rows), BYOK; a free balance check before retrying a 500 or 502 (owner, 2026-10-19), and a link to claim the daily tokens in Settings and the low-balance warning. New PC specs: command-line AI provider (Claude Code or Codex), start with Windows in the tray, scheduled digest; phone stays on the rfab API; proposed key setup flow; switch to the PC app if tokens run short.
+- `:core` rfab client: a chat 500 or 502 is retried only when the free balance check finds no new charge; otherwise it fails as `FAILED_BILLED` (with the charge) or `FAILED_MAYBE_BILLED`. The lab prints a found charge for the spend log.
+- Stage 2 answers (owner, 2026-10-19): English UI, minSdk 26 with no tailoring to one phone, Balanced attention mode by default; USB debugging, the signing key and the key setup flow later.
+- Template: the opening greets the reader, shows the voice with humor and may use the profile; checked on a free model with each persona.
+- Prompt: one story per topic, with a self-check and a keyword-fit rule; tested on two paid sonar split runs.
+- Mixed-story check: a topic whose own text reads like two stories ("another report said", "round-up"...) is dropped.
+- Source-type filter: also drops paths ending in a bare section word (`/video`, `/news`, `/latest`) or in `updates`.
+- Stage 1 settings recorded: `maxTokens` 4,000, `temperature` 0.2, `MIN_SCORE` 50.
+- Session rules moved from `CLAUDE.md` to `AGENTS.md`, read by every AI tool; `CLAUDE.md` now only imports it. New rule: one AI tool at a time in this folder.
+- Model comparison closed 2026-10-18 (results in `docs/lab-log.md`): Grok ids do not search through rfab; sonar-reasoning-pro, sonar-pro and gemini-2.5-flash-search fail the bar; sonar chosen. Split runs fill the digest (5 topics); a persona does not hurt accuracy.
+- Session close 2026-10-18 (second session): new status and resume steps; open: "several stories in one topic".
+- MIT license.
+- Spec review: multiplatform library correction, data model, outcomes table, template versions, lab and template-session plan, risks and questions by milestone, session instructions in `CLAUDE.md`.

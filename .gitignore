@@ -1,0 +1,29 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+keystore.properties
+
+# AI-agent files and project docs: local only, never public
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+docs/
+.git-docs/
+
+# Local machine files
+local.properties
+.claude/settings.local.json
+
+# Build and lab output
+lab-out/
+dist/
+build/
+.gradle/
+.kotlin/
+
+# IDE
+.idea/

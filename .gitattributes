@@ -1,0 +1,7 @@
+* text=auto
+# Shell scripts and hooks must keep LF endings to run in Git for Windows and on Unix
+*.sh text eol=lf
+gradlew text eol=lf
+scripts/* text eol=lf
+.githooks/* text eol=lf
+*.bat text eol=crlf

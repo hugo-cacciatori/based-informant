@@ -1,0 +1,10 @@
+#!/bin/sh
+# setup-dev: run once per clone. Turns on the git hooks in .githooks/, which scan for secrets
+# before every commit and every push, then scans the working tree once.
+set -eu
+
+top=$(git rev-parse --show-toplevel)
+git -C "$top" config core.hooksPath .githooks
+chmod +x "$top"/.githooks/* "$top"/scripts/* 2>/dev/null || true
+echo "Git hooks enabled: secrets are checked before every commit and push."
+sh "$top/scripts/check-secrets"

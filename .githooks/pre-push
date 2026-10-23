@@ -1,0 +1,4 @@
+#!/bin/sh
+# Blocks the push if a commit being pushed contains a secret. Enabled by scripts/setup-dev.
+# Git passes the refs being pushed on stdin; check-secrets reads them.
+exec sh "$(git rev-parse --show-toplevel)/scripts/check-secrets" --pre-push

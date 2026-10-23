@@ -1,0 +1,41 @@
+Synthetic search results for free-model format tests. Every outlet, URL and event here is made up.
+
+[1] Test stellarator holds plasma for a record 40 minutes
+Publisher: Example Science Daily | Date: 2026-10-16 | Language: en
+URL: https://science.example.com/2026/10/stellarator-record
+A research stellarator held a stable plasma for 40 minutes on Tuesday, four times its previous best, the lab said. Engineers credit a new tungsten wall coating that sheds less material into the plasma. Two outside physicists quoted called it a real but incremental step; net energy gain remains years away.
+
+[2] Le stellarator d'essai bat son record de durée
+Publisher: Exemple Sciences | Date: 2026-10-17 | Language: fr
+URL: https://sciences.example.org/stellarator-record
+Le stellarator a maintenu un plasma stable pendant 40 minutes. Le laboratoire prévoit une campagne d'une heure à densité plus élevée au printemps 2027.
+
+[3] Seabed authority schedules a vote on a mining moratorium
+Publisher: Example Ocean News | Date: 2026-10-14 | Language: en
+URL: https://ocean.example.com/seabed-vote
+The council of an international seabed body agreed on Monday to vote on a 10-year moratorium on commercial deep-sea mining at its November session. Twelve member states back the pause; two companies holding exploration contracts said a moratorium would breach existing agreements.
+
+[4] Council agenda lists the moratorium for 12 November
+Publisher: Example Wire | Date: 2026-10-15 | Language: en
+URL: https://wire.example.net/council-agenda
+The published agenda puts the moratorium vote on 12 November. A two-thirds majority is needed.
+
+[5] Regional chess open draws a record field of 900
+Publisher: Example Chess | Date: 2026-10-12 | Language: en
+URL: https://chess.example.com/open-record
+A regional open tournament drew 900 players, its largest field since it began in 1998. Organizers added a second playing hall.
+
+[6] Chess federation tests a shorter time control for youth events
+Publisher: Example Board Games Review | Date: 2026-10-13 | Language: en
+URL: https://boardgames.example.org/youth-time-control
+A national chess federation will trial 45-minute games with a 10-second increment at three youth events this winter, citing shorter attention spans and travel costs. Coaches quoted were split.
+
+[7] Fusion startup raises funding round (older story)
+Publisher: Example Business | Date: 2026-09-20 | Language: en
+URL: https://business.example.com/fusion-funding
+A fusion startup closed a funding round. This article is outside the search window.
+
+[8] Pop star announces world tour
+Publisher: Example Gossip | Date: 2026-10-16 | Language: en
+URL: https://gossip.example.com/world-tour
+A pop star announced a 40-date world tour. Not related to any keyword.

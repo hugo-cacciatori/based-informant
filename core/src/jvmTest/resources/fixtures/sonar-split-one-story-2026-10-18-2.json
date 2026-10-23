@@ -1,0 +1,100 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Here is a brief digest for the week.",
+  "closing": "That is the slate for now.",
+  "topics": [
+    {
+      "id": "portugal-high-speed-rail-construction",
+      "continues": null,
+      "new_development": null,
+      "title": "Portugal starts Lisbon-Porto high-speed line",
+      "summary": "Portugal began construction of the first section of its high-speed rail line linking Lisbon and Porto. The government says the line will cut the trip between the two cities to 1 hour and 15 minutes once completed.",
+      "detail": "The first work is on the Porto-Campanhã to Oiã section in the Aveiro district. The project includes a new road-rail bridge over the Douro River, a new station at Vila Nova de Gaia-Santo Ovídio, and changes to Porto-Campanhã Intermodal Station. The government says the concession contract for this section will cost about €2 billion and will include financing from the European Investment Bank and the Connecting Europe Facility.",
+      "keywords": [
+        "high-speed rail in Europe"
+      ],
+      "score": 79,
+      "score_parts": {
+        "relevance": 55,
+        "attention": 24,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Portugal begins high-speed rail construction between Lisbon and Porto",
+          "publisher": "Euronews",
+          "url": "https://www.euronews.com/2026/10/12/portugal-begins-construction-of-high-speed-rail-line-linking-lisbon-and-porto",
+          "language": "en",
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "coral-reefs-under-threat",
+      "continues": null,
+      "new_development": null,
+      "title": "Report says bleached corals are not lost causes",
+      "summary": "A report on coral reefs said bleached corals are under threat from climate change, warming oceans and human activity. It also said bleached corals are not necessarily lost and can recover.",
+      "detail": "The article focused on the condition of coral reefs and the possibility of recovery after bleaching. It linked the threat to warming seas and other human pressures. No other article in the window was found that covered the same story in more detail.",
+      "keywords": [
+        "coral reefs"
+      ],
+      "score": 68,
+      "score_parts": {
+        "relevance": 52,
+        "attention": 16,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Coral reefs are under threat, but bleached corals aren't a ...",
+          "publisher": "ABC News",
+          "url": "https://abcnews.com/US/coral-reefs-threat-bleached-corals-arent-lost-cause/story?id=137240198",
+          "language": "en",
+          "published": "2026-10-14"
+        }
+      ]
+    },
+    {
+      "id": "formula-1-us-grand-prix-calendar",
+      "continues": null,
+      "new_development": null,
+      "title": "Formula 1 heads into the Austin round",
+      "summary": "Formula 1 coverage this week focused on the scheduled break after the Singapore Grand Prix and the return to racing at Austin from October 23 to 25. Several outlets also noted the 2026 calendar entries around the upcoming United States Grand Prix.",
+      "detail": "The reporting said there is no race this weekend of October 17-18 and that the next round is the United States Grand Prix at Circuit of The Americas. One Formula 1 page listed the Singapore weekend on October 9-11 and the Austin race on October 23-25. Another article described how the 2026 calendar is organized around regional clusters.",
+      "keywords": [
+        "Formula 1"
+      ],
+      "score": 60,
+      "score_parts": {
+        "relevance": 35,
+        "attention": 25,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "The Complicated Puzzle of the Formula 1 Schedule",
+          "publisher": "The New York Times",
+          "url": "https://www.nytimes.com/2026/10/13/sports/f1-schedule.html",
+          "language": "en",
+          "published": "2026-10-13"
+        },
+        {
+          "title": "Is there an F1 race this weekend? Here’s when Formula 1 returns",
+          "publisher": "Grande Premio",
+          "url": "https://grandepremio.com/en/f1/is-there-an-f1-race-this-weekend-heres-when-formula-1-returns/",
+          "language": "en",
+          "published": "2026-10-16"
+        },
+        {
+          "title": "F1 - The Official Home of Formula 1® Racing",
+          "publisher": "Formula 1",
+          "url": "https://www.formula1.com/en/video",
+          "language": "en",
+          "published": "2026-10-14"
+        }
+      ]
+    }
+  ]
+}

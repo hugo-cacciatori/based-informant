@@ -1,0 +1,18 @@
+Subject: News digest · 18 Oct 2026 · 1 topic
+
+News digest · 18 Oct 2026 · 1 topic
+
+<b>Bold</b> & "quoted" 'text'
+
+1. <script>alert('x')</script> & co
+New: <img src=x onerror=alert(1)>
+A research stellarator held a stable plasma for 40 minutes, four times its previous best. The team credits new wall coatings. Independent physicists call it a step, not a breakthrough.
+Matched: fusion energy
+More: </details><a href="javascript:alert(1)">click</a>
+1 source:
+- <i>Wire</i>, 16 Oct 2026, en
+
+That is all for now.
+
+Model: perplexity:sonar · template v1
+Summaries are written by AI and can be wrong: check the sources.

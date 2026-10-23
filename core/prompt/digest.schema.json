@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Based Informant digest, template version 1",
+  "type": "object",
+  "required": ["template_version", "generated_at", "opening", "closing", "topics"],
+  "additionalProperties": false,
+  "properties": {
+    "template_version": { "const": 1 },
+    "generated_at": { "type": "string", "format": "date" },
+    "opening": { "type": ["string", "null"] },
+    "closing": { "type": ["string", "null"] },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "continues", "new_development", "title", "summary", "detail", "keywords", "score", "score_parts", "sources"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+          "continues": { "type": ["string", "null"] },
+          "new_development": { "type": ["string", "null"] },
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "detail": { "type": ["string", "null"] },
+          "keywords": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "score_parts": {
+            "type": "object",
+            "required": ["relevance", "attention", "repeat_penalty"],
+            "additionalProperties": false,
+            "properties": {
+              "relevance": { "type": "integer", "minimum": 0, "maximum": 60 },
+              "attention": { "type": "integer", "minimum": 0, "maximum": 40 },
+              "repeat_penalty": { "type": "integer", "minimum": 0, "maximum": 50 }
+            }
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "required": ["title", "publisher", "url", "language", "published"],
+              "additionalProperties": false,
+              "properties": {
+                "title": { "type": "string" },
+                "publisher": { "type": "string" },
+                "url": { "type": "string", "pattern": "^https://" },
+                "language": { "type": "string", "pattern": "^[a-z]{2}$" },
+                "published": { "type": "string", "format": "date" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

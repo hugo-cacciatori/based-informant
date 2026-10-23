@@ -1,0 +1,136 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Alright chat, here’s the news buffet for the week — no filler, just the stuff that actually happened.",
+  "closing": "That’s the roundup, and yeah, it is what it is.",
+  "topics": [
+    {
+      "id": "antarctic-research-genetic-diversity",
+      "continues": null,
+      "new_development": null,
+      "title": "Antarctic genomics project gets $18.4 million",
+      "summary": "A new $18.4 million project called GIGA DATA will build a genomic resource for Antarctic life. The work is led by Alison Murray of the Desert Research Institute and is backed by the National Science Foundation. It will produce reference-quality genomes for more than 250 Antarctic species and analyze 600 environmental samples.",
+      "detail": "The project name stands for Genome Infrastructure catalyzing next Generation Antarctic Data, Access, Tools, and Analytics. The species list includes algae, invertebrates, fish, birds and marine mammals. The team also plans tens of thousands of microbial and viral genomic datasets from ecosystems such as lakes and soils.",
+      "keywords": [
+        "Antarctic research"
+      ],
+      "score": 81,
+      "score_parts": {
+        "relevance": 48,
+        "attention": 33,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Mapping the genetic diversity of Antarctic life",
+          "publisher": "Arizona State University News",
+          "url": "https://news.asu.edu/20261012-science-and-technology-mapping-genetic-diversity-antarctic-life",
+          "language": "en",
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "kilauea-eruption-episode-55",
+      "continues": null,
+      "new_development": null,
+      "title": "Kilauea eruption episode ends abruptly",
+      "summary": "USGS said episode 55 of the ongoing Halemaʻumaʻu eruption ended abruptly on October 17. The volcano remained at WATCH/ORANGE afterward, and officials said conditions could change rapidly. Another USGS notice said lava continued to erupt slowly within the summit crater of Great Sitkin Volcano.",
+      "detail": "The Kilauea notice reported the end of episode 55 at 9:03 a.m. HST on October 17. Separate USGS notices on October 15 and October 16 said Great Sitkin remained at ADVISORY/YELLOW and Kilauea remained at WATCH/ORANGE. A USGS summary page also said the Cascade Range volcanoes were at normal background activity levels.",
+      "keywords": [
+        "volcanoes"
+      ],
+      "score": 79,
+      "score_parts": {
+        "relevance": 45,
+        "attention": 34,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "USGS Volcano Notice - DOI-USGS-HVO-2026-10-17T19:04 ...",
+          "publisher": "USGS Volcanoes",
+          "url": "https://volcanoes.usgs.gov/hans-public/notice/DOI-USGS-HVO-2026-10-17T19:04:00+00:00",
+          "language": "en",
+          "published": "2026-10-17"
+        },
+        {
+          "title": "USGS Volcano Notice - DOI-USGS-AVO-2026-10-15T19:23:04+00:00",
+          "publisher": "USGS Volcanoes",
+          "url": "https://volcanoes.usgs.gov/hans-public/notice/DOI-USGS-AVO-2026-10-15T19:23:04+00:00",
+          "language": "en",
+          "published": "2026-10-15"
+        },
+        {
+          "title": "DOI-USGS-HVO-2026-10-16T18:37:16+00:00",
+          "publisher": "USGS Volcanoes",
+          "url": "https://volcanoes.usgs.gov/hans-public/notice/DOI-USGS-HVO-2026-10-16T18:37:16+00:00",
+          "language": "en",
+          "published": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "id": "urban-cycling-world-championships-cancelled",
+      "continues": null,
+      "new_development": null,
+      "title": "UCI cancels urban cycling worlds in Saudi Arabia",
+      "summary": "The UCI cancelled the 2026 Urban Cycling World Championships in Saudi Arabia after missile strikes on the country’s capital. Cycling Weekly reported the decision on October 16. The cancellation wipes out the planned event, and that’s a brutal one for the calendar.",
+      "detail": null,
+      "keywords": [
+        "urban cycling"
+      ],
+      "score": 77,
+      "score_parts": {
+        "relevance": 40,
+        "attention": 37,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "UCI cancels World Championships in Saudi Arabia after missile strikes on airport",
+          "publisher": "Cycling Weekly",
+          "url": "https://www.cyclingweekly.com/news/uci-cancels-urban-cycling-world-championships-in-saudi-arabia-after-missile-strikes-on-airport",
+          "language": "en",
+          "published": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "id": "video-game-preservation-no-eligible-topic",
+      "continues": null,
+      "new_development": null,
+      "title": "No clear preservation story surfaced",
+      "summary": "No qualifying article within the date window clearly matched video game preservation. Nothing solid enough to report without inventing a connection, so this one gets benched. It is what it is.",
+      "detail": null,
+      "keywords": [
+        "video game preservation"
+      ],
+      "score": 0,
+      "score_parts": {
+        "relevance": 0,
+        "attention": 0,
+        "repeat_penalty": 0
+      },
+      "sources": []
+    },
+    {
+      "id": "wine-harvest-no-eligible-topic",
+      "continues": null,
+      "new_development": null,
+      "title": "No qualifying harvest story surfaced",
+      "summary": "No qualifying article within the date window clearly matched wine harvest. With no source-backed story in hand, this topic stays off the board. No fake grapes, no fake news.",
+      "detail": null,
+      "keywords": [
+        "wine harvest"
+      ],
+      "score": 0,
+      "score_parts": {
+        "relevance": 0,
+        "attention": 0,
+        "repeat_penalty": 0
+      },
+      "sources": []
+    }
+  ]
+}

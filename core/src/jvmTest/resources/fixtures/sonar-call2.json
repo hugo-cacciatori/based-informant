@@ -1,0 +1,159 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Here is the latest digest for the week.",
+  "closing": "That is the briefing for now.",
+  "topics": [
+    {
+      "id": "fusion-energy-milestone",
+      "continues": null,
+      "new_development": null,
+      "title": "General Fusion reports plasma heating milestone",
+      "summary": "General Fusion said it reached a historic compressional plasma heating result with its Lawson Machine 26 demonstration. The UK government said the result was co-authored with UKAEA, and the company reported electron temperatures above 12 million degrees Celsius.",
+      "detail": "The UK government said General Fusion completed the first major technical milestone of its LM26 programme. It said the company used Magnetised Target Fusion in the demonstration. The company said the result is part of its path toward commercial fusion power.",
+      "keywords": [
+        "fusion energy"
+      ],
+      "score": 84,
+      "score_parts": {
+        "relevance": 40,
+        "attention": 34,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "UKAEA, General Fusion announce Magnetised Target Fusion milestone",
+          "publisher": "gov.uk",
+          "url": "https://www.gov.uk/government/news/ukaea-general-fusion-announce-magnetised-target-fusion-milestone",
+          "language": "en",
+          "published": "2026-10-08"
+        },
+        {
+          "title": "Fusion's Prove-It Era Just Delivered a World-First Result",
+          "publisher": "The Spec",
+          "url": "https://www.thespec.com/globenewswire/fusion-s-prove-it-era-just-delivered-a-world-first-result/article_9680ed99-c6b7-5b45-83ea-7bfc0f1ce06d.html",
+          "language": "en",
+          "published": "2026-10-08"
+        }
+      ]
+    },
+    {
+      "id": "mars-perseverance-distance-record",
+      "continues": null,
+      "new_development": null,
+      "title": "Perseverance sets off-world driving record",
+      "summary": "NASA said Perseverance reached 28.10 miles traveled on Mars, passing the record set by Opportunity. The rover hit the mark on Oct. 11, according to NASA Science.",
+      "detail": "NASA said the rover's odometer reached 28.10 miles, or 45.22 kilometers. The agency said that topped Opportunity's 28.06 miles, or 45.16 kilometers. NASA Science published the update in its Mars Exploration archive.",
+      "keywords": [
+        "Mars exploration"
+      ],
+      "score": 82,
+      "score_parts": {
+        "relevance": 40,
+        "attention": 32,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Mars Exploration Archives",
+          "publisher": "NASA Science",
+          "url": "https://science.nasa.gov/blogs/mars/",
+          "language": "en",
+          "published": "2026-08-06"
+        },
+        {
+          "title": "Mars Exploration Archives - NASA Science",
+          "publisher": "NASA Science",
+          "url": "https://science.nasa.gov/blogs/mars/2026/10/",
+          "language": "en",
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "mars-mmx-launch",
+      "continues": null,
+      "new_development": null,
+      "title": "ESA says MMX launch is set for Oct. 19",
+      "summary": "ESA said Japan's Martian Moons eXploration mission is set to launch on Oct. 19, 2026. The mission will aim to collect a sample from Phobos and return it to Earth.",
+      "detail": "ESA said the spacecraft will launch on an H3 rocket from the Tanegashima Space Center. The agency said MMX is expected to enter orbit around Mars in August 2027 and orbit Phobos from September 2027.",
+      "keywords": [
+        "Mars exploration"
+      ],
+      "score": 78,
+      "score_parts": {
+        "relevance": 38,
+        "attention": 30,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Mars moon lander set to launch on 19 October",
+          "publisher": "ESA",
+          "url": "https://www.esa.int/Science_Exploration/Space_Science/Mars_moon_lander_set_to_launch_on_19_October",
+          "language": "en",
+          "published": "2026-10-13"
+        }
+      ]
+    },
+    {
+      "id": "deep-sea-mining-license",
+      "continues": null,
+      "new_development": null,
+      "title": "American Metal advances seabed exploration bid",
+      "summary": "American Metal said U.S. regulators certified its application for licenses to explore for critical minerals in the Pacific Ocean. NOAA will now complete an environmental study before any exploration licenses are issued.",
+      "detail": "The company said the applications cover 104,000 square miles in the Clarion-Clipperton Zone. The article said the seafloor area contains polymetallic nodules with nickel, copper, cobalt and manganese. The company said it aims to obtain a commercial mining permit within three years.",
+      "keywords": [
+        "deep-sea mining"
+      ],
+      "score": 77,
+      "score_parts": {
+        "relevance": 39,
+        "attention": 28,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "American Metal says US seabed mining exploration licence application advances",
+          "publisher": "mining.com.au",
+          "url": "https://mining.com.au/american-metal-says-us-seabed-mining-exploration-licence-application-advances/",
+          "language": "en",
+          "published": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "id": "fusion-energy-briefing",
+      "continues": null,
+      "new_development": null,
+      "title": "Fusion sector leaders meet in Boston",
+      "summary": "Reuters Events held Fusion Energy 2026 in Boston on Oct. 6 to 7, bringing together more than 250 leaders from the fusion ecosystem. The agenda focused on financing, reactor design, supply chains and regulation.",
+      "detail": "The event listing said speakers included reactor developers, utilities, data centers, investors, supply chain partners, policy makers and future customers. It said the sessions covered bankable financing models, scalable reactor technology, supply chain readiness and regulatory frameworks.",
+      "keywords": [
+        "fusion energy"
+      ],
+      "score": 63,
+      "score_parts": {
+        "relevance": 35,
+        "attention": 28,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Fusion Energy 2026",
+          "publisher": "Physics World",
+          "url": "https://physicsworld.com/event/fusion-energy-2026/",
+          "language": "en",
+          "published": "2026-10-15"
+        },
+        {
+          "title": "Home - Fusion Energy 2026",
+          "publisher": "Reuters Events",
+          "url": "https://events.reutersevents.com/nuclear/fusion-energy",
+          "language": "en",
+          "published": "2025-09-10"
+        }
+      ]
+    }
+  ]
+}

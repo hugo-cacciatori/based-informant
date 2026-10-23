@@ -1,0 +1,36 @@
+Synthetic search results for the "one story per topic" format test. Every outlet, URL and event here is made up. Each keyword has two or more separate stories, as in the real searches where sonar merged them.
+
+[1] Mount Example erupts again, lava reaches the coast road
+Publisher: Example Volcano Watch | Date: 2026-10-15 | Language: en
+URL: https://volcano.example.com/mount-example-episode-12
+Mount Example began its 12th eruptive episode on Wednesday. Lava fountains reached 300 metres and a flow crossed the coast road, which is closed. The alert level stays WARNING/RED.
+
+[2] Northpeak volcano raised to WATCH/ORANGE after ash emissions
+Publisher: Example Geo Survey | Date: 2026-10-16 | Language: en
+URL: https://geosurvey.example.org/northpeak-watch
+The survey raised Northpeak, 2,000 km from Mount Example, to WATCH/ORANGE after two small ash emissions. Flights near the island were rerouted. No lava has been seen.
+
+[3] Southridge volcano stays at ADVISORY/YELLOW
+Publisher: Example Geo Survey | Date: 2026-10-17 | Language: en
+URL: https://geosurvey.example.org/southridge-advisory
+Southridge remains at ADVISORY/YELLOW with low-level tremor. The survey sees no sign of an eruption.
+
+[4] Quantum weekly: five things that happened this week
+Publisher: Example Qubit Letter | Date: 2026-10-12 | Language: en
+URL: https://qubitletter.example.com/weekly-41
+This week: a lab reports a 99.9% two-qubit gate fidelity; a startup raises $40 million; a national lab opens a quantum test bed; a cloud provider adds a 100-qubit machine; a university launches a quantum degree.
+
+[5] Lab reports 99.9% fidelity on two-qubit gates with neutral atoms
+Publisher: Example Physics News | Date: 2026-10-11 | Language: en
+URL: https://physics.example.net/neutral-atom-fidelity
+A university lab reported two-qubit gate fidelity of 99.9% on a 60-atom neutral-atom array, a record for the platform. The team says error correction tests start next year.
+
+[6] Seabed authority opens comments on a mining code draft
+Publisher: Example Ocean News | Date: 2026-10-14 | Language: en
+URL: https://ocean.example.com/mining-code-comments
+An international seabed body opened a public comment period on its draft mining code, closing on 30 November. Environmental groups asked for a longer period.
+
+[7] Country X grants its first national seabed mining licence
+Publisher: Example Wire | Date: 2026-10-16 | Language: en
+URL: https://wire.example.net/country-x-licence
+Country X's energy minister granted a national licence to a mining company to collect nodules in its own waters, outside the seabed body's area. The company plans a pilot in 2027.

@@ -1,0 +1,106 @@
+<resources>
+    <string name="app_name">Based Informant</string>
+
+    <!-- Navigation -->
+    <string name="tab_keywords">Keywords</string>
+    <string name="tab_history">History</string>
+    <string name="settings">Settings</string>
+    <string name="back">Back</string>
+
+    <!-- First run (releases.md section 2, stage 2 step 4) -->
+    <string name="first_run_title">Welcome to Based Informant</string>
+    <string name="first_run_body">Based Informant turns your keywords into a short news digest, written by AI through rfab.ai. To start, it needs your rfab API key. The key stays on this device, encrypted, and is sent only to rfab.</string>
+    <string name="first_run_get_key">Get a key</string>
+    <string name="open_settings">Open Settings</string>
+
+    <!-- Keywords screen -->
+    <string name="keyword_add_label">Add a keyword</string>
+    <string name="keyword_add">Add</string>
+    <string name="keyword_count">%1$d of %2$d keywords</string>
+    <string name="keywords_empty">No keywords yet. Add the topics you want news about.</string>
+    <string name="keyword_edit">Edit %1$s</string>
+    <string name="keyword_delete">Delete %1$s</string>
+    <string name="keyword_edit_title">Edit keyword</string>
+    <string name="keyword_deleted">Deleted %1$s</string>
+    <string name="undo">Undo</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="field_counter">%1$d / %2$d</string>
+
+    <string name="refusal_blank">Type something first.</string>
+    <string name="refusal_too_long_keyword">Too long: a keyword can have up to %1$d characters.</string>
+    <string name="refusal_too_long_tag">Too long: a tag can have up to %1$d characters.</string>
+    <string name="refusal_duplicate">Already in the list (capitals don’t count).</string>
+    <string name="refusal_full_keywords">A digest takes exactly %1$d keywords. Delete one to add another.</string>
+    <string name="refusal_full_tags">The list is full: %1$d tags at most. Delete one to add another.</string>
+
+    <string name="generate">Generate digest</string>
+    <string name="generate_block_run_active">A digest is being generated.</string>
+    <string name="generate_block_no_key">Add your rfab API key in Settings.</string>
+    <string name="generate_block_too_few_keywords">A digest takes exactly %1$d keywords: add %2$d more.</string>
+    <string name="generate_not_yet">Generating a digest comes in a later build of the app.</string>
+
+    <!-- History -->
+    <string name="history_empty">Your digests will appear here.</string>
+
+    <!-- Settings: key -->
+    <string name="key_section">rfab API key</string>
+    <string name="key_saved">Saved key ending in %1$s</string>
+    <string name="key_none">No key saved.</string>
+    <string name="key_paste_label">Paste your key</string>
+    <string name="key_replace_label">Paste a new key to replace it</string>
+    <string name="key_save">Save key</string>
+    <string name="key_test">Test key</string>
+    <string name="key_remove">Remove key</string>
+    <string name="key_remove_title">Remove the key?</string>
+    <string name="key_remove_body">The app can’t generate digests without a key. You can paste it again later.</string>
+    <string name="key_get">Where to get a key</string>
+    <string name="key_shape_empty">Paste a key first.</string>
+    <string name="key_shape_not_rfab">This isn’t an rfab key: rfab keys start with rfab_.</string>
+    <string name="key_shape_bad_characters">This key has characters an rfab key never has. Copy it again.</string>
+    <string name="key_shape_too_short">This key is too short. Copy it again, in full.</string>
+    <string name="key_test_works">The key works.</string>
+    <string name="key_test_failed">The key test failed: %1$s</string>
+
+    <!-- Settings: balance -->
+    <string name="balance_section">Token balance</string>
+    <string name="balance_known">%1$s tokens</string>
+    <string name="balance_reading">Reading the balance…</string>
+    <string name="balance_not_known">Not known: %1$s</string>
+    <string name="balance_refresh">Refresh</string>
+    <string name="balance_line_known">Balance: %1$s tokens</string>
+    <string name="balance_line_not_known">Balance not known: %1$s</string>
+    <string name="balance_claim">Claim your free daily tokens</string>
+    <string name="reason_no_key">no key is saved.</string>
+    <string name="reason_key_refused">rfab refused the key. Check it or paste a new one.</string>
+    <string name="reason_unavailable">rfab is busy or down. Try again later.</string>
+    <string name="reason_network">no connection to rfab. Check your internet.</string>
+    <string name="reason_other">rfab gave an unexpected answer.</string>
+
+    <!-- Settings: what feeds the call -->
+    <string name="tags_section">Interest tags (optional)</string>
+    <string name="tag_add_label">Add a tag</string>
+    <string name="tag_remove">Remove %1$s</string>
+    <string name="tag_deleted">Removed %1$s</string>
+
+    <string name="attention_section">Attention mode</string>
+    <string name="attention_hottest">Hottest only</string>
+    <string name="attention_hottest_hint">Topics with large public attention.</string>
+    <string name="attention_balanced">Balanced</string>
+    <string name="attention_balanced_hint">A mix of big and less-discussed topics.</string>
+    <string name="attention_niche">Niche</string>
+    <string name="attention_niche_hint">Less-discussed or alternative topics.</string>
+
+    <string name="persona_section">Persona</string>
+    <string name="persona_off">Off</string>
+    <string name="persona_roach_king">Roach King</string>
+    <string name="persona_doctor_wife">Doctor Wife</string>
+    <string name="persona_dog_zapper">Dog Zapper</string>
+
+    <string name="model_section">Model (advanced)</string>
+    <string name="model_hint">Only models checked in testing are offered.</string>
+
+    <!-- Privacy (security.md section 6) -->
+    <string name="privacy_section">Privacy</string>
+    <string name="privacy_note">To write a digest, the app sends your keywords, your interest tags, a short memory of past digests and your persona choice to rfab.ai and the AI providers it uses. Don’t put sensitive personal details in them. To check links, the app opens each source page. Nothing else leaves this device: no analytics, no crash reports, no server of ours.</string>
+</resources>

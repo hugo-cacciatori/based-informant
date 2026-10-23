@@ -1,0 +1,100 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Alright, let's see what's been going on this week.",
+  "closing": "That's the rundown, it is what it is.",
+  "topics": [
+    {
+      "id": "stellarator-plasma-record",
+      "continues": null,
+      "new_development": null,
+      "title": "Test stellarator holds plasma for record 40 minutes",
+      "summary": "A research stellarator kept a stable plasma for 40 minutes, four times its previous best, thanks to a new tungsten wall coating. Physicists call it a real but incremental step, with net energy gain still years away.",
+      "detail": "The lab credited the tungsten coating for shedding less material into the plasma. Two outside physicists quoted said it's a genuine improvement but not a breakthrough. The lab plans a campaign next spring aiming for an hour at higher density.",
+      "keywords": [
+        "fusion energy"
+      ],
+      "score": 82,
+      "score_parts": {
+        "relevance": 55,
+        "attention": 27,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Test stellarator holds plasma for a record 40 minutes",
+          "publisher": "Example Science Daily",
+          "url": "https://science.example.com/2026/10/stellarator-record",
+          "language": "en",
+          "published": "2026-10-16"
+        },
+        {
+          "title": "Le stellarator d'essai bat son record de durée",
+          "publisher": "Exemple Sciences",
+          "url": "https://sciences.example.org/stellarator-record",
+          "language": "fr",
+          "published": "2026-10-17"
+        }
+      ]
+    },
+    {
+      "id": "seabed-mining-moratorium-vote",
+      "continues": "seabed-mining-talks",
+      "new_development": "The council has now scheduled a vote on a 10-year moratorium for its November session, with the agenda setting the vote for 12 November.",
+      "title": "Seabed body schedules vote on mining moratorium",
+      "summary": "An international seabed council agreed to vote on a 10-year moratorium on commercial deep-sea mining at its November session. Twelve member states back the pause, while two companies with exploration contracts say it would breach existing agreements.",
+      "detail": "The published agenda puts the moratorium vote on 12 November, requiring a two-thirds majority to pass. The council's move follows earlier talks that had resumed without a concrete outcome. Companies holding exploration contracts argue a moratorium would violate their agreements.",
+      "keywords": [
+        "deep-sea mining"
+      ],
+      "score": 78,
+      "score_parts": {
+        "relevance": 55,
+        "attention": 28,
+        "repeat_penalty": 5
+      },
+      "sources": [
+        {
+          "title": "Seabed authority schedules a vote on a mining moratorium",
+          "publisher": "Example Ocean News",
+          "url": "https://ocean.example.com/seabed-vote",
+          "language": "en",
+          "published": "2026-10-14"
+        },
+        {
+          "title": "Council agenda lists the moratorium for 12 November",
+          "publisher": "Example Wire",
+          "url": "https://wire.example.net/council-agenda",
+          "language": "en",
+          "published": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "id": "chess-federation-youth-time-control",
+      "continues": null,
+      "new_development": null,
+      "title": "Chess federation trials shorter youth time controls",
+      "summary": "A national chess federation will trial 45-minute games with a 10-second increment at three youth events this winter, citing shorter attention spans and travel costs. Coaches are split on the change.",
+      "detail": "The federation announced the trial for three youth events this winter. It cited shorter attention spans and travel costs as reasons. Coaches quoted in the report were divided, with some supporting the change and others concerned about its impact on young players' development.",
+      "keywords": [
+        "chess"
+      ],
+      "score": 55,
+      "score_parts": {
+        "relevance": 40,
+        "attention": 15,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Chess federation tests a shorter time control for youth events",
+          "publisher": "Example Board Games Review",
+          "url": "https://boardgames.example.org/youth-time-control",
+          "language": "en",
+          "published": "2026-10-13"
+        }
+      ]
+    }
+  ]
+}

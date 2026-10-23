@@ -1,0 +1,19 @@
+{
+  "keywords": ["fusion energy", "deep-sea mining", "chess"],
+  "interest_tags": ["science", "policy"],
+  "attention_mode": "balanced",
+  "persona": "off",
+  "today": "2026-10-18",
+  "last_digest": null,
+  "memory": [
+    {
+      "id": "seabed-mining-talks",
+      "title": "Seabed mining talks resume",
+      "gist": "Delegates met again.",
+      "first_featured": "2026-10-01",
+      "last_featured": "2026-10-10",
+      "times_featured": 2,
+      "last_score": 66
+    }
+  ]
+}

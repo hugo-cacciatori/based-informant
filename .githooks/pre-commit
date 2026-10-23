@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks the commit if a staged file contains a secret. Enabled by scripts/setup-dev.
+exec sh "$(git rev-parse --show-toplevel)/scripts/check-secrets" --staged

@@ -1,0 +1,69 @@
+#!/bin/sh
+# set-rfab-key: run once per machine, and again after rotating the key. Asks for your rfab API key
+# without showing it and stores it outside the repo, where the lab finds it:
+#   Windows (Git Bash):  the user environment variable RFAB_API_KEY
+#   macOS / Linux:       ~/.config/based-informant/rfab-api-key, readable by you only
+# If that fails, it offers the git-ignored .env file at the repo root as a last resort.
+# The key is never printed. Afterwards, restart terminals and the IDE and run ./gradlew --stop.
+set -u
+
+die() { echo "set-rfab-key: $*" >&2; exit 2; }
+
+[ -t 0 ] || die "run this in a terminal: it needs to read the key with hidden input."
+
+trap 'stty echo 2>/dev/null' EXIT
+trap 'exit 2' INT TERM
+printf 'Paste your rfab API key (input is hidden), then press Enter: ' >&2
+stty -echo 2>/dev/null
+IFS= read -r key
+stty echo 2>/dev/null
+printf '\n' >&2
+
+key=$(printf '%s' "$key" | tr -d '\r\n\t ')
+case $key in
+    rfab_*) ;;
+    *) die "that doesn't look like an rfab key (it should start with rfab_). Nothing was saved." ;;
+esac
+case ${key#rfab_} in
+    *[!A-Za-z0-9_-]*) die "that key contains unexpected characters. Nothing was saved." ;;
+esac
+[ ${#key} -ge 25 ] || die "that key looks too short. Nothing was saved."
+tail4=$(printf '%s' "$key" | tail -c 4)
+
+store_windows() {
+    command -v powershell.exe >/dev/null 2>&1 || return 1
+    # The key goes through stdin, so it never appears on a command line.
+    printf '%s' "$key" | powershell.exe -NoProfile -NonInteractive -Command \
+        '$k = [Console]::In.ReadToEnd(); [Environment]::SetEnvironmentVariable("RFAB_API_KEY", $k, "User")' \
+        || return 1
+    len=$(powershell.exe -NoProfile -NonInteractive -Command \
+        '([Environment]::GetEnvironmentVariable("RFAB_API_KEY", "User")).Length' | tr -d '\r\n ')
+    [ "$len" = "${#key}" ] || return 1
+    echo "Saved as your Windows user environment variable RFAB_API_KEY (the key ends with $tail4)."
+}
+
+store_unix() {
+    dir="${XDG_CONFIG_HOME:-$HOME/.config}/based-informant"
+    mkdir -p "$dir" || return 1
+    chmod 700 "$dir" || return 1
+    ( umask 077 && printf '%s\n' "$key" > "$dir/rfab-api-key" ) || return 1
+    chmod 600 "$dir/rfab-api-key" || return 1
+    echo "Saved in $dir/rfab-api-key, readable by you only (the key ends with $tail4)."
+}
+
+store_env_file() {
+    top=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
+    git -C "$top" check-ignore -q .env || die ".env is not git-ignored in this repo. Nothing was saved."
+    printf 'Store it in %s/.env instead (git-ignored, plain text)? [y/N] ' "$top" >&2
+    read -r answer
+    case $answer in y|Y|yes) ;; *) die "nothing was saved." ;; esac
+    ( umask 077 && printf 'RFAB_API_KEY=%s\n' "$key" > "$top/.env" ) || return 1
+    echo "Saved in $top/.env (the key ends with $tail4)."
+}
+
+case $(uname -s) in
+    MINGW*|MSYS*|CYGWIN*) store_windows || { echo "Could not set the Windows environment variable." >&2; store_env_file; } ;;
+    *)                    store_unix || { echo "Could not write the config file." >&2; store_env_file; } ;;
+esac || die "nothing was saved."
+
+echo "Restart your terminals and IDE, then run ./gradlew --stop (gradlew.bat --stop in cmd), so they see the new key."

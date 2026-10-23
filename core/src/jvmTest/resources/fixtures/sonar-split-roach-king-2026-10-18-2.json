@@ -1,0 +1,93 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Alright, here's the news buffet, and yeah, some of these topics showed up better than others.",
+  "closing": "That’s the digest, it is what it is.",
+  "topics": [
+    {
+      "id": "formula-1-singapore-break-austin",
+      "continues": null,
+      "new_development": null,
+      "title": "F1 takes a weekend break before Austin",
+      "summary": "Formula 1 had no race on October 17–18, with the championship on a scheduled break after Singapore and before the United States Grand Prix. The next round is set for October 23–25 at Circuit of The Americas in Austin. It’s a quiet patch in the calendar, which is rare enough to feel suspicious.",
+      "detail": "The official 2026 calendar lists Singapore as the previous round from October 9–11 and the United States Grand Prix as the next race from October 23–25. Race coverage and schedule listings published during the window also noted that there were no Formula 1 sessions on October 17 or 18. One report framed the weekend as a pause between Singapore and Austin.",
+      "keywords": [
+        "Formula 1"
+      ],
+      "score": 63,
+      "score_parts": {
+        "relevance": 45,
+        "attention": 18,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Is there an F1 race this weekend? Here’s when Formula 1 returns",
+          "publisher": "Grande Premio",
+          "url": "https://grandepremio.com/en/f1/is-there-an-f1-race-this-weekend-heres-when-formula-1-returns/",
+          "language": "en",
+          "published": "2026-10-16"
+        },
+        {
+          "title": "F1 Schedule 2026 - Official Calendar of Grand Prix Races",
+          "publisher": "Formula 1",
+          "url": "https://www.formula1.com/en/racing/2026",
+          "language": "en",
+          "published": "2026-10-13"
+        }
+      ]
+    },
+    {
+      "id": "high-speed-rail-europe-parliament-resolution",
+      "continues": null,
+      "new_development": null,
+      "title": "EU lawmakers back high-speed rail push",
+      "summary": "The European Parliament’s transport committee adopted recommendations to accelerate the rollout of Europe’s high-speed rail network. The draft resolution calls for stronger links between major urban centres and neighbouring countries, plus funding support in the next EU budget cycle. Very EU-core stuff, but with actual rail attached to it.",
+      "detail": "The committee approved the recommendations on October 5, and the resolution was set to go to a plenary vote during the Parliament’s second October session. The text says high-speed rail should support competitiveness, territorial cohesion, modal shift, climate neutrality and strategic autonomy. It also calls for adequate funding through the Connecting Europe Facility and continued support in national and regional partnership plans.",
+      "keywords": [
+        "high-speed rail in Europe"
+      ],
+      "score": 58,
+      "score_parts": {
+        "relevance": 46,
+        "attention": 12,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "MEPs adopt proposed resolution on development of high-speed rail",
+          "publisher": "Agence Europe",
+          "url": "https://agenceurope.eu/en/bulletin/article/13953/18/meps-adopt-proposed-resolution-on-development-of-high-speed-rail",
+          "language": "en",
+          "published": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "id": "open-source-software-leftovers",
+      "continues": null,
+      "new_development": null,
+      "title": "Open-source roundup surfaces on October 18",
+      "summary": "A dated open-source roundup was published on October 18 under the title “Free, Libre, and Open Source Software Leftovers.” The result is clearly about open-source software, but the source snippet does not provide enough detail to extract a real news development beyond that. Not exactly a blockbuster, chief.",
+      "detail": null,
+      "keywords": [
+        "open-source software"
+      ],
+      "score": 14,
+      "score_parts": {
+        "relevance": 8,
+        "attention": 6,
+        "repeat_penalty": 0
+      },
+      "sources": [
+        {
+          "title": "Free, Libre, and Open Source Software Leftovers",
+          "publisher": "TuxMachines",
+          "url": "http://news.tuxmachines.org/n/2026/10/18/Free_Libre_and_Open_Source_Software_Leftovers.shtml",
+          "language": "en",
+          "published": "2026-10-18"
+        }
+      ]
+    }
+  ]
+}

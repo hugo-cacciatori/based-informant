@@ -1,0 +1,52 @@
+{
+  "template_version": 1,
+  "generated_at": "2026-10-18",
+  "opening": "Three stories this week.",
+  "closing": "That is all for now.",
+  "topics": [
+    {
+      "id": "stellarator-record-run",
+      "continues": null,
+      "new_development": null,
+      "title": "Test stellarator holds plasma for a record 40 minutes",
+      "summary": "A research stellarator held a stable plasma for 40 minutes, four times its previous best. The team credits new wall coatings. Independent physicists call it a step, not a breakthrough.",
+      "detail": "The run used a lower-power heating mode. The next campaign aims for an hour at higher density.",
+      "keywords": ["fusion energy"],
+      "score": 82,
+      "score_parts": { "relevance": 45, "attention": 37, "repeat_penalty": 0 },
+      "sources": [
+        { "title": "Stellarator sets duration record", "publisher": "Example Science Daily", "url": "https://science.example.com/2026/10/stellarator-record", "language": "en", "published": "2026-10-16" },
+        { "title": "Le stellarator bat son record", "publisher": "Exemple Sciences", "url": "https://sciences.example.org/stellarator-record", "language": "fr", "published": "2026-10-17" }
+      ]
+    },
+    {
+      "id": "seabed-mining-moratorium-vote",
+      "continues": "seabed-mining-talks",
+      "new_development": "The council scheduled a vote for next month.",
+      "title": "Seabed authority schedules a moratorium vote",
+      "summary": "The council of an international seabed body set a date to vote on a mining moratorium. Twelve member states back a pause; two mining applicants object.",
+      "detail": null,
+      "keywords": ["Deep-Sea Mining"],
+      "score": 64,
+      "score_parts": { "relevance": 40, "attention": 34, "repeat_penalty": 10 },
+      "sources": [
+        { "title": "Vote set on seabed mining pause", "publisher": "Example Ocean News", "url": "https://ocean.example.com/seabed-vote", "language": "en", "published": "2026-10-14" },
+        { "title": "Council agenda", "publisher": "Example Wire", "url": "https://wire.example.net/council-agenda", "language": "en", "published": "2026-10-15" }
+      ]
+    },
+    {
+      "id": "club-chess-open",
+      "continues": null,
+      "new_development": null,
+      "title": "A regional chess open draws a record field",
+      "summary": "A regional open tournament drew 900 players, its largest field so far.",
+      "detail": null,
+      "keywords": ["chess"],
+      "score": 40,
+      "score_parts": { "relevance": 30, "attention": 10, "repeat_penalty": 0 },
+      "sources": [
+        { "title": "Record entry for the open", "publisher": "Example Chess", "url": "https://chess.example.com/open-record", "language": "en", "published": "2026-10-12" }
+      ]
+    }
+  ]
+}
