@@ -1,7 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.limits
 
 /**
- * Input limits (ai-call.md section 2, decided 2026-10-18). The UI, the data layer and the prompt builder
+ * Input limits (02-ai-call.md section 2, decided 2026-10-18). The UI, the data layer and the prompt builder
  * all enforce them. Change them only with the owner's OK.
  *
  * Lengths count characters (Unicode code points), after trimming.

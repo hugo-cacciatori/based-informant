@@ -11,7 +11,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** Offline: the call redesign's writer pieces (ai-call.md section 12) on synthetic data. */
+/** Offline: the call redesign's writer pieces (02-ai-call.md section 12) on synthetic data. */
 class WriterTest {
     private val repo = File("").absoluteFile.parentFile
     private val synthetic = SearchAnswer.read(repo.resolve("lab/inputs/search-answer-synthetic.json").readText()).numbered()

@@ -35,7 +35,7 @@ kotlin {
 }
 
 room3 {
-    // Committed: each schema version is the base of its migration test (platforms.md section 7).
+    // Committed: each schema version is the base of its migration test (04-platforms.md section 7).
     schemaDirectory("$projectDir/schemas")
 }
 

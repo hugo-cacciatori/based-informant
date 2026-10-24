@@ -43,7 +43,7 @@ class PromptBuilderTest {
     private fun built(input: PromptInput, files: Map<String, String> = testFiles) =
         assertIs<PromptBuilder.Result.Built>(PromptBuilder(files).build(input))
 
-    /** testing.md: every prompt change shows up in the diff of this file and is reviewed on purpose. */
+    /** 07-testing.md: every prompt change shows up in the diff of this file and is reviewed on purpose. */
     @Test
     fun goldenPrompt() {
         val actual = pretty.encodeToString(ChatRequest.serializer(), built(input).request) + "\n"

@@ -12,7 +12,7 @@ import java.io.File
 
 /**
  * What the lab sends, as a JSON file. `lab/inputs/synthetic.json` is committed and synthetic; the owner's real
- * keywords and tags go in a file under the git-ignored `lab-out/` (security.md section 4).
+ * keywords and tags go in a file under the git-ignored `lab-out/` (05-security.md section 4).
  */
 @Serializable
 data class LabInput(
@@ -24,7 +24,7 @@ data class LabInput(
     val today: String? = null,
     @SerialName("last_digest") val lastDigest: String? = null,
     val memory: List<MemoryEntry> = emptyList(),
-    /** Topic tags of earlier digests, for the redesign's writer (ai-call.md section 9). */
+    /** Topic tags of earlier digests, for the redesign's writer (02-ai-call.md section 9). */
     @SerialName("known_topic_tags") val knownTopicTags: List<String> = emptyList(),
 ) {
     @Serializable
@@ -69,7 +69,7 @@ data class LabInput(
             Persona.entries.firstOrNull { it.name.equals(text.replace('-', '_'), ignoreCase = true) }
                 ?: throw LabUsageError("unknown persona \"$text\" (off, roach-king, doctor-wife, dog-zapper)")
 
-        /** Display names only: the real people are named in the voice files alone (product.md section 9). */
+        /** Display names only: the real people are named in the voice files alone (01-product.md section 9). */
         fun displayName(persona: Persona): String? = when (persona) {
             Persona.OFF -> null
             Persona.ROACH_KING -> "Roach King"

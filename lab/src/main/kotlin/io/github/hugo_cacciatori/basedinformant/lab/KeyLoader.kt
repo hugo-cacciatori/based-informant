@@ -3,7 +3,7 @@ package io.github.hugo_cacciatori.basedinformant.lab
 import java.io.File
 
 /**
- * The only place that reads the rfab key (security.md section 3): the `RFAB_API_KEY` environment variable, then
+ * The only place that reads the rfab key (05-security.md section 3): the `RFAB_API_KEY` environment variable, then
  * `~/.config/based-informant/rfab-api-key`, then the git-ignored `.env` at the repo root. The key is never printed;
  * [describe] gives at most its last 4 characters.
  */

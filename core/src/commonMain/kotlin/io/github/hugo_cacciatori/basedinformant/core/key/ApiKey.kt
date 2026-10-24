@@ -6,7 +6,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 
 /**
- * Where the rfab key is kept (security.md section 3): the Android Keystore or Windows DPAPI, never DataStore,
+ * Where the rfab key is kept (05-security.md section 3): the Android Keystore or Windows DPAPI, never DataStore,
  * Room, logs or the repo. Implementations never log the key.
  */
 interface SecretStore {
@@ -41,7 +41,7 @@ object ApiKeyRules {
 
 enum class KeyShape { OK, EMPTY, NOT_RFAB, BAD_CHARACTERS, TOO_SHORT }
 
-/** The token balance as Settings shows it (product.md section 3). */
+/** The token balance as Settings shows it (01-product.md section 3). */
 sealed interface BalanceDisplay {
     data class Known(val tokens: Long) : BalanceDisplay
     data class NotKnown(val reason: NotKnownReason) : BalanceDisplay

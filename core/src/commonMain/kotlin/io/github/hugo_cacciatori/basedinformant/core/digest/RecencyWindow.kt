@@ -5,7 +5,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 
 /**
- * The period the AI searches (ai-call.md section 3, decided 2026-10-18): since the last digest generated on
+ * The period the AI searches (02-ai-call.md section 3, decided 2026-10-18): since the last digest generated on
  * this device, at most [MAX_DAYS] days back; [MAX_DAYS] days when there is none. Both ends are inclusive.
  */
 data class RecencyWindow(val start: LocalDate, val end: LocalDate) {
@@ -14,7 +14,7 @@ data class RecencyWindow(val start: LocalDate, val end: LocalDate) {
     companion object {
         const val MAX_DAYS = 7
 
-        /** The wider window offered after an empty digest (product.md section 4 step 6, 30 days [PROPOSED]). */
+        /** The wider window offered after an empty digest (01-product.md section 4 step 6, 30 days [PROPOSED]). */
         const val WIDE_DAYS = 30
 
         /** The last [WIDE_DAYS] days, whatever the last digest: a second chance after an empty one. */

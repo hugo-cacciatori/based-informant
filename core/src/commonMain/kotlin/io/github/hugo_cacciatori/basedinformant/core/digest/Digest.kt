@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * A validated digest. Built from the preliminary contract of ai-call.md section 7: the real schema comes out
+ * A validated digest. Built from the preliminary contract of 02-ai-call.md section 7: the real schema comes out
  * of the template session (`core/prompt/digest.schema.json`), and this model follows it then.
  * Serialized with the contract's field names: that JSON is what History stores per digest.
  */

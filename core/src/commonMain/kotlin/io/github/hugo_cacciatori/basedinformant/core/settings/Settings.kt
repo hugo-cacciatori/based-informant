@@ -1,10 +1,10 @@
 package io.github.hugo_cacciatori.basedinformant.core.settings
 
-/** Which topics are searched for, through which sources, and how they are reported (ai-call.md section 4). */
+/** Which topics are searched for, through which sources, and how they are reported (02-ai-call.md section 4). */
 enum class AttentionMode { HOTTEST, BALANCED, NICHE }
 
 /**
- * The voice the AI writes in (product.md section 9). [voiceFile] names the file in `core/prompt/voices/`;
+ * The voice the AI writes in (01-product.md section 9). [voiceFile] names the file in `core/prompt/voices/`;
  * [OFF] uses the lens voice once lenses exist, and the neutral voice until then.
  */
 enum class Persona(val voiceFile: String) {

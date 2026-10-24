@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** What Settings shows (product.md section 3). The key itself never enters this state, only its last 4 characters. */
+/** What Settings shows (01-product.md section 3). The key itself never enters this state, only its last 4 characters. */
 data class SettingsState(
     val loaded: Boolean = false,
     val settings: AppSettings = AppSettings(),
@@ -32,7 +32,7 @@ data class SettingsState(
 )
 
 /**
- * Settings' logic, platform-free. Each change takes effect and is saved at once (product.md section 11);
+ * Settings' logic, platform-free. Each change takes effect and is saved at once (01-product.md section 11);
  * one over a limit is not saved. Only free calls: the balance read, on open, on Refresh and after a key change.
  * [clientFor] makes an rfab client for a key.
  */
@@ -102,7 +102,7 @@ class SettingsModel(
 
     suspend fun setPersona(persona: Persona) = change { it.copy(persona = persona) }
 
-    /** Only models validated in the lab are offered (ai-call.md section 11). */
+    /** Only models validated in the lab are offered (02-ai-call.md section 11). */
     suspend fun setModel(model: String): Boolean {
         if (model !in TemplateConfig.ALLOWED_MODELS) return false
         change { it.copy(model = model) }

@@ -17,7 +17,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * The rfab key, encrypted with an AES-256-GCM key that never leaves the Android Keystore (platforms.md section 3).
+ * The rfab key, encrypted with an AES-256-GCM key that never leaves the Android Keystore (04-platforms.md section 3).
  * Only the sealed bytes are stored, in `noBackupFilesDir`. Nothing here logs the key.
  */
 class KeystoreSecretStore(context: Context) : SecretStore {

@@ -21,7 +21,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
 
-/** The runs in Room, their raw answers in [raw] (platforms.md section 7). */
+/** The runs in Room, their raw answers in [raw] (04-platforms.md section 7). */
 class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : RunStore {
     override suspend fun start(snapshot: RunSnapshot, startedAt: Long): Long? = db.withWriteTransaction {
         if (db.runs().unfinished().isNotEmpty()) {
@@ -107,7 +107,7 @@ class RoomMemoryStore(private val db: AppDatabase) : MemoryStore {
     }
 }
 
-/** The call history (product.md section 4.5): written here, never shown in the app. */
+/** The call history (01-product.md section 4.5): written here, never shown in the app. */
 class RoomCallLog(private val db: AppDatabase) : CallLog {
     override suspend fun record(call: CallRecord) {
         db.calls().insert(

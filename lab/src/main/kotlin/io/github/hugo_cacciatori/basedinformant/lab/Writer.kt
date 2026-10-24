@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * The paid search answer of the call redesign (ai-call.md section 12, draft template v2): stories with numbered
+ * The paid search answer of the call redesign (02-ai-call.md section 12, draft template v2): stories with numbered
  * sources, their facts, the article text the app downloaded, and the persona notes. Lab only until redesign step 4.
  */
 @Serializable

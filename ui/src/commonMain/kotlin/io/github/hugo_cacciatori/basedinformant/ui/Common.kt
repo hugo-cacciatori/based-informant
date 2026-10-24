@@ -44,7 +44,7 @@ fun FieldSupport(counter: FieldCounter, message: String?) {
     }
 }
 
-/** 120174 → "120,174": the UI is in English (product.md section 11), and common code has no locale formatter. */
+/** 120174 → "120,174": the UI is in English (01-product.md section 11), and common code has no locale formatter. */
 fun groupThousands(value: Long): String {
     val digits = kotlin.math.abs(value).toString()
     val grouped = digits.reversed().chunked(3).joinToString(",").reversed()

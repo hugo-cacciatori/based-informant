@@ -7,7 +7,7 @@ import kotlin.test.Test
 import kotlin.test.fail
 
 /**
- * testing.md: every change to the email shows up in the diff of these files and is reviewed on purpose.
+ * 07-testing.md: every change to the email shows up in the diff of these files and is reviewed on purpose.
  * On a difference, the new output goes to build/golden-actual/; copy it to src/jvmTest/resources/golden/ if intended.
  */
 class EmailGoldenTest {

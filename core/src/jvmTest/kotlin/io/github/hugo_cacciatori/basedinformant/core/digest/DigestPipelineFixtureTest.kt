@@ -7,7 +7,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** Runs the synthetic fixtures (testing.md) through parse, validate and select. */
+/** Runs the synthetic fixtures (07-testing.md) through parse, validate and select. */
 class DigestPipelineFixtureTest {
     private val context = ValidationContext(
         keywords = listOf("fusion energy", "deep-sea mining", "chess"),

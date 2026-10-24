@@ -14,7 +14,7 @@ data class RenderMeta(
 )
 
 /**
- * The digest as the reader sees it (rendering.md section 3): every text, label and its order, built once from a
+ * The digest as the reader sees it (03-rendering.md section 3): every text, label and its order, built once from a
  * digest. The email renderer draws it as HTML and text; the History viewer (stage 6) draws it natively, so the
  * two cannot drift apart. Texts are plain and unescaped: each renderer escapes for its own format.
  * Texts are English until the UI language is decided.
@@ -47,7 +47,7 @@ data class CardView(
     val sources: List<SourceView>,
 )
 
-/** What the size cap left out of the email (rendering.md section 1). */
+/** What the size cap left out of the email (03-rendering.md section 1). */
 data class Shortened(val details: Int, val topics: Int)
 
 /** A source chip: "Publisher, 17 Oct 2026, en", with its link only when it is `https`. */

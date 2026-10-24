@@ -7,7 +7,7 @@ import java.net.http.HttpResponse
 import java.time.Duration
 
 /**
- * The readable text of an article page, for the free writer (ai-call.md section 12: the writer gets the article
+ * The readable text of an article page, for the free writer (02-ai-call.md section 12: the writer gets the article
  * text). Paragraphs and headings only, scripts, menus and footers removed. Lab only until redesign step 4.
  */
 object ArticleText {

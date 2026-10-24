@@ -132,7 +132,7 @@ interface SettingsActions {
 }
 
 /**
- * Settings (product.md section 3), stage 2 part: the key (paste + Test key only), the balance, what feeds the call,
+ * Settings (01-product.md section 3), stage 2 part: the key (paste + Test key only), the balance, what feeds the call,
  * and the privacy note. Email, theme and reminder join in their own stages. Every change is saved at once.
  */
 @Composable

@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 /**
- * The app's database (platforms.md section 7). Every schema change bumps [version] with a migration and a
+ * The app's database (04-platforms.md section 7). Every schema change bumps [version] with a migration and a
  * migration test, never a destructive fallback: History matters.
  */
 @Database(

@@ -36,7 +36,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
 
-/** The parsed command line (ai-call.md section 11). */
+/** The parsed command line (02-ai-call.md section 11). */
 sealed interface LabCommand {
     data class Fixture(val fixture: String, val input: String?, val checkLinks: Boolean = false) : LabCommand
     data class DryRun(val input: String?, val persona: String?, val model: String?, val groupSize: Int? = null) : LabCommand
@@ -48,7 +48,7 @@ sealed interface LabCommand {
     /** Asks for one article to see whether [model] searches the web (Model plan step 3). [paid] needs the owner's OK. */
     data class Probe(val model: String, val keyword: String?, val input: String?, val paid: Boolean) : LabCommand
 
-    /** The free writer of the call redesign (ai-call.md section 12) on a saved search answer, or a v1 answer turned into one. */
+    /** The free writer of the call redesign (02-ai-call.md section 12) on a saved search answer, or a v1 answer turned into one. */
     data class Write(
         val model: String,
         val searchAnswer: String,
@@ -58,7 +58,7 @@ sealed interface LabCommand {
         val articles: String? = null,
     ) : LabCommand
 
-    /** The free input check (ai-call.md section 12) on a fixed list, once per free model in [models]. */
+    /** The free input check (02-ai-call.md section 12) on a fixed list, once per free model in [models]. */
     data class CheckInput(val models: List<String>, val list: String?) : LabCommand
     data object Models : LabCommand
     data object Balance : LabCommand
@@ -267,7 +267,7 @@ class Lab(
     }
 
     /**
-     * The free writer (ai-call.md section 12, call redesign step 1): the search answer, with the article texts when asked,
+     * The free writer (02-ai-call.md section 12, call redesign step 1): the search answer, with the article texts when asked,
      * goes to one free model; its topics are joined with the answer's sources and run through the usual pipeline.
      */
     private suspend fun write(command: LabCommand.Write): Int {
@@ -327,7 +327,7 @@ class Lab(
     }
 
     /**
-     * Real, paid calls (ai-call.md section 11): one, or one per keyword group. The owner's OK in chat comes first, every
+     * Real, paid calls (02-ai-call.md section 11): one, or one per keyword group. The owner's OK in chat comes first, every
      * time; the flag only stops accidental runs. Nothing is retried beyond the client's documented rules, and no answer
      * is ever re-sent.
      */
@@ -353,7 +353,7 @@ class Lab(
     }
 
     /**
-     * Sends [calls] one at a time, saving each raw answer before anything reads it (ai-call.md section 8). Stops at
+     * Sends [calls] one at a time, saving each raw answer before anything reads it (02-ai-call.md section 8). Stops at
      * the first failed call, and for paid calls also after one over the stop rule. Returns the answers received, null
      * for a call that gave no content; calls never sent are left out.
      */
@@ -414,7 +414,7 @@ class Lab(
     }
 
     /**
-     * The search probe (ai-call.md section 11, Model plan step 3): one tiny request, then the app checks the returned
+     * The search probe (02-ai-call.md section 11, Model plan step 3): one tiny request, then the app checks the returned
      * page. Paid only with [LabCommand.Probe.paid], after the owner's OK; never retried or re-sent.
      */
     private suspend fun probe(command: LabCommand.Probe): Int {
@@ -465,7 +465,7 @@ class Lab(
             }
             is RfabResult.Ok -> response
         }
-        // The raw answer is saved before anything reads it (ai-call.md section 8).
+        // The raw answer is saved before anything reads it (02-ai-call.md section 8).
         dir.resolve("raw.json").writeText(ok.raw)
         val billed = ok.value.tokensBilled ?: before?.let { b -> after?.let { b - it } }
         report.line("tokensBilled: ${ok.value.tokensBilled ?: "not in the response"}; usage: ${ok.value.usage}")
@@ -705,7 +705,7 @@ class Lab(
             is PromptBuilder.Result.Built -> result.request
             is PromptBuilder.Result.OverLimit -> null.also { out.println("over the input limits, nothing built: ${result.violations}") }
             is PromptBuilder.Result.MissingPart -> null.also {
-                out.println("core/prompt/${result.path} is not written yet (template session, ai-call.md section 11); nothing built")
+                out.println("core/prompt/${result.path} is not written yet (template session, 02-ai-call.md section 11); nothing built")
             }
         }
 

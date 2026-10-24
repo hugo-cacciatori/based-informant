@@ -25,7 +25,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlin.coroutines.cancellation.CancellationException
 
-/** What a source URL turned out to be (ai-call.md section 8). */
+/** What a source URL turned out to be (02-ai-call.md section 8). */
 enum class LinkStatus {
     ALIVE,
 
@@ -203,7 +203,7 @@ data class LinkReport(
 
 /**
  * Drops dead sources and sources whose page date is outside [window], corrects dates that differ from the page, then
- * drops topics left with no source (ai-call.md section 8). Checks run in parallel.
+ * drops topics left with no source (02-ai-call.md section 8). Checks run in parallel.
  */
 object LinkStage {
     const val PARALLEL_CHECKS = 8

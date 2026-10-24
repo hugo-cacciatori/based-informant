@@ -59,11 +59,11 @@ data class Issue(val kind: Kind, val topicIndex: Int? = null, val sourceIndex: I
 }
 
 /**
- * Checks the parsed answer against the contract and keeps only what is safe to show (ai-call.md sections 6-8).
+ * Checks the parsed answer against the contract and keeps only what is safe to show (02-ai-call.md sections 6-8).
  * A bad header fails the whole answer; a bad topic or source is dropped and reported as an [Issue].
  */
 object DigestValidator {
-    /** The template versions this parser accepts. Template v1 is still a draft (ai-call.md section 11). */
+    /** The template versions this parser accepts. Template v1 is still a draft (02-ai-call.md section 11). */
     const val CURRENT_TEMPLATE_VERSION = 1
 
     /** Sources dated one day after the device's date are kept: the publisher may be in a later time zone. */
@@ -126,7 +126,7 @@ object DigestValidator {
             return null
         }
         if (parts != null && modelScore != score) issues += Issue(Issue.Kind.TOPIC_SCORE_CORRECTED, index)
-        // Eligibility rule (ai-call.md section 4): a topic must match at least one of the owner's keywords.
+        // Eligibility rule (02-ai-call.md section 4): a topic must match at least one of the owner's keywords.
         val matched = (obj["keywords"] as? JsonArray).orEmpty()
             .mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content?.trim()?.lowercase() }
             .mapNotNull { ownerKeywords[it] }
@@ -199,7 +199,7 @@ object DigestValidator {
         )
     }
 
-    /** Only `https` links with a host and no whitespace are ever shown (rendering.md section 1). */
+    /** Only `https` links with a host and no whitespace are ever shown (03-rendering.md section 1). */
     internal fun isHttpsUrl(url: String): Boolean {
         if (!url.startsWith("https://", ignoreCase = true)) return false
         if (url.any { it.isWhitespace() || it.isISOControl() }) return false

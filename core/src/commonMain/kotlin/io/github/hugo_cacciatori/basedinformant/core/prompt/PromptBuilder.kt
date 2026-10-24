@@ -16,17 +16,17 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/** Settings of the template version in use, fixed in the lab (ai-call.md sections 2 and 11). */
+/** Settings of the template version in use, fixed in the lab (02-ai-call.md sections 2 and 11). */
 object TemplateConfig {
     const val TEMPLATE_VERSION = DigestValidator.CURRENT_TEMPLATE_VERSION
 
-    /** Chosen in the lab (owner, 2026-10-18; ai-call.md section 11), id verified 2026-10-18 in rfab's models list. */
+    /** Chosen in the lab (owner, 2026-10-18; 02-ai-call.md section 11), id verified 2026-10-18 in rfab's models list. */
     const val DEFAULT_MODEL = "openrouter:perplexity/sonar"
 
-    /** The models Settings may offer: only those validated in the lab (ai-call.md section 11). */
+    /** The models Settings may offer: only those validated in the lab (02-ai-call.md section 11). */
     val ALLOWED_MODELS: List<String> = listOf(DEFAULT_MODEL)
 
-    /** Kept by the owner, 2026-10-18 (ai-call.md section 2): the longest sonar answer used 1,541 tokens. */
+    /** Kept by the owner, 2026-10-18 (02-ai-call.md section 2): the longest sonar answer used 1,541 tokens. */
     const val MAX_TOKENS = 4_000
 
     /** Kept by the owner, 2026-10-18: every lab run used it. */
@@ -35,7 +35,7 @@ object TemplateConfig {
     /** The owner-written template text (instructions and output schema), written in the template session. */
     const val TEMPLATE_FILE = "template.txt"
 
-    /** The output schema, sent with the template and kept as the contract's source of truth (ai-call.md section 7). */
+    /** The output schema, sent with the template and kept as the contract's source of truth (02-ai-call.md section 7). */
     const val SCHEMA_FILE = "digest.schema.json"
 
     fun voiceFile(persona: Persona) = "voices/${persona.voiceFile}.txt"
@@ -58,7 +58,7 @@ data class PromptInput(
     fun window(): RecencyWindow = if (wideWindow) RecencyWindow.wide(today) else RecencyWindow.of(today, lastDigestDate)
 }
 
-/** The body of `POST /api/chat/completions` (ai-call.md section 1). Headers, and so the key, are never part of it. */
+/** The body of `POST /api/chat/completions` (02-ai-call.md section 1). Headers, and so the key, are never part of it. */
 @Serializable
 data class ChatRequest(
     val model: String,
@@ -72,7 +72,7 @@ data class ChatRequest(
 data class ChatMessage(val role: String, val content: String)
 
 /**
- * Builds the request (ai-call.md sections 3 and 5). The system prompt is owner-written text only: the template, the
+ * Builds the request (02-ai-call.md sections 3 and 5). The system prompt is owner-written text only: the template, the
  * output schema and one voice part. Everything the owner types, and the memory, goes in the user message as delimited JSON data.
  * An over-limit input builds nothing, so no paid call can happen.
  */

@@ -4,7 +4,7 @@ import okio.FileSystem
 import okio.Path
 
 /**
- * The raw responses, one file per run (`raw/<runId>.json`, platforms.md section 7), written before any parsing.
+ * The raw responses, one file per run (`raw/<runId>.json`, 04-platforms.md section 7), written before any parsing.
  * Each write goes to a temporary file first and is then renamed, so a crash never leaves half an answer.
  */
 class RawFiles(private val fileSystem: FileSystem, private val dir: Path) {

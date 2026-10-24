@@ -5,7 +5,7 @@ plugins {
 }
 
 /**
- * Turns the plain-text prompt files in `core/prompt/` into Kotlin constants (ai-call.md section 5), so the
+ * Turns the plain-text prompt files in `core/prompt/` into Kotlin constants (02-ai-call.md section 5), so the
  * Android app, the Windows app and the lab all use exactly the same text.
  */
 abstract class GeneratePromptFiles : DefaultTask() {

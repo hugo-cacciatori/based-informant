@@ -1,5 +1,5 @@
 {
- "_comment": "Synthetic test list for --check-input (ai-call.md section 12). expect: ok, refuse (nonsense or misspelled), or any (not scored).",
+ "_comment": "Synthetic test list for --check-input (02-ai-call.md section 12). expect: ok, refuse (nonsense or misspelled), or any (not scored).",
  "entries": [
   {
    "text": "ocean policy",

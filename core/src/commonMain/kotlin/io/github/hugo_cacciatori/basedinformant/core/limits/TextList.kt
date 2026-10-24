@@ -1,7 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.limits
 
 /**
- * Editing rules for a list of short texts: the keyword list (product.md section 3) and the interest tags.
+ * Editing rules for a list of short texts: the keyword list (01-product.md section 3) and the interest tags.
  * Entries are stored trimmed, in the order they were added; a duplicate (ignoring case) is refused.
  * Every operation returns the new list or the reason it was refused, and never changes the list on refusal.
  */

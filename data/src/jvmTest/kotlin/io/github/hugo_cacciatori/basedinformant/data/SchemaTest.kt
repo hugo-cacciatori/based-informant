@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Migration tests (platforms.md section 7): every schema version is exported to `data/schemas/` and committed; each
+ * Migration tests (04-platforms.md section 7): every schema version is exported to `data/schemas/` and committed; each
  * new version gets a test that fills the one before and runs `runMigrationsAndValidate`.
  */
 class SchemaTest {

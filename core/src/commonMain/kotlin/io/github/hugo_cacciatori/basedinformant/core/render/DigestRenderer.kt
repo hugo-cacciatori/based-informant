@@ -12,7 +12,7 @@ data class RenderedDigest(
 )
 
 /**
- * The email renderer (rendering.md section 1): draws the [DigestView] as HTML with inline styles only, no scripts,
+ * The email renderer (03-rendering.md section 1): draws the [DigestView] as HTML with inline styles only, no scripts,
  * no remote content, every model string escaped, links only for `https`; and as plain text.
  */
 object DigestRenderer {

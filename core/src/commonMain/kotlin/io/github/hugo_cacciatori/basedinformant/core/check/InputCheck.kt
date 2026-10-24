@@ -18,7 +18,7 @@ data class CheckEntry(val kind: Kind, val index: Int, val text: String) {
 data class Refusal(val entry: CheckEntry, val reason: String?)
 
 /**
- * The free input check (product.md section 4.4, ai-call.md section 12): one small request to a free (0x) model that
+ * The free input check (01-product.md section 4.4, 02-ai-call.md section 12): one small request to a free (0x) model that
  * names the nonsense and misspelled entries among the keywords and tags. It never decides whether a real word has
  * news today.
  */

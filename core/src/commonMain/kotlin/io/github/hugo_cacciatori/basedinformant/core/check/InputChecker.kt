@@ -9,7 +9,7 @@ data class CheckAttempt(val model: String, val result: Result, val error: RfabEr
     enum class Result { ANSWERED, NOT_FREE, FAILED, UNREADABLE }
 }
 
-/** The check's outcome. Only [Refused] is shown to the owner; the rest lets the run go on (product.md section 4.4). */
+/** The check's outcome. Only [Refused] is shown to the owner; the rest lets the run go on (01-product.md section 4.4). */
 sealed interface CheckOutcome {
     val attempts: List<CheckAttempt>
 
@@ -21,11 +21,11 @@ sealed interface CheckOutcome {
     data class NoAnswer(override val attempts: List<CheckAttempt>, val modelsListRead: Boolean = true) : CheckOutcome
 }
 
-/** One check, for the call history (product.md section 4.5). Never shown in the app. */
+/** One check, for the call history (01-product.md section 4.5). Never shown in the app. */
 data class CheckRecord(val at: Long, val entries: Int, val outcome: CheckOutcome)
 
 /**
- * Runs the free input check with model rotation (ai-call.md section 12). Never spends tokens: a model is used only
+ * Runs the free input check with model rotation (02-ai-call.md section 12). Never spends tokens: a model is used only
  * when the models list, read just before, shows it at exactly 0x. One request at a time, at most one per model:
  * [client] must not retry (`KtorRfabClient(maxAttempts = 1)`), so a model at its usage limit passes to the next at once.
  */
@@ -62,7 +62,7 @@ class InputChecker(private val client: RfabClient, private val models: List<Stri
 
     companion object {
         /**
-         * ai-call.md section 12 (owner, 2026-10-20): the models that passed the lab list, best first, families
+         * 02-ai-call.md section 12 (owner, 2026-10-20): the models that passed the lab list, best first, families
          * alternating; ids without `:free` first, the `:free` ones as a fallback.
          */
         val ROTATION = listOf(

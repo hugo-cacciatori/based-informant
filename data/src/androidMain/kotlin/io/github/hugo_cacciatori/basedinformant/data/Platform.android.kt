@@ -19,6 +19,6 @@ fun databaseBuilder(context: Context): RoomDatabase.Builder<AppDatabase> {
 fun settingsPath(context: Context): String =
     context.applicationContext.filesDir.resolve(DataStoreSettingsStore.FILE_NAME).absolutePath
 
-/** The raw responses in the app's private files folder (platforms.md section 7). */
+/** The raw responses in the app's private files folder (04-platforms.md section 7). */
 fun rawFiles(context: Context): RawFiles =
     RawFiles(FileSystem.SYSTEM, context.applicationContext.filesDir.resolve(RawFiles.DIR_NAME).toOkioPath())

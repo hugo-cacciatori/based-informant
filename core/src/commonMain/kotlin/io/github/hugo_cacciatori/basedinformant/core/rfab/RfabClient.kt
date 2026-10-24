@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Every rfab call goes through this interface (ai-call.md section 1), so an API change touches one place. */
+/** Every rfab call goes through this interface (02-ai-call.md section 1), so an API change touches one place. */
 interface RfabClient {
     /** Spends tokens unless the model is free (0x). The caller asks the owner first. */
     suspend fun chat(request: ChatRequest): RfabResult<ChatResponse>
@@ -108,7 +108,7 @@ data class Transaction(
 @Serializable
 private data class ErrorBody(val code: String? = null)
 
-/** An HTTP client with the timeouts of ai-call.md section 1: the client never gives up before rfab's 10-minute cut. */
+/** An HTTP client with the timeouts of 02-ai-call.md section 1: the client never gives up before rfab's 10-minute cut. */
 fun rfabHttpClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
     expectSuccess = false
     install(HttpTimeout) {
@@ -120,9 +120,9 @@ fun rfabHttpClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
 
 /**
  * The rfab API over Ktor. Retries only 429, 500 and 502, waiting 2-5 s, at most [maxAttempts] attempts in all; the
- * free input check uses 1, since it moves to the next model instead (ai-call.md section 12).
+ * free input check uses 1, since it moves to the next model instead (02-ai-call.md section 12).
  * rfab keeps the charge for a call its provider ran, so a chat 500 or 502 is retried only when the free balance
- * check shows no new charge (ai-call.md section 1). A network failure is never retried.
+ * check shows no new charge (02-ai-call.md section 1). A network failure is never retried.
  */
 class KtorRfabClient(
     private val http: HttpClient,

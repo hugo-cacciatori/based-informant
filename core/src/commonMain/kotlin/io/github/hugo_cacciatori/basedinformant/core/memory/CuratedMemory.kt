@@ -7,7 +7,7 @@ import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 
-/** One topic the owner already received (ai-call.md section 9). */
+/** One topic the owner already received (02-ai-call.md section 9). */
 data class CuratedTopic(
     val id: String,
     val title: String,

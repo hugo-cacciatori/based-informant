@@ -16,7 +16,7 @@ import kotlinx.serialization.json.Json
 import okio.Path.Companion.toPath
 
 /**
- * The settings in DataStore (platforms.md section 7). A missing or unreadable value reads as its default, so an
+ * The settings in DataStore (04-platforms.md section 7). A missing or unreadable value reads as its default, so an
  * update that renames an option never breaks Settings. Never holds the key. Over-limit settings are not stored.
  */
 class DataStoreSettingsStore(private val store: DataStore<Preferences>) : SettingsStore {

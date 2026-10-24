@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** What the Keywords screen shows (product.md section 3). */
+/** What the Keywords screen shows (01-product.md section 3). */
 data class KeywordsState(
     val loaded: Boolean = false,
     val keywords: List<String> = emptyList(),

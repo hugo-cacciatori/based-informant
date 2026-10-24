@@ -4,7 +4,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
-/** Turns the model's `content` text into a JSON object (ai-call.md section 8: strip fences, parse). */
+/** Turns the model's `content` text into a JSON object (02-ai-call.md section 8: strip fences, parse). */
 object DigestParser {
     sealed interface Result {
         /** [truncated] is true when the text was cut off and only the complete topics were kept. */

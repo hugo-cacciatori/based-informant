@@ -3,7 +3,7 @@ package io.github.hugo_cacciatori.basedinformant.core.render
 import kotlin.io.encoding.Base64
 
 /**
- * A basic `multipart/alternative` message (rendering.md section 2): UTF-8, RFC 2047 subject, base64 parts.
+ * A basic `multipart/alternative` message (03-rendering.md section 2): UTF-8, RFC 2047 subject, base64 parts.
  * The HTML part is the very string given, never regenerated. Milestone 0.5.0 adds the Gmail encoding.
  */
 object MimeBuilder {

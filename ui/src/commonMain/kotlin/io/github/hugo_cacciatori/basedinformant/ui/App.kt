@@ -43,7 +43,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_keywords
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** What each host (Android `:app`, later the Windows app) hands the UI; injection by hand (platforms.md section 1). */
+/** What each host (Android `:app`, later the Windows app) hands the UI; injection by hand (04-platforms.md section 1). */
 class AppDependencies(
     val keywordStore: KeywordStore,
     val settingsStore: SettingsStore,
@@ -52,7 +52,7 @@ class AppDependencies(
     val clientFor: (String) -> RfabClient,
 )
 
-/** The three screens of the navigation bar (product.md section 3). */
+/** The three screens of the navigation bar (01-product.md section 3). */
 enum class Screen { KEYWORDS, HISTORY, SETTINGS }
 
 /** Pages the app opens in the browser. */

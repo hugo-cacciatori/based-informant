@@ -1,4 +1,4 @@
-# Offline tests and the secret scan on every push (docs/spec/security.md section 4, rule 5).
+# Offline tests and the secret scan on every push (docs/spec/05-security.md section 4, rule 5).
 # No rfab key here, ever: nothing in CI makes a paid call. Third-party actions are pinned by commit SHA.
 name: CI
 

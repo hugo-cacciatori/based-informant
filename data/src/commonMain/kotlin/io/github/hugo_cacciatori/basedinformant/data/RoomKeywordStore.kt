@@ -7,7 +7,7 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordStore
 
 /**
  * The keyword list in Room. A save replaces the list in one transaction; an entry kept from before keeps its
- * creation time. The data layer enforces the input limits too (testing.md): a list over them is never stored.
+ * creation time. The data layer enforces the input limits too (07-testing.md): a list over them is never stored.
  */
 class RoomKeywordStore(
     private val db: AppDatabase,

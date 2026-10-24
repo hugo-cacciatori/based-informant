@@ -1,7 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.digest
 
 /**
- * Local post-processing of one answer (ai-call.md section 8), all free: parse, validate (which drops
+ * Local post-processing of one answer (02-ai-call.md section 8), all free: parse, validate (which drops
  * non-`https` sources, topics left with no source, duplicate ids and URLs), check links, then select.
  */
 object DigestPipeline {
@@ -42,7 +42,7 @@ object DigestPipeline {
     }
 
     /**
-     * A split run (ai-call.md section 11 "Coverage plan"): one answer per keyword group, null when a call gave none.
+     * A split run (02-ai-call.md section 11 "Coverage plan"): one answer per keyword group, null when a call gave none.
      * Readable answers are merged (a later topic with the same id or a shared source URL is dropped), then checked
      * and selected once. Unreadable only when no answer is readable; [Result.Processed.issues] lists the failed calls.
      */

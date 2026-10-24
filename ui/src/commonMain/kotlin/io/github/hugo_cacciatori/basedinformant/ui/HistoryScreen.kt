@@ -12,7 +12,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.Res
 import io.github.hugo_cacciatori.basedinformant.ui.resources.history_empty
 import org.jetbrains.compose.resources.stringResource
 
-/** The History tab (product.md section 5) is built in stage 6; until then it says what will be there. */
+/** The History tab (01-product.md section 5) is built in stage 6; until then it says what will be there. */
 @Composable
 fun HistoryScreen(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {

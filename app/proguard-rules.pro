@@ -1,4 +1,4 @@
-# App keep rules for R8 (platforms.md section 3). Room, kotlinx.serialization, Ktor, DataStore and Compose ship
+# App keep rules for R8 (04-platforms.md section 3). Room, kotlinx.serialization, Ktor, DataStore and Compose ship
 # their own consumer rules; add a rule here only for a failure seen in the release build.
 # AGP 9 keep rules are strict: "-keep class A" no longer keeps A's constructor.
 

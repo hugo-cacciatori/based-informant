@@ -1,7 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.digest
 
 /**
- * Splits the owner's keywords into groups, one paid call per group (ai-call.md section 11 "Coverage plan"). Sonar
+ * Splits the owner's keywords into groups, one paid call per group (02-ai-call.md section 11 "Coverage plan"). Sonar
  * covered only 2-5 of 15 keywords in one call; smaller groups should leave more topics after the app's checks.
  */
 object KeywordGroups {

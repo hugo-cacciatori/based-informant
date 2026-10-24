@@ -6,7 +6,7 @@ import io.github.hugo_cacciatori.basedinformant.core.limits.LimitViolation
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 
 /**
- * The settings that feed the call (product.md section 3), with their defaults. Email, theme and reminder join
+ * The settings that feed the call (01-product.md section 3), with their defaults. Email, theme and reminder join
  * in their own stages. The key is not here: it lives in the [SecretStore].
  */
 data class AppSettings(
@@ -23,7 +23,7 @@ data class AppSettings(
         if (model in TemplateConfig.ALLOWED_MODELS) this else copy(model = TemplateConfig.DEFAULT_MODEL)
 }
 
-/** Why Generate is disabled (product.md section 3), in the order they are shown; the UI shows the first. */
+/** Why Generate is disabled (01-product.md section 3), in the order they are shown; the UI shows the first. */
 enum class GenerateBlock { RUN_ACTIVE, NO_KEY, TOO_FEW_KEYWORDS }
 
 object GenerateRules {

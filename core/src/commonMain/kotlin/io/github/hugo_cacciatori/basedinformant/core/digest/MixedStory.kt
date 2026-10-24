@@ -1,7 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.digest
 
 /**
- * The mixed-story check (ai-call.md section 8, owner 2026-10-18): sonar sometimes puts two stories in one topic, and the
+ * The mixed-story check (02-ai-call.md section 8, owner 2026-10-18): sonar sometimes puts two stories in one topic, and the
  * prompt alone did not stop it. Its own text often gives the mix away ("Another report said…", "A separate update
  * said…", "Several quantum computing developments…"). Free and offline: it looks at the topic's text only.
  */

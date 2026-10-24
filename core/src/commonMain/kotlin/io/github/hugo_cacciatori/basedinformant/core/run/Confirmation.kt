@@ -10,7 +10,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-/** What the confirmation dialog states before any paid call (product.md section 4 step 1). */
+/** What the confirmation dialog states before any paid call (01-product.md section 4 step 1). */
 data class Confirmation(
     /** Null when the balance could not be read: the dialog says why and cannot be confirmed. */
     val balance: Long?,

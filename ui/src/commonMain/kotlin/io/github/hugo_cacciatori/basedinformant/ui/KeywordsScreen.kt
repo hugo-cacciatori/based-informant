@@ -88,7 +88,7 @@ interface KeywordsActions {
     fun dismissRefusal()
 }
 
-/** The main screen (product.md section 3): the keyword list and Generate. */
+/** The main screen (01-product.md section 3): the keyword list and Generate. */
 @Composable
 fun KeywordsScreen(
     state: KeywordsState,
@@ -243,8 +243,8 @@ private fun EditKeywordDialog(
 }
 
 /**
- * Generate, disabled with its reason and, when there is one, the action that fixes it (product.md section 11).
- * Above it, once a key is saved, the balance line; tapping it opens Settings (product.md section 3).
+ * Generate, disabled with its reason and, when there is one, the action that fixes it (01-product.md section 11).
+ * Above it, once a key is saved, the balance line; tapping it opens Settings (01-product.md section 3).
  */
 @Composable
 private fun GenerateBar(state: KeywordsState, onGenerate: () -> Unit, onOpenSettings: () -> Unit) {

@@ -7,7 +7,7 @@
     <string name="settings">Settings</string>
     <string name="back">Back</string>
 
-    <!-- First run (releases.md section 2, stage 2 step 4) -->
+    <!-- First run (06-releases.md section 2, stage 2 step 4) -->
     <string name="first_run_title">Welcome to Based Informant</string>
     <string name="first_run_body">Based Informant turns your keywords into a short news digest, written by AI through rfab.ai. To start, it needs your rfab API key. The key stays on this device, encrypted, and is sent only to rfab.</string>
     <string name="first_run_get_key">Get a key</string>
@@ -100,7 +100,7 @@
     <string name="model_section">Model (advanced)</string>
     <string name="model_hint">Only models checked in testing are offered.</string>
 
-    <!-- Privacy (security.md section 6) -->
+    <!-- Privacy (05-security.md section 6) -->
     <string name="privacy_section">Privacy</string>
     <string name="privacy_note">To write a digest, the app sends your keywords, your interest tags, a short memory of past digests and your persona choice to rfab.ai and the AI providers it uses. Don’t put sensitive personal details in them. To check links, the app opens each source page. Nothing else leaves this device: no analytics, no crash reports, no server of ours.</string>
 </resources>

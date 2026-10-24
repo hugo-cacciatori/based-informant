@@ -9,7 +9,7 @@ import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import androidx.room3.Update
 
-// Schema v2 (platforms.md section 7). Enums are stored by name; lists, maps, the snapshot and the digest as JSON text
+// Schema v2 (04-platforms.md section 7). Enums are stored by name; lists, maps, the snapshot and the digest as JSON text
 // (StoredJson.kt), since they are read whole and never queried inside.
 
 @Entity(tableName = "runs", indices = [Index(value = ["state"]), Index(value = ["model"])])

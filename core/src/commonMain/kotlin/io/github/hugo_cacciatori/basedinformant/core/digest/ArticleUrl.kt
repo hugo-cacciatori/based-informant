@@ -1,7 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.digest
 
 /**
- * The source-type filter (ai-call.md section 8, owner 2026-10-18): a URL shaped like a homepage, an index, an archive,
+ * The source-type filter (02-ai-call.md section 8, owner 2026-10-18): a URL shaped like a homepage, an index, an archive,
  * an event or a calendar page is not one article. Free and offline: it looks at the URL only. Models kept citing such
  * pages despite the prompt (an ANS topic index, a NASA month archive, a university event page).
  */

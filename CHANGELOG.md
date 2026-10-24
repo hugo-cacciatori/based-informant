@@ -45,7 +45,7 @@
 - Model-selection protocol (triggers, benchmark, scoring sheet, decision rule, budget) and accuracy checks (facts, dates) added to the pass bar.
 - Page-date check: the link check reads each live page's own publication date and drops or corrects misdated sources.
 - The user message now starts with a plain search request (window and keywords), after two web-search models returned empty digests from a JSON-only message.
-- Model choice: cheapest first, restarting after prompt changes; web search required and rate up to 0.80x: sonar, sonar-reasoning-pro, Grok 4.5 and possibly Grok 4.20 (list of search models in `ai-call.md`).
+- Model choice: cheapest first, restarting after prompt changes; web search required and rate up to 0.80x: sonar, sonar-reasoning-pro, Grok 4.5 and possibly Grok 4.20 (list of search models in `02-ai-call.md`).
 - One ordered model plan (search models up to 0.80x, cheapest first); rfab's limits recorded (no citations, no search filters, no pre-prompt); docs-first rule.
 - Session close 2026-10-18: a "Resume here" status, rules for writing the docs, done/next marked on the step lists.
 - CI on GitHub: offline tests and the secret scan on every push.

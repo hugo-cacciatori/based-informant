@@ -5,7 +5,7 @@
     <!-- The free balance call now; the paid call and the link check from stage 4. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Backups blocked (platforms.md section 3): nothing goes to Google Drive or to a new phone.
+    <!-- Backups blocked (04-platforms.md section 3): nothing goes to Google Drive or to a new phone.
          allowBackup="false" alone does not stop device-to-device transfer on Android 12+, hence both rule files. -->
     <application
         android:name=".BasedInformantApp"

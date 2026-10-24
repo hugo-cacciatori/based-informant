@@ -7,7 +7,7 @@ import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedTopic
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 
 /**
- * Everything one run uses, taken when the owner confirms (product.md section 4 step 3), so later changes in
+ * Everything one run uses, taken when the owner confirms (01-product.md section 4 step 3), so later changes in
  * Settings never affect it. The keywords, tags and memory are in [prompt].
  */
 data class RunSnapshot(
@@ -18,7 +18,7 @@ data class RunSnapshot(
     val recipient: String?,
 )
 
-/** platforms.md section 7, `runs`. */
+/** 04-platforms.md section 7, `runs`. */
 enum class RunState { CALLING, RECEIVED, DONE, FAILED, INTERRUPTED }
 
 /** Why a run ended without a stored digest. */
@@ -53,10 +53,10 @@ data class RunRecord(
     val digestId: Long? = null,
 )
 
-/** product.md section 4 steps 4 and 5: email off gives `SAVED`; email on starts at `GENERATED` (stage 5 sends it). */
+/** 01-product.md section 4 steps 4 and 5: email off gives `SAVED`; email on starts at `GENERATED` (stage 5 sends it). */
 enum class DigestStatus { SAVED, GENERATED, SENDING, SENT, SEND_FAILED }
 
-/** One History entry (product.md section 5). [html] and [text] are the exact strings an email would carry. */
+/** One History entry (01-product.md section 5). [html] and [text] are the exact strings an email would carry. */
 data class StoredDigest(
     val runId: Long,
     val status: DigestStatus,
@@ -76,7 +76,7 @@ data class StoredDigest(
     val tokensBilled: Long?,
 )
 
-/** One paid call, for the call history (product.md section 4.5). Never shown in the app. */
+/** One paid call, for the call history (01-product.md section 4.5). Never shown in the app. */
 data class CallRecord(
     val runId: Long,
     val at: Long,
@@ -100,7 +100,7 @@ data class CallRecord(
     val issues: Map<Issue.Kind, Int> = emptyMap(),
 )
 
-/** What the owner is told at the end of a run (product.md section 4.3). */
+/** What the owner is told at the end of a run (01-product.md section 4.3). */
 sealed interface RunOutcome {
     /** Another run is active: nothing was sent. */
     data object Busy : RunOutcome
@@ -138,7 +138,7 @@ interface RunStore {
     /** Runs left [RunState.CALLING] or [RunState.RECEIVED], for recovery at app start. */
     suspend fun unfinished(): List<RunRecord>
 
-    /** Written before any parsing (platforms.md section 7, raw responses). */
+    /** Written before any parsing (04-platforms.md section 7, raw responses). */
     suspend fun saveRaw(runId: Long, content: String)
 
     suspend fun raw(runId: Long): String?
@@ -160,6 +160,6 @@ interface MemoryStore {
 interface CallLog {
     suspend fun record(call: CallRecord)
 
-    /** The free input check, every time it runs (product.md section 4.4). */
+    /** The free input check, every time it runs (01-product.md section 4.4). */
     suspend fun recordCheck(check: CheckRecord)
 }

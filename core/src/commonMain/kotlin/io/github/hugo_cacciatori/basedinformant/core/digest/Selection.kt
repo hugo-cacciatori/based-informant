@@ -1,6 +1,6 @@
 package io.github.hugo_cacciatori.basedinformant.core.digest
 
-/** Local, deterministic selection (ai-call.md section 4, step 4). */
+/** Local, deterministic selection (02-ai-call.md section 4, step 4). */
 object Selection {
     /** [OPEN] Starting value; tuned in the lab. */
     const val MIN_SCORE = 50

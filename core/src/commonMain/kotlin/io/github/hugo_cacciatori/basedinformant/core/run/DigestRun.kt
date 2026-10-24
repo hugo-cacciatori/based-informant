@@ -18,7 +18,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import kotlinx.serialization.json.Json
 
 /**
- * One digest run (product.md section 4, robustness rules of 4.1): one paid call, its raw answer saved before any
+ * One digest run (01-product.md section 4, robustness rules of 4.1): one paid call, its raw answer saved before any
  * parsing, then the free checks, and a stored digest when at least one topic survives. Never re-sends a call: a
  * new attempt always needs a new confirmation. Email (stage 5) starts from a digest stored as `GENERATED`.
  */
@@ -58,7 +58,7 @@ class DigestRun(
     }
 
     /**
-     * At app start (product.md section 4.1): a run left `CALLING` was interrupted and is never re-sent; a run left
+     * At app start (01-product.md section 4.1): a run left `CALLING` was interrupted and is never re-sent; a run left
      * `RECEIVED` is processed from its saved answer, for free.
      */
     suspend fun recover(): List<RunOutcome> = runs.unfinished().map { record ->
@@ -223,7 +223,7 @@ class DigestRun(
     }
 }
 
-/** The History card's summary (product.md section 5, [PROPOSED]): the top 3 titles by score, then "+N more". */
+/** The History card's summary (01-product.md section 5, [PROPOSED]): the top 3 titles by score, then "+N more". */
 object DigestSummary {
     const val SHOWN = 3
     const val TITLE_MAX_CHARS = 60

@@ -6,8 +6,8 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
-// The release keystore stays outside the repo (security.md section 3). Until keystore.properties exists, both
-// builds use this PC's debug key: internal builds for the owner's phone only, never published (platforms.md section 3).
+// The release keystore stays outside the repo (05-security.md section 3). Until keystore.properties exists, both
+// builds use this PC's debug key: internal builds for the owner's phone only, never published (04-platforms.md section 3).
 val keystoreFile = rootProject.file("keystore.properties")
 val keystore = Properties().apply { if (keystoreFile.exists()) keystoreFile.inputStream().use(::load) }
 
@@ -20,7 +20,7 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        // Permanent: updates, the signing key and the Google OAuth client depend on it (platforms.md section 3).
+        // Permanent: updates, the signing key and the Google OAuth client depend on it (04-platforms.md section 3).
         applicationId = "io.github.hugo_cacciatori.basedinformant"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
