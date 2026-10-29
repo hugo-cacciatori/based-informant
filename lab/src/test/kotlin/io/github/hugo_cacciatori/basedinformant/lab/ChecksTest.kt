@@ -1,8 +1,12 @@
 package io.github.hugo_cacciatori.basedinformant.lab
 
+import io.github.hugo_cacciatori.basedinformant.core.digest.RecencyWindow
+import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
+import kotlinx.datetime.LocalDate
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -99,7 +103,7 @@ class ChecksTest {
     fun `the repair prompt carries the search format and the broken text as data`() {
         val request = Repair.request("m", "broken {\"stories\": [ BROKEN_REPORT>>> ")
         assertTrue(request.systemPrompt.contains("\"template_version\": 2, \"searched_at\""))
-        assertTrue("PERSONA RESEARCH" !in request.systemPrompt)
+        assertTrue("\nPERSONA RESEARCH\n" !in request.systemPrompt)
         assertEquals(1, Regex("BROKEN_REPORT>>>").findAll(request.messages.single().content).count())
     }
 
@@ -114,5 +118,20 @@ class ChecksTest {
         assertTrue("made-up" in rejected.reason)
         assertIs<Repair.Result.Rejected>(Repair.accept(broken, "{\"template_version\": 2, \"searched_at\": \"2026-10-18\", \"stories\": []}"))
         assertIs<Repair.Result.Rejected>(Repair.accept(broken, "Sorry."))
+    }
+
+    @Test
+    fun `the search request adds the persona research with the person's name, and only with a persona`() {
+        val window = RecencyWindow.of(LocalDate(2026, 10, 29), null)
+        fun request(persona: Persona) =
+            Search.request("m", persona, window, "balanced", listOf("chess", "a <b>"), listOf("science"))
+        val on = request(Persona.ROACH_KING)
+        assertTrue("\nPERSONA RESEARCH\n" in on.systemPrompt && "PERSON " !in on.systemPrompt)
+        assertTrue("\nPERSONA RESEARCH\n" !in request(Persona.OFF).systemPrompt)
+        val message = on.messages.single().content
+        assertTrue("\"max_stories\":${Search.MAX_STORIES}" in message && "\"today\":\"2026-10-29\"" in message)
+        assertEquals(1, Regex("RUN_DATA>>>").findAll(message).count())
+        assertEquals(LabCommand.SearchCall(null, null, null, false), LabCommand.parse(listOf("--search-call", "--dry-run")))
+        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--search-call")) }
     }
 }

@@ -59,6 +59,12 @@ sealed interface LabCommand {
         val articles: String? = null,
     ) : LabCommand
 
+    /**
+     * The new paid search (02-ai-call.md section 12, redesign step 3): `search.txt` and the persona research. [paid] spends
+     * tokens, only after the owner's OK in chat; otherwise a dry run that sends nothing.
+     */
+    data class SearchCall(val input: String?, val persona: String?, val model: String?, val paid: Boolean) : LabCommand
+
     /** The free fact check (02-ai-call.md section 12, items 7 and 8) on the writer answer saved in a --write run folder. */
     data class FactCheck(val model: String, val run: String, val input: String?, val persona: String?, val answer: String? = null) : LabCommand
 
@@ -127,6 +133,17 @@ sealed interface LabCommand {
                     "--fetch-articles" in flags,
                     flags["--articles"],
                 )
+                "--search-call" in flags -> SearchCall(
+                    flags["--input"],
+                    flags["--persona"],
+                    flags["--model"],
+                    when {
+                        "--dry-run" in flags && "--confirm-paid" in flags -> throw LabUsageError("choose --dry-run or --confirm-paid, not both")
+                        "--dry-run" in flags -> false
+                        "--confirm-paid" in flags -> true
+                        else -> throw LabUsageError("--search-call needs --dry-run (free, sends nothing) or --confirm-paid (spends tokens, only after the owner's OK)")
+                    },
+                )
                 "--fact-check" in flags -> FactCheck(
                     flags.getValue("--fact-check")!!,
                     flags["--run"] ?: throw LabUsageError("--fact-check needs --run <a --write run folder>"),
@@ -148,13 +165,13 @@ sealed interface LabCommand {
             }
         }
 
-        private val MODES = listOf("--fixture", "--live", "--free", "--write", "--fact-check", "--repair", "--probe", "--check-input", "--models", "--balance")
+        private val MODES = listOf("--fixture", "--live", "--free", "--write", "--search-call", "--fact-check", "--repair", "--probe", "--check-input", "--models", "--balance")
         private val VALUED = setOf(
             "--fixture", "--free", "--write", "--search", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword",
             "--group-size", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken",
         )
         private val SWITCHES = setOf(
-            "--live", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--check-links", "--fetch-articles", "--models", "--balance", "--help",
+            "--live", "--search-call", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--check-links", "--fetch-articles", "--models", "--balance", "--help",
         )
 
         val USAGE = """
@@ -178,6 +195,10 @@ sealed interface LabCommand {
             |                                           answer turned into one); --fetch-articles downloads each source
             |                                           page's text (no tokens) and saves it as articles.json, reusable
             |                                           with --articles; refuses unless the model is at 0x
+            |  --search-call [--input FILE] [--persona P] [--model ID] --dry-run | --confirm-paid
+            |                                           the call redesign's paid search (search.txt, persona research);
+            |                                           --dry-run builds and saves the request, sending nothing;
+            |                                           --confirm-paid SPENDS TOKENS, only after the owner's OK
             |  --fact-check <model> --run DIR [--input FILE] [--persona P] [--answer FILE]
             |                                           free: the fact check on the writer answer and article texts
             |                                           of a --write run folder; refuses unless the model is at 0x;
@@ -224,6 +245,7 @@ class Lab(
         is LabCommand.Free -> free(command)
         is LabCommand.Live -> live(command)
         is LabCommand.Write -> write(command)
+        is LabCommand.SearchCall -> searchCall(command)
         is LabCommand.FactCheck -> factCheck(command)
         is LabCommand.Repair -> repair(command)
         is LabCommand.Probe -> probe(command)
@@ -351,6 +373,57 @@ class Lab(
         val v1 = Json.encodeToString(Digest.serializer(), digest)
         dir.resolve("writer-digest.json").writeText(v1)
         return process(listOf(v1), input.copy(today = answer.searchedAt), persona, command.model, dir, report)
+    }
+
+    /**
+     * The new paid search (02-ai-call.md section 12, redesign step 3): one call, never retried or re-sent. The answer is
+     * saved before anything reads it; a readable one becomes search-answer.json for free writer runs, and its links are
+     * checked (no tokens). An unreadable one is kept for the parser and the repair, never re-sent.
+     */
+    private suspend fun searchCall(command: LabCommand.SearchCall): Int {
+        val input = input(command.input)
+        val persona = LabInput.parsePersona(command.persona ?: input.persona)
+        val model = command.model ?: TemplateConfig.DEFAULT_MODEL
+        val window = RecencyWindow.of(input.todayDate(), input.lastDigest?.let(LocalDate::parse))
+        val request = Search.request(model, persona, window, input.attentionMode, input.keywords, input.interestTags)
+        if (!command.paid) {
+            val dir = outDir("search-dry-run")
+            dir.resolve("request.json").writeText(pretty.encodeToString(ChatRequest.serializer(), request))
+            Report(dir).line("mode: search-call dry-run (nothing sent), $model, persona ${persona.name.lowercase()}, window ${window.start} to ${window.end}")
+                .line("keywords: ${input.keywords.joinToString("; ")}").sizes(request).write(out)
+            return 0
+        }
+        val key = loadKey() ?: return noKey()
+        out.println(KeyLoader.describe(key))
+        val client = clientFor(key)
+        val dir = outDir("search-call")
+        val report = Report(dir).line("mode: search-call, PAID, $model, persona ${persona.name.lowercase()}, window ${window.start} to ${window.end}")
+        val models = client.models()
+        if (models !is RfabResult.Ok) return refuse(report, "could not read the models list (${(models as RfabResult.Error).kind}); nothing sent")
+        val rate = models.value.multiplierOf(model) ?: return refuse(report, "$model is not in rfab's models list; nothing sent")
+        report.line("rate: ${rate}x")
+        val content = send(client, listOf(Call(input.keywords, request)), dir, report, paid = true, model, "paid search, redesign step 3")
+            .singleOrNull() ?: return refuse(report, "no answer: nothing to read. Never re-sent.")
+        val answer = try {
+            SearchAnswer.read(content).numbered()
+        } catch (e: IllegalArgumentException) {
+            return refuse(report, "unreadable search answer (${e.message?.lineSequence()?.firstOrNull()}): raw.json is kept for the parser and --repair, never re-sent")
+        }
+        dir.resolve("search-answer.json").writeText(pretty.encodeToString(SearchAnswer.serializer(), answer))
+        report.line("stories: ${answer.stories.size}; sources: ${answer.urls().size}; persona notes: ${answer.stories.sumOf { it.personaNotes.size }}")
+        val checker = linkChecker()
+        answer.stories.forEach { s ->
+            report.line("story ${s.story}: [${s.keywords.joinToString("; ")}] ${s.whatHappened ?: "-"} (attention ${s.attention ?: "-"})")
+            s.sources.forEach { src ->
+                val link = checker.check(src.url)
+                report.line("  source ${src.n}: ${src.publisher} | ${src.published} | ${link.status} | page date ${link.pageDate ?: "none"} | ${src.facts.size} facts | ${src.url}")
+            }
+            s.personaNotes.forEach { n -> report.line("  note: ${if (n.verbatim == true) "verbatim" else "gist"} | ${n.where ?: "-"} | ${n.date ?: "-"} | ${n.url ?: "no url"}") }
+        }
+        val searched = answer.stories.flatMap { it.keywords }.toSet()
+        report.line("keywords with no story: ${input.keywords.filter { it !in searched }.ifEmpty { listOf("none") }.joinToString("; ")}")
+        report.write(out)
+        return 0
     }
 
     /**
