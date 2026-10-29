@@ -38,7 +38,81 @@
     <string name="generate_block_run_active">A digest is being generated.</string>
     <string name="generate_block_no_key">Add your rfab API key in Settings.</string>
     <string name="generate_block_too_few_keywords">A digest takes exactly %1$d keywords: add %2$d more.</string>
-    <string name="generate_not_yet">Generating a digest comes in a later build of the app.</string>
+    <string name="generate_block_no_topic">Pick at least one topic.</string>
+    <string name="generate_preparing">Preparing…</string>
+
+    <!-- Keywords | Topics (01-product.md section 3, owner 2026-10-29) -->
+    <string name="mode_keywords">Keywords</string>
+    <string name="mode_topics">Topics</string>
+    <string name="topics_note">Keywords are not used in this mode. Pick up to %1$d topics from your earlier digests: each gets one story.</string>
+    <string name="topics_none">Topics come from the digests you generate: none is stored yet.</string>
+    <string name="topics_count">%1$d / %2$d topics</string>
+
+    <!-- Presets -->
+    <string name="presets">Presets</string>
+    <string name="presets_title">Keyword presets</string>
+    <string name="presets_save">Save these 5</string>
+    <string name="presets_empty">No presets yet. Save your current 5 keywords to switch back to them later.</string>
+    <string name="preset_delete">Delete preset</string>
+    <string name="preset_delete_title">Delete this preset?</string>
+    <string name="preset_loaded">Preset loaded</string>
+    <string name="preset_refused_not_five">A preset holds exactly %1$d keywords.</string>
+    <string name="preset_refused_already_saved">These keywords are already a preset.</string>
+    <string name="preset_refused_full">You have %1$d presets: delete one first.</string>
+    <string name="close">Close</string>
+    <string name="delete">Delete</string>
+
+    <!-- The input check's refusals: the check itself is never described (01-product.md section 4.4) -->
+    <string name="refused_title">Fix these entries</string>
+    <string name="refused_keyword">Keyword “%1$s”: %2$s</string>
+    <string name="refused_tag">Interest tag “%1$s”: %2$s</string>
+    <string name="refused_no_reason">not recognized.</string>
+
+    <!-- Confirmation (01-product.md section 4 step 1) -->
+    <string name="confirm_title">Generate a digest?</string>
+    <string name="confirm_tokens">rfab tokens will be spent. Once the request is sent, they are not refunded.</string>
+    <string name="confirm_balance">Balance: %1$s tokens</string>
+    <string name="confirm_balance_unknown">The balance can’t be read: %1$s</string>
+    <string name="confirm_average">Average cost of the last calls: %1$s tokens</string>
+    <string name="confirm_average_unknown">Average cost: not known yet</string>
+    <string name="confirm_low">Your balance is below twice the average cost.</string>
+    <string name="confirm_settings">Attention mode: %1$s · Persona: %2$s</string>
+    <string name="confirm_topics">Topic mode: %1$s</string>
+    <string name="confirm_destination">The digest is saved in the app only.</string>
+    <string name="confirm_last">Last digest on this device: %1$s</string>
+    <string name="confirm_last_none">No digest on this device yet.</string>
+    <string name="confirm_chat_recent">A chat call was billed on your rfab account less than an hour ago, maybe a digest from another device.</string>
+    <string name="confirm_chat_hours">A chat call was billed on your rfab account %1$d hours ago, maybe a digest from another device.</string>
+    <string name="confirm_go">Generate</string>
+
+    <!-- Progress: no cancel button, the call is paid once sent -->
+    <string name="progress_title">Generating your digest…</string>
+    <string name="progress_body">This can take a few minutes. You can leave the app; you’ll get a notification.</string>
+    <string name="progress_notifications_off">Notifications are off, so the app can’t tell you when the digest arrives: come back to see it.</string>
+
+    <!-- Outcomes (01-product.md section 4.3) -->
+    <string name="outcome_title_done">Digest ready</string>
+    <string name="outcome_title_none">No new digest</string>
+    <string name="outcome_stored">Saved in History: %1$d topics.</string>
+    <string name="outcome_empty">Nothing met your criteria.</string>
+    <string name="outcome_not_written">The news was found but the digest is not written yet. Write again is free.</string>
+    <string name="outcome_unreadable">The answer could not be read. It is kept; an update may be able to read it.</string>
+    <string name="outcome_failed_billed">rfab charged for a call that gave no answer.</string>
+    <string name="outcome_interrupted">Interrupted. The tokens may have been billed.</string>
+    <string name="outcome_charges">Recent charges on your rfab account:</string>
+    <string name="outcome_charge">%1$s tokens · %2$s</string>
+    <string name="outcome_key_refused">Your rfab key was refused: check it in Settings.</string>
+    <string name="outcome_insufficient">Not enough rfab tokens.</string>
+    <string name="outcome_unavailable">rfab is unavailable, try again later. Nothing was billed.</string>
+    <string name="outcome_refused">rfab refused the request. Nothing was billed.</string>
+    <string name="outcome_busy">A digest is being generated.</string>
+    <string name="outcome_not_built">The request could not be built. Nothing was sent.</string>
+    <string name="outcome_nothing">There is nothing more to do for this run.</string>
+    <string name="outcome_not_started">The app could not start the run. Nothing was sent.</string>
+    <string name="outcome_tokens">Tokens spent: %1$s</string>
+    <string name="read_again">Read again</string>
+    <string name="write_again">Write again</string>
+    <string name="ok">OK</string>
 
     <!-- History -->
     <string name="history_empty">Your digests will appear here.</string>

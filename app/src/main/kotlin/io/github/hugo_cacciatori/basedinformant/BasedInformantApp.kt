@@ -3,6 +3,8 @@ package io.github.hugo_cacciatori.basedinformant
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import androidx.core.app.NotificationManagerCompat
+import io.github.hugo_cacciatori.basedinformant.core.check.InputChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.HttpLinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.linkCheckHttpClient
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestRun
@@ -14,6 +16,7 @@ import io.github.hugo_cacciatori.basedinformant.data.DataStoreSettingsStore
 import io.github.hugo_cacciatori.basedinformant.data.RoomCallLog
 import io.github.hugo_cacciatori.basedinformant.data.RoomDigestStore
 import io.github.hugo_cacciatori.basedinformant.data.RoomKeywordStore
+import io.github.hugo_cacciatori.basedinformant.data.RoomPresetStore
 import io.github.hugo_cacciatori.basedinformant.data.RoomRunStore
 import io.github.hugo_cacciatori.basedinformant.data.buildDatabase
 import io.github.hugo_cacciatori.basedinformant.data.databaseBuilder
@@ -39,10 +42,23 @@ class BasedInformantApp : Application() {
             settingsStore = DataStoreSettingsStore(settingsDataStore(settingsPath(this))),
             secrets = secrets,
             clientFor = { key -> KtorRfabClient(rfabHttp, key) },
+            presetStore = RoomPresetStore(database, System::currentTimeMillis),
+            runStore = runStore,
+            digestStore = RoomDigestStore(database),
+            callLog = RoomCallLog(database),
+            // A model at its usage limit passes to the next at once: the check's client never retries.
+            inputCheck = { key, keywords, tags -> InputChecker(KtorRfabClient(rfabHttp, key, maxAttempts = 1)).check(keywords, tags) },
+            runController = runController,
+            startRun = { job -> RunService.start(this, runController, job) },
+            notificationsAllowed = { NotificationManagerCompat.from(this).areNotificationsEnabled() },
+            today = ::today,
+            now = System::currentTimeMillis,
         )
     }
 
     val runStore by lazy { RoomRunStore(database, rawFiles(this)) }
+
+    private fun today() = java.time.LocalDate.now().toKotlinLocalDate()
 
     /** The one runner of this device (01-product.md section 4.1); [RunService] hosts its jobs. */
     val runController: RunController by lazy {
@@ -57,7 +73,7 @@ class BasedInformantApp : Application() {
             },
             notifier = Notifications.Poster(this),
             appVisible = { startedActivities > 0 },
-            today = { java.time.LocalDate.now().toKotlinLocalDate() },
+            today = ::today,
         )
     }
 

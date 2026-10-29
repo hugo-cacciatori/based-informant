@@ -1,0 +1,249 @@
+package io.github.hugo_cacciatori.basedinformant.ui
+
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.runComposeUiTest
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.hugo_cacciatori.basedinformant.core.check.CheckEntry
+import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
+import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
+import io.github.hugo_cacciatori.basedinformant.core.check.Refusal
+import io.github.hugo_cacciatori.basedinformant.core.key.SecretStore
+import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
+import io.github.hugo_cacciatori.basedinformant.core.rfab.Balance
+import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
+import io.github.hugo_cacciatori.basedinformant.core.rfab.ModelCatalog
+import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
+import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
+import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
+import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
+import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
+import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
+import io.github.hugo_cacciatori.basedinformant.core.run.RunController
+import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
+import io.github.hugo_cacciatori.basedinformant.core.run.RunNotifier
+import io.github.hugo_cacciatori.basedinformant.core.run.RunOutcome
+import io.github.hugo_cacciatori.basedinformant.core.run.RunRecord
+import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
+import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
+import io.github.hugo_cacciatori.basedinformant.core.run.StoredDigest
+import io.github.hugo_cacciatori.basedinformant.core.settings.AppSettings
+import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordStore
+import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordsModel
+import io.github.hugo_cacciatori.basedinformant.core.settings.Preset
+import io.github.hugo_cacciatori.basedinformant.core.settings.PresetStore
+import io.github.hugo_cacciatori.basedinformant.core.settings.PresetsModel
+import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsStore
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.LocalDate
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.fail
+
+private const val KEY = "rfab_abcdefghijklmnopqrstuvwxyz"
+private val FIVE = listOf("fusion energy", "deep-sea mining", "chess", "rust", "volcanoes")
+
+/** Offline stores and runner for the run screens; nothing here can spend tokens. */
+internal class RunFixture(
+    keywords: List<String> = FIVE,
+    var check: CheckOutcome = CheckOutcome.Passed(emptyList()),
+    topics: List<String> = emptyList(),
+    /** What the runner returns; it waits for [release] first, so a test can see the progress. */
+    var outcomes: List<RunOutcome> = emptyList(),
+) {
+    val started = mutableListOf<RunJob>()
+    var asked = 0
+    val release = CompletableDeferred<Unit>()
+
+    private val secrets = object : SecretStore {
+        override suspend fun rfabKey() = KEY
+        override suspend fun setRfabKey(key: String) = Unit
+        override suspend fun removeRfabKey() = Unit
+    }
+    private val keywordStore = object : KeywordStore {
+        var list = keywords
+        override suspend fun load() = list
+        override suspend fun save(keywords: List<String>) { list = keywords }
+    }
+    private val settings = object : SettingsStore {
+        override suspend fun load() = AppSettings()
+        override suspend fun save(settings: AppSettings) = Unit
+    }
+    private val client: (String) -> RfabClient = {
+        object : RfabClient {
+            override suspend fun chat(request: ChatRequest): RfabResult<ChatResponse> = fail("no chat call from the UI")
+            override suspend fun balance(): RfabResult<Balance> = RfabResult.Ok(Balance(42_000), raw = "{}")
+            override suspend fun models(): RfabResult<ModelCatalog> = fail("no models call from the UI")
+        }
+    }
+    private val runs = object : RunStore {
+        override suspend fun start(snapshot: RunSnapshot, startedAt: Long): Long? = fail("the UI never creates a run")
+        override suspend fun update(record: RunRecord) = Unit
+        override suspend fun get(id: Long): RunRecord? = null
+        override suspend fun unfinished(): List<RunRecord> = emptyList()
+        override suspend fun saveRaw(runId: Long, content: String) = Unit
+        override suspend fun raw(runId: Long): String? = null
+        override suspend fun saveSearch(runId: Long, answer: String) = Unit
+        override suspend fun search(runId: Long): String? = null
+        override suspend fun recentCosts(model: String, limit: Int) = listOf(1_440L)
+    }
+    private val digests = object : DigestStore {
+        override suspend fun save(digest: StoredDigest) = 1L
+        override suspend fun topicTags() = topics
+        override suspend fun lastGeneratedAt(): Long? = null
+    }
+    private val calls = object : CallLog {
+        override suspend fun record(call: CallRecord) = Unit
+        override suspend fun recordCheck(check: CheckRecord) = Unit
+    }
+    private val presetStore = object : PresetStore {
+        val presets = mutableListOf<Preset>()
+        override suspend fun all() = presets.toList()
+        override suspend fun add(keywords: List<String>): Long = (presets.size + 1L).also { presets += Preset(it, keywords) }
+        override suspend fun delete(id: Long) { presets.removeAll { it.id == id } }
+    }
+
+    val controller = RunController(
+        perform = { release.await(); outcomes },
+        notifier = object : RunNotifier {
+            override fun newDigest(notice: io.github.hugo_cacciatori.basedinformant.core.run.NewDigestNotice) = Unit
+            override fun runNotice(outcome: RunOutcome) = Unit
+        },
+        appVisible = { true },
+        today = { LocalDate(2026, 10, 29) },
+    )
+
+    private val startRun: (RunJob) -> Boolean = { job -> controller.claim(job).also { if (it) started += job } }
+
+    val settingsVm = SettingsViewModel(io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel(settings, secrets, client))
+    val keywordsVm = KeywordsViewModel(KeywordsModel(keywordStore, secrets, client))
+    val presetsVm = PresetsViewModel(PresetsModel(presetStore, keywordsVm.model))
+    val generateVm = GenerateViewModel(
+        GenerateModel(
+            keywords = { keywordsVm.model.state.value.keywords }, settings = settings, secrets = secrets, clientFor = client,
+            inputCheck = { _, _, _ -> check }, runs = runs, digests = digests, calls = calls, start = startRun,
+            personaName = { null }, now = { 1_000L }, today = { LocalDate(2026, 10, 29) },
+        ),
+        controller, startRun, keywordsVm.model, recentCharges = { emptyList() }, askNotifications = { asked++ },
+    )
+}
+
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+class RunScreensTest {
+    @BeforeTest
+    fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())
+
+    @AfterTest
+    fun resetDispatcher() = Dispatchers.resetMain()
+
+    private fun androidx.compose.ui.test.ComposeUiTest.show(f: RunFixture) = setContent {
+        AppTheme { AppShell(f.keywordsVm, f.settingsVm, f.generateVm, f.presetsVm, notificationsAllowed = { false }) }
+    }
+
+    @Test
+    fun generateConfirmsThenRunsWithProgressAndNoCancel() = runComposeUiTest {
+        val f = RunFixture(outcomes = listOf(RunOutcome.Stored(1, 7, 4, 1_440)))
+        show(f)
+        onNodeWithTag("generate").performClick()
+        waitForIdle()
+        onNodeWithText("rfab tokens will be spent", substring = true).assertExists()
+        onNodeWithText("Average cost of the last calls: 1,440 tokens", substring = true).assertExists()
+        onNodeWithText("The digest is saved in the app only.", substring = true).assertExists()
+        onNodeWithTag("confirm-go").performClick()
+        waitForIdle()
+        assertIs<RunJob.Generate>(f.started.single())
+        assertEquals(1, f.asked, "the notification permission is asked after confirm")
+        onNodeWithTag("progress").assertExists()
+        onNodeWithTag("generate").assertDoesNotExist()
+        onNodeWithText("Notifications are off", substring = true).assertExists()
+
+        runBlocking { f.release.complete(Unit); f.controller.runClaimed() }
+        waitForIdle()
+        onNodeWithText("Saved in History: 4 topics.", substring = true).assertExists()
+        onNodeWithTag("outcome-ok").performClick()
+        waitForIdle()
+        onNodeWithTag("generate").assertExists()
+    }
+
+    @Test
+    fun refusedEntriesAreListedAndNothingIsConfirmed() = runComposeUiTest {
+        val f = RunFixture(check = CheckOutcome.Refused(listOf(Refusal(CheckEntry(CheckEntry.Kind.KEYWORD, 2, "chess"), "did you mean chess?")), emptyList()))
+        show(f)
+        onNodeWithTag("generate").performClick()
+        waitForIdle()
+        onNodeWithText("Keyword “chess”: did you mean chess?", substring = true).assertExists()
+        onNodeWithTag("confirmation").assertDoesNotExist()
+        assertEquals(emptyList(), f.started)
+    }
+
+    @Test
+    fun anUnreadableAnswerOffersReadAgainButNoSendToSupportYet() = runComposeUiTest {
+        val f = RunFixture(outcomes = listOf(RunOutcome.Unreadable(3, 1_440)))
+        show(f)
+        f.controller.claim(RunJob.ReadAgain(3))
+        runBlocking { f.release.complete(Unit); f.controller.runClaimed() }
+        waitForIdle()
+        onNodeWithText("The answer could not be read.", substring = true).assertExists()
+        onNodeWithText("Read again").assertExists()
+        onNodeWithText("Send to support").assertDoesNotExist()
+        onNodeWithText("Read again").performClick()
+        waitForIdle()
+        assertEquals(RunJob.ReadAgain(3), f.started.single())
+    }
+
+    @Test
+    fun topicModeIsDisabledWithoutStoredTopics() = runComposeUiTest {
+        show(RunFixture())
+        onNodeWithTag("mode-topics").assertIsNotEnabled()
+    }
+
+    @Test
+    fun topicModeSaysKeywordsAreNotUsedAndNeedsAPick() = runComposeUiTest {
+        val f = RunFixture(topics = listOf("Stellarator research"))
+        show(f)
+        f.generateVm.reload()
+        waitForIdle()
+        onNodeWithTag("mode-topics").performClick()
+        waitForIdle()
+        onNodeWithTag("topics-note").assertTextContains("Keywords are not used in this mode", substring = true)
+        onNodeWithTag("generate-reason").assertTextContains("Pick at least one topic.")
+        onNodeWithText("Stellarator research").performClick()
+        waitForIdle()
+        onNodeWithTag("generate-reason").assertDoesNotExist()
+    }
+
+    @Test
+    fun theCurrentFiveAreSavedAsAPresetOnce() = runComposeUiTest {
+        val f = RunFixture()
+        setContent {
+            AppTheme {
+                val state by f.keywordsVm.state.collectAsStateWithLifecycle()
+                val presets by f.presetsVm.state.collectAsStateWithLifecycle()
+                KeywordsScreen(state, f.keywordsVm, SnackbarHostState(), onOpenSettings = {}, run = RunUi(presets = presets, presetActions = f.presetsVm))
+            }
+        }
+        onNodeWithTag("presets-open").performClick()
+        waitForIdle()
+        onNodeWithTag("preset-save").performClick()
+        waitForIdle()
+        onNodeWithText(FIVE.joinToString(" · ")).assertExists()
+        onNodeWithTag("preset-save").performClick()
+        waitForIdle()
+        onNodeWithText("These keywords are already a preset.", substring = true).assertExists()
+    }
+}

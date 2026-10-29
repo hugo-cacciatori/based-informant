@@ -30,7 +30,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.hugo_cacciatori.basedinformant.core.key.SecretStore
+import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
+import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
+import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
+import io.github.hugo_cacciatori.basedinformant.core.run.ConfirmationRules
+import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
+import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
+import io.github.hugo_cacciatori.basedinformant.core.run.RunController
+import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
+import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
+import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
+import io.github.hugo_cacciatori.basedinformant.core.settings.PresetStore
+import io.github.hugo_cacciatori.basedinformant.core.settings.PresetsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordStore
 import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel
@@ -40,7 +52,9 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.app_name
 import io.github.hugo_cacciatori.basedinformant.ui.resources.settings
 import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_history
 import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_keywords
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 /** What each host (Android `:app`, later the Windows app) hands the UI; injection by hand (04-platforms.md section 1). */
@@ -50,6 +64,18 @@ class AppDependencies(
     val secrets: SecretStore,
     /** Makes an rfab client for a key; the UI only uses its free balance call. */
     val clientFor: (String) -> RfabClient,
+    val presetStore: PresetStore,
+    val runStore: RunStore,
+    val digestStore: DigestStore,
+    val callLog: CallLog,
+    /** The free input check with a key: `InputChecker` on a client that never retries. */
+    val inputCheck: suspend (key: String, keywords: List<String>, tags: List<String>) -> CheckOutcome,
+    val runController: RunController,
+    /** Claims the runner for a job and starts the platform's background-safe host; false when nothing started. */
+    val startRun: (RunJob) -> Boolean,
+    val notificationsAllowed: () -> Boolean,
+    val today: () -> LocalDate,
+    val now: () -> Long,
 )
 
 /** The three screens of the navigation bar (01-product.md section 3). */
@@ -62,11 +88,38 @@ object Links {
 }
 
 @Composable
-fun App(deps: AppDependencies) {
+fun App(deps: AppDependencies, askNotifications: () -> Unit = {}) {
     val keywords = viewModel { KeywordsViewModel(KeywordsModel(deps.keywordStore, deps.secrets, deps.clientFor)) }
     val settings = viewModel { SettingsViewModel(SettingsModel(deps.settingsStore, deps.secrets, deps.clientFor)) }
+    val presets = viewModel { PresetsViewModel(PresetsModel(deps.presetStore, keywords.model)) }
+    val generate = viewModel {
+        GenerateViewModel(
+            GenerateModel(
+                keywords = { keywords.model.state.value.keywords },
+                settings = deps.settingsStore,
+                secrets = deps.secrets,
+                clientFor = deps.clientFor,
+                inputCheck = deps.inputCheck,
+                runs = deps.runStore,
+                digests = deps.digestStore,
+                calls = deps.callLog,
+                start = deps.startRun,
+                personaName = { persona -> if (persona == Persona.OFF) null else getString(personaRes(persona)) },
+                now = deps.now,
+                today = deps.today,
+            ),
+            deps.runController,
+            deps.startRun,
+            keywords.model,
+            recentCharges = {
+                val balance = deps.secrets.rfabKey()?.let { (deps.clientFor(it).balance() as? RfabResult.Ok)?.value }
+                balance?.let { ConfirmationRules.recentCharges(it, deps.now()) }.orEmpty()
+            },
+            askNotifications = askNotifications,
+        )
+    }
     AppTheme {
-        AppShell(keywords, settings)
+        AppShell(keywords, settings, generate, presets, deps.notificationsAllowed)
     }
 }
 
@@ -78,7 +131,13 @@ fun AppTheme(content: @Composable () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppShell(keywords: KeywordsViewModel, settings: SettingsViewModel) {
+fun AppShell(
+    keywords: KeywordsViewModel,
+    settings: SettingsViewModel,
+    generate: GenerateViewModel,
+    presets: PresetsViewModel,
+    notificationsAllowed: () -> Boolean,
+) {
     var screen by rememberSaveable { mutableStateOf(Screen.KEYWORDS) }
     val snackbar = remember { SnackbarHostState() }
 
@@ -86,7 +145,10 @@ fun AppShell(keywords: KeywordsViewModel, settings: SettingsViewModel) {
         if (target == screen) return
         screen = target
         // Each time the main screen opens: a key may have changed in Settings, and the balance is read again.
-        if (target == Screen.KEYWORDS) keywords.reload()
+        if (target == Screen.KEYWORDS) {
+            keywords.reload()
+            generate.reload()
+        }
     }
 
     // Back from History or Settings returns to the main screen, as Material 3 navigation does.
@@ -113,7 +175,22 @@ fun AppShell(keywords: KeywordsViewModel, settings: SettingsViewModel) {
         when (screen) {
             Screen.KEYWORDS -> {
                 val state by keywords.state.collectAsStateWithLifecycle()
-                KeywordsScreen(state, keywords, snackbar, onOpenSettings = { show(Screen.SETTINGS) }, modifier = modifier)
+                val generateState by generate.state.collectAsStateWithLifecycle()
+                val progress by generate.progress.collectAsStateWithLifecycle()
+                val charges by generate.charges.collectAsStateWithLifecycle()
+                val notStarted by generate.notStarted.collectAsStateWithLifecycle()
+                val presetsState by presets.state.collectAsStateWithLifecycle()
+                val run = RunUi(
+                    generate = generateState,
+                    progress = progress,
+                    charges = charges,
+                    notStarted = notStarted,
+                    notificationsAllowed = notificationsAllowed(),
+                    presets = presetsState,
+                    actions = generate,
+                    presetActions = presets,
+                )
+                KeywordsScreen(state, keywords, snackbar, onOpenSettings = { show(Screen.SETTINGS) }, modifier = modifier, run = run)
             }
             Screen.HISTORY -> HistoryScreen(modifier)
             Screen.SETTINGS -> {

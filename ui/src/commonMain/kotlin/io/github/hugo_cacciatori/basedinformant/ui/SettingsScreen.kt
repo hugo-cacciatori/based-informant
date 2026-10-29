@@ -338,7 +338,7 @@ private fun SectionTitle(title: StringResource) {
 }
 
 @Composable
-private fun attentionLabel(mode: AttentionMode) = stringResource(
+internal fun attentionLabel(mode: AttentionMode) = stringResource(
     when (mode) {
         AttentionMode.HOTTEST -> Res.string.attention_hottest
         AttentionMode.BALANCED -> Res.string.attention_balanced
@@ -356,14 +356,15 @@ private fun attentionHint(mode: AttentionMode) = stringResource(
 )
 
 @Composable
-private fun personaLabel(persona: Persona) = stringResource(
-    when (persona) {
-        Persona.OFF -> Res.string.persona_off
-        Persona.ROACH_KING -> Res.string.persona_roach_king
-        Persona.DOCTOR_WIFE -> Res.string.persona_doctor_wife
-        Persona.DOG_ZAPPER -> Res.string.persona_dog_zapper
-    },
-)
+internal fun personaLabel(persona: Persona) = stringResource(personaRes(persona))
+
+/** Also the name in a digest's header (RunSnapshot.personaDisplayName). */
+internal fun personaRes(persona: Persona) = when (persona) {
+    Persona.OFF -> Res.string.persona_off
+    Persona.ROACH_KING -> Res.string.persona_roach_king
+    Persona.DOCTOR_WIFE -> Res.string.persona_doctor_wife
+    Persona.DOG_ZAPPER -> Res.string.persona_dog_zapper
+}
 
 @Composable
 private fun keyShapeText(shape: KeyShape) = stringResource(

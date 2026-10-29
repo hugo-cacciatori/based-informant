@@ -8,11 +8,23 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordsState
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsState
+import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
+import io.github.hugo_cacciatori.basedinformant.core.rfab.Transaction
+import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
+import io.github.hugo_cacciatori.basedinformant.core.run.GenerateState
+import io.github.hugo_cacciatori.basedinformant.core.run.RunController
+import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
+import io.github.hugo_cacciatori.basedinformant.core.run.RunOutcome
+import io.github.hugo_cacciatori.basedinformant.core.run.RunProgress
+import io.github.hugo_cacciatori.basedinformant.core.settings.PresetsModel
+import io.github.hugo_cacciatori.basedinformant.core.settings.PresetsState
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** Runs the platform-free [KeywordsModel] in the screen's lifecycle; the logic and its tests live in `:core`. */
-class KeywordsViewModel(private val model: KeywordsModel) : ViewModel(), KeywordsActions {
+class KeywordsViewModel(val model: KeywordsModel) : ViewModel(), KeywordsActions {
     val state: StateFlow<KeywordsState> = model.state
 
     init {
@@ -96,4 +108,97 @@ class SettingsViewModel(private val model: SettingsModel) : ViewModel(), Setting
     override fun setModel(id: String) {
         viewModelScope.launch { model.setModel(id) }
     }
+}
+
+/**
+ * Runs [GenerateModel] and follows the runner ([RunController]): Generate is disabled while a job runs, an interrupted
+ * run gets the account's recent charges, and the topics are read again when a job ends (it may have stored a digest).
+ */
+class GenerateViewModel(
+    private val model: GenerateModel,
+    private val runs: RunController,
+    private val startRun: (RunJob) -> Boolean,
+    keywords: KeywordsModel,
+    /** The recent charges on the account, read for free; empty when they cannot be read. */
+    private val recentCharges: suspend () -> List<Transaction>,
+    /** Asks for the notification permission when Android needs it (01-product.md section 7). */
+    private val askNotifications: () -> Unit,
+) : ViewModel(), GenerateActions {
+    val state: StateFlow<GenerateState> = model.state
+    val progress: StateFlow<RunProgress> = runs.progress
+    private val _charges = MutableStateFlow<List<Transaction>?>(null)
+    val charges: StateFlow<List<Transaction>?> = _charges.asStateFlow()
+    private val _notStarted = MutableStateFlow(false)
+    val notStarted: StateFlow<Boolean> = _notStarted.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            runs.progress.collect { progress ->
+                keywords.setRunActive(progress is RunProgress.Running)
+                if (progress is RunProgress.Finished) {
+                    model.loadTopics()
+                    if (progress.outcomes.any { it is RunOutcome.Interrupted }) _charges.value = recentCharges()
+                } else {
+                    _charges.value = null
+                }
+            }
+        }
+    }
+
+    /** Each time the main screen opens. */
+    fun reload() {
+        viewModelScope.launch { model.loadTopics() }
+    }
+
+    override fun generate() {
+        viewModelScope.launch { model.generate() }
+    }
+
+    override fun confirm() {
+        if (model.confirm()) askNotifications() else _notStarted.value = true
+    }
+
+    override fun dismiss() = model.dismiss()
+
+    override fun setMode(mode: DigestMode) = model.setMode(mode)
+
+    override fun toggleTopic(tag: String) = model.toggleTopic(tag)
+
+    override fun readAgain(runId: Long) = again(RunJob.ReadAgain(runId))
+
+    override fun writeAgain(runId: Long) = again(RunJob.WriteAgain(runId))
+
+    private fun again(job: RunJob) {
+        runs.acknowledge()
+        if (!startRun(job)) _notStarted.value = true
+    }
+
+    override fun acknowledge() = runs.acknowledge()
+
+    override fun dismissNotStarted() {
+        _notStarted.value = false
+    }
+}
+
+/** Runs the platform-free [PresetsModel]. */
+class PresetsViewModel(private val model: PresetsModel) : ViewModel(), PresetActions {
+    val state: StateFlow<PresetsState> = model.state
+
+    override fun open() {
+        viewModelScope.launch { model.load() }
+    }
+
+    override fun save() {
+        viewModelScope.launch { model.saveCurrent() }
+    }
+
+    override fun use(id: Long) {
+        viewModelScope.launch { model.use(id) }
+    }
+
+    override fun delete(id: Long) {
+        viewModelScope.launch { model.delete(id) }
+    }
+
+    override fun dismissRefusal() = model.dismissRefusal()
 }

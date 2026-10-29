@@ -123,6 +123,9 @@ interface DigestDao {
     @Query("SELECT topic_tags FROM digests ORDER BY generated_at DESC, id DESC")
     suspend fun topicTags(): List<String>
 
+    @Query("SELECT MAX(generated_at) FROM digests")
+    suspend fun lastGeneratedAt(): Long?
+
     @Query("SELECT * FROM digests WHERE id = :id")
     suspend fun get(id: Long): DigestEntity?
 }

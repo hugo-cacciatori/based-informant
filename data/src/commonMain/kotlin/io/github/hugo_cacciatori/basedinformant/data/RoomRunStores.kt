@@ -86,6 +86,8 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore {
         return db.digests().topicTags().flatMap(StoredJson::stringList).filter { seen.add(it.lowercase()) }
     }
 
+    override suspend fun lastGeneratedAt(): Long? = db.digests().lastGeneratedAt()
+
     suspend fun get(id: Long): StoredDigest? = db.digests().get(id)?.let {
         StoredDigest(
             runId = it.runId, status = DigestStatus.valueOf(it.status), generatedAt = it.generatedAt, subject = it.subject,

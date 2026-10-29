@@ -7,6 +7,7 @@ import io.github.hugo_cacciatori.basedinformant.core.key.KeyCheck
 import io.github.hugo_cacciatori.basedinformant.core.key.NotKnownReason
 import io.github.hugo_cacciatori.basedinformant.core.rfab.Balance
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
+import io.github.hugo_cacciatori.basedinformant.core.rfab.Transaction
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -52,6 +53,18 @@ object ConfirmationRules {
             }
         }
     }
+
+    /**
+     * The `USAGE` rows of the last [RECENT_CHAT_HOURS] hours, newest first: shown with an interrupted run, so the owner
+     * can see whether it was billed (01-product.md section 4.1).
+     */
+    fun recentCharges(balance: Balance, nowMillis: Long): List<Transaction> =
+        balance.recentTransactions
+            .filter { it.type == "USAGE" }
+            .mapNotNull { row -> row.createdAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() }?.let { row to it } }
+            .filter { (_, at) -> nowMillis - at < RECENT_CHAT_HOURS * 3_600_000 }
+            .sortedByDescending { (_, at) -> at }
+            .map { (row, _) -> row }
 
     /**
      * A chat call shows as a `USAGE` row naming the model (checked 2026-10-19). A chat in rfab's web app looks the

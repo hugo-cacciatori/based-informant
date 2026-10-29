@@ -35,7 +35,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,7 +47,11 @@ import io.github.hugo_cacciatori.basedinformant.core.key.BalanceDisplay
 import io.github.hugo_cacciatori.basedinformant.core.limits.FieldCounter
 import io.github.hugo_cacciatori.basedinformant.core.limits.InputLimits
 import io.github.hugo_cacciatori.basedinformant.core.limits.TextListRules
+import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
+import io.github.hugo_cacciatori.basedinformant.core.run.GenerateStep
+import io.github.hugo_cacciatori.basedinformant.core.run.RunProgress
 import io.github.hugo_cacciatori.basedinformant.core.settings.GenerateBlock
+import io.github.hugo_cacciatori.basedinformant.core.settings.GenerateRules
 import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordsState
 import io.github.hugo_cacciatori.basedinformant.ui.resources.Res
 import io.github.hugo_cacciatori.basedinformant.ui.resources.balance_line_known
@@ -62,7 +65,10 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.generate
 import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_no_key
 import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_too_few_keywords
 import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_run_active
-import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_not_yet
+import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_no_topic
+import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_preparing
+import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_loaded
+import io.github.hugo_cacciatori.basedinformant.ui.resources.presets
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_add
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_add_label
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_count
@@ -74,7 +80,6 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_empty
 import io.github.hugo_cacciatori.basedinformant.ui.resources.open_settings
 import io.github.hugo_cacciatori.basedinformant.ui.resources.save
 import io.github.hugo_cacciatori.basedinformant.ui.resources.undo
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
@@ -88,7 +93,10 @@ interface KeywordsActions {
     fun dismissRefusal()
 }
 
-/** The main screen (01-product.md section 3): the keyword list and Generate. */
+/**
+ * The main screen (01-product.md section 3): the Keywords | Topics switch, the keyword list with its presets or the
+ * topic picker, and Generate with its dialogs; while a job runs, its progress instead of Generate.
+ */
 @Composable
 fun KeywordsScreen(
     state: KeywordsState,
@@ -96,9 +104,11 @@ fun KeywordsScreen(
     snackbar: SnackbarHostState,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    run: RunUi = RunUi(),
 ) {
-    val scope = rememberCoroutineScope()
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
+    var presetsOpen by rememberSaveable { mutableStateOf(false) }
+    val mode = run.generate.mode
 
     // The Undo offer lasts as long as the snackbar (a few seconds), or until the next edit.
     val undo = state.undo
@@ -111,20 +121,39 @@ fun KeywordsScreen(
         )
         if (result == SnackbarResult.ActionPerformed) actions.undo() else actions.dismissUndo()
     }
+    // The same for a loaded preset: Undo brings the previous list back.
+    val replaced = state.replaced
+    LaunchedEffect(replaced) {
+        if (replaced == null) return@LaunchedEffect
+        val result = snackbar.showSnackbar(
+            message = getString(Res.string.preset_loaded),
+            actionLabel = getString(Res.string.undo),
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) actions.undo() else actions.dismissUndo()
+    }
 
     Column(modifier.fillMaxSize()) {
-        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
+        ModeSwitch(run.generate, run.actions, Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp))
+        if (mode == DigestMode.TOPICS) TopicPicker(run.generate, run.actions, Modifier.weight(1f).fillMaxWidth())
+        else LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
             if (state.loaded && !state.hasKey) {
                 item { FirstRunCard(onOpenSettings, Modifier.padding(bottom = 16.dp)) }
             }
             item {
                 // While the edit dialog is open, a refusal belongs to it.
                 AddKeyword(state.refusal.takeIf { editing == null }, actions)
-                Text(
-                    stringResource(Res.string.keyword_count, state.keywords.size, InputLimits.KEYWORDS_MAX),
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(Res.string.keyword_count, state.keywords.size, InputLimits.KEYWORDS_MAX),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                    )
+                    TextButton(
+                        onClick = { run.presetActions.open(); presetsOpen = true },
+                        modifier = Modifier.testTag("presets-open"),
+                    ) { Text(stringResource(Res.string.presets)) }
+                }
             }
             if (state.loaded && state.keywords.isEmpty()) {
                 item { Text(stringResource(Res.string.keywords_empty), Modifier.padding(vertical = 8.dp)) }
@@ -134,10 +163,31 @@ fun KeywordsScreen(
                 HorizontalDivider()
             }
         }
-        GenerateBar(
-            state = state,
-            onGenerate = { scope.launch { snackbar.showSnackbar(getString(Res.string.generate_not_yet)) } },
-            onOpenSettings = onOpenSettings,
+        if (run.progress is RunProgress.Running) {
+            ProgressCard(run.notificationsAllowed)
+        } else {
+            val blocks = if (mode == DigestMode.TOPICS) {
+                GenerateRules.topicBlocks(state.hasKey, run.generate.chosen.size, state.runActive)
+            } else {
+                state.generateBlocks
+            }
+            GenerateBar(
+                state = state,
+                blocks = blocks,
+                preparing = run.generate.step == GenerateStep.Checking,
+                onGenerate = run.actions::generate,
+                onOpenSettings = onOpenSettings,
+            )
+        }
+    }
+
+    RunDialogs(run)
+    if (presetsOpen) {
+        PresetsDialog(
+            run.presets,
+            run.presetActions,
+            canSave = state.keywords.size == InputLimits.KEYWORDS_MAX,
+            onClose = { presetsOpen = false; run.presetActions.dismissRefusal() },
         )
     }
 
@@ -247,8 +297,14 @@ private fun EditKeywordDialog(
  * Above it, once a key is saved, the balance line; tapping it opens Settings (01-product.md section 3).
  */
 @Composable
-private fun GenerateBar(state: KeywordsState, onGenerate: () -> Unit, onOpenSettings: () -> Unit) {
-    val block = state.generateBlocks.firstOrNull().takeIf { state.loaded }
+private fun GenerateBar(
+    state: KeywordsState,
+    blocks: List<GenerateBlock>,
+    preparing: Boolean,
+    onGenerate: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    val block = blocks.firstOrNull().takeIf { state.loaded }
     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (state.loaded && state.hasKey) {
             val balance = state.balance
@@ -265,9 +321,9 @@ private fun GenerateBar(state: KeywordsState, onGenerate: () -> Unit, onOpenSett
         }
         Button(
             onClick = onGenerate,
-            enabled = state.loaded && block == null,
+            enabled = state.loaded && block == null && !preparing,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("generate"),
-        ) { Text(stringResource(Res.string.generate)) }
+        ) { Text(stringResource(if (preparing) Res.string.generate_preparing else Res.string.generate)) }
         if (block != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -279,6 +335,7 @@ private fun GenerateBar(state: KeywordsState, onGenerate: () -> Unit, onOpenSett
                             InputLimits.KEYWORDS_MAX,
                             InputLimits.KEYWORDS_MAX - state.keywords.size,
                         )
+                        GenerateBlock.NO_TOPIC_CHOSEN -> stringResource(Res.string.generate_block_no_topic)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f).testTag("generate-reason"),

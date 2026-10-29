@@ -24,7 +24,7 @@ data class AppSettings(
 }
 
 /** Why Generate is disabled (01-product.md section 3), in the order they are shown; the UI shows the first. */
-enum class GenerateBlock { RUN_ACTIVE, NO_KEY, TOO_FEW_KEYWORDS }
+enum class GenerateBlock { RUN_ACTIVE, NO_KEY, TOO_FEW_KEYWORDS, NO_TOPIC_CHOSEN }
 
 object GenerateRules {
     fun blocks(hasKey: Boolean, keywordCount: Int, runActive: Boolean): List<GenerateBlock> = buildList {
@@ -32,5 +32,12 @@ object GenerateRules {
         if (!hasKey) add(GenerateBlock.NO_KEY)
         // A digest takes exactly InputLimits.KEYWORDS_MAX keywords; the list cannot hold more.
         if (keywordCount < InputLimits.KEYWORDS_MAX) add(GenerateBlock.TOO_FEW_KEYWORDS)
+    }
+
+    /** Topic mode: one to [InputLimits.KEYWORDS_MAX] chosen topic tags (01-product.md section 3). */
+    fun topicBlocks(hasKey: Boolean, chosenCount: Int, runActive: Boolean): List<GenerateBlock> = buildList {
+        if (runActive) add(GenerateBlock.RUN_ACTIVE)
+        if (!hasKey) add(GenerateBlock.NO_KEY)
+        if (chosenCount == 0) add(GenerateBlock.NO_TOPIC_CHOSEN)
     }
 }

@@ -161,6 +161,9 @@ interface DigestStore {
 
     /** The topic tags of stored digests, newest first, each once (ignoring case): the choices of topic mode. */
     suspend fun topicTags(): List<String>
+
+    /** When the newest digest was stored on this device, for the confirmation dialog; null before the first. */
+    suspend fun lastGeneratedAt(): Long?
 }
 
 interface CallLog {

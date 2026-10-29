@@ -74,6 +74,8 @@ class FakeDigestStore : DigestStore {
         val seen = mutableSetOf<String>()
         return saved.reversed().flatMap { d -> d.digest.topics.mapNotNull { it.topicTag } }.filter { seen.add(it.lowercase()) }
     }
+
+    override suspend fun lastGeneratedAt(): Long? = saved.maxOfOrNull { it.generatedAt }
 }
 
 class FakeCallLog : CallLog {
