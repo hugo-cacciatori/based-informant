@@ -60,10 +60,10 @@ sealed interface LabCommand {
     ) : LabCommand
 
     /**
-     * The new paid search (02-ai-call.md section 12, redesign step 3): `search.txt` and the persona research. [paid] spends
-     * tokens, only after the owner's OK in chat; otherwise a dry run that sends nothing.
+     * The new paid search (02-ai-call.md section 12, redesign step 3): `search.txt`, and the persona research only with
+     * [research]. [paid] spends tokens, only after the owner's OK in chat; otherwise a dry run that sends nothing.
      */
-    data class SearchCall(val input: String?, val persona: String?, val model: String?, val paid: Boolean) : LabCommand
+    data class SearchCall(val input: String?, val persona: String?, val model: String?, val paid: Boolean, val research: Boolean = false) : LabCommand
 
     /** The free fact check (02-ai-call.md section 12, items 7 and 8) on the writer answer saved in a --write run folder. */
     data class FactCheck(val model: String, val run: String, val input: String?, val persona: String?, val answer: String? = null) : LabCommand
@@ -143,6 +143,7 @@ sealed interface LabCommand {
                         "--confirm-paid" in flags -> true
                         else -> throw LabUsageError("--search-call needs --dry-run (free, sends nothing) or --confirm-paid (spends tokens, only after the owner's OK)")
                     },
+                    "--persona-research" in flags,
                 )
                 "--fact-check" in flags -> FactCheck(
                     flags.getValue("--fact-check")!!,
@@ -171,7 +172,7 @@ sealed interface LabCommand {
             "--group-size", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken",
         )
         private val SWITCHES = setOf(
-            "--live", "--search-call", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--check-links", "--fetch-articles", "--models", "--balance", "--help",
+            "--live", "--search-call", "--persona-research", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--check-links", "--fetch-articles", "--models", "--balance", "--help",
         )
 
         val USAGE = """
@@ -195,8 +196,9 @@ sealed interface LabCommand {
             |                                           answer turned into one); --fetch-articles downloads each source
             |                                           page's text (no tokens) and saves it as articles.json, reusable
             |                                           with --articles; refuses unless the model is at 0x
-            |  --search-call [--input FILE] [--persona P] [--model ID] --dry-run | --confirm-paid
-            |                                           the call redesign's paid search (search.txt, persona research);
+            |  --search-call [--input FILE] [--persona P] [--model ID] [--persona-research] --dry-run | --confirm-paid
+            |                                           the call redesign's paid search (search.txt; the persona
+            |                                           research, off for now, only with --persona-research);
             |                                           --dry-run builds and saves the request, sending nothing;
             |                                           --confirm-paid SPENDS TOKENS, only after the owner's OK
             |  --fact-check <model> --run DIR [--input FILE] [--persona P] [--answer FILE]
@@ -385,11 +387,11 @@ class Lab(
         val persona = LabInput.parsePersona(command.persona ?: input.persona)
         val model = command.model ?: TemplateConfig.DEFAULT_MODEL
         val window = RecencyWindow.of(input.todayDate(), input.lastDigest?.let(LocalDate::parse))
-        val request = Search.request(model, persona, window, input.attentionMode, input.keywords, input.interestTags)
+        val request = Search.request(model, persona, window, input.attentionMode, input.keywords, input.interestTags, command.research)
         if (!command.paid) {
             val dir = outDir("search-dry-run")
             dir.resolve("request.json").writeText(pretty.encodeToString(ChatRequest.serializer(), request))
-            Report(dir).line("mode: search-call dry-run (nothing sent), $model, persona ${persona.name.lowercase()}, window ${window.start} to ${window.end}")
+            Report(dir).line("mode: search-call dry-run (nothing sent), $model, persona ${persona.name.lowercase()}, research ${if (command.research) "on" else "off"}, window ${window.start} to ${window.end}")
                 .line("keywords: ${input.keywords.joinToString("; ")}").sizes(request).write(out)
             return 0
         }
@@ -397,7 +399,7 @@ class Lab(
         out.println(KeyLoader.describe(key))
         val client = clientFor(key)
         val dir = outDir("search-call")
-        val report = Report(dir).line("mode: search-call, PAID, $model, persona ${persona.name.lowercase()}, window ${window.start} to ${window.end}")
+        val report = Report(dir).line("mode: search-call, PAID, $model, persona ${persona.name.lowercase()}, research ${if (command.research) "on" else "off"}, window ${window.start} to ${window.end}")
         val models = client.models()
         if (models !is RfabResult.Ok) return refuse(report, "could not read the models list (${(models as RfabResult.Error).kind}); nothing sent")
         val rate = models.value.multiplierOf(model) ?: return refuse(report, "$model is not in rfab's models list; nothing sent")

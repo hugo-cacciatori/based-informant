@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Persona research off for now: the persona speaks from its voice alone; the lab search adds the research only with `--persona-research`.
 - Call redesign step 3, second paid search (1,440 tokens) on gaming keywords: news found, persona research again empty.
 - Search prompt draft: no story without sources, no listed index pages, no facts about the page itself; lab input for a persona probe on gaming keywords.
 - Call redesign step 3: one paid search with the new prompt (1,440 tokens): readable answer in the new format; the persona research found nothing.

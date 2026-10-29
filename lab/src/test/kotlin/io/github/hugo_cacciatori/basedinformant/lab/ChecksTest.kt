@@ -121,17 +121,19 @@ class ChecksTest {
     }
 
     @Test
-    fun `the search request adds the persona research with the person's name, and only with a persona`() {
+    fun `the search request adds the persona research with the person's name, only when asked and with a persona`() {
         val window = RecencyWindow.of(LocalDate(2026, 10, 29), null)
-        fun request(persona: Persona) =
-            Search.request("m", persona, window, "balanced", listOf("chess", "a <b>"), listOf("science"))
+        fun request(persona: Persona, research: Boolean = true) =
+            Search.request("m", persona, window, "balanced", listOf("chess", "a <b>"), listOf("science"), research)
         val on = request(Persona.ROACH_KING)
         assertTrue("\nPERSONA RESEARCH\n" in on.systemPrompt && "PERSON " !in on.systemPrompt)
         assertTrue("\nPERSONA RESEARCH\n" !in request(Persona.OFF).systemPrompt)
+        assertTrue("\nPERSONA RESEARCH\n" !in request(Persona.ROACH_KING, research = false).systemPrompt)
         val message = on.messages.single().content
         assertTrue("\"max_stories\":${Search.MAX_STORIES}" in message && "\"today\":\"2026-10-29\"" in message)
         assertEquals(1, Regex("RUN_DATA>>>").findAll(message).count())
         assertEquals(LabCommand.SearchCall(null, null, null, false), LabCommand.parse(listOf("--search-call", "--dry-run")))
+        assertEquals(LabCommand.SearchCall(null, null, null, false, true), LabCommand.parse(listOf("--search-call", "--dry-run", "--persona-research")))
         assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--search-call")) }
     }
 }

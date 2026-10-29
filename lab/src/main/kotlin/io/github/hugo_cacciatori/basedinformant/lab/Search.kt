@@ -12,8 +12,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * The paid search request of the call redesign (02-ai-call.md section 12, draft template v2): `search.txt`, plus the
- * persona research with the real person's name when a persona is on. Lab only until redesign step 4 moves it to `:core`.
+ * The paid search request of the call redesign (02-ai-call.md section 12, draft template v2): `search.txt`. The persona
+ * research is off for now (owner, 2026-10-29: two calls found nothing); [research] adds it, with the real person's name,
+ * for lab trials of other models. Lab only until redesign step 4 moves it to `:core`.
  */
 object Search {
     const val FILE = "search.txt"
@@ -29,9 +30,10 @@ object Search {
         attentionMode: String,
         keywords: List<String>,
         interestTags: List<String>,
+        research: Boolean = false,
         files: Map<String, String> = PromptFiles.all,
     ): ChatRequest {
-        val research = if (persona == Persona.OFF) "" else {
+        val research = if (!research || persona == Persona.OFF) "" else {
             val person = files.getValue("personas/${persona.voiceFile}.txt").trim()
             "\n\n" + files.getValue(RESEARCH_FILE).trim().replace(Regex("\\bPERSON\\b"), Regex.escapeReplacement(person))
         }
