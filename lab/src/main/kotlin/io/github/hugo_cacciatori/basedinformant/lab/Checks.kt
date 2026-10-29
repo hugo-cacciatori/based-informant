@@ -1,5 +1,6 @@
 package io.github.hugo_cacciatori.basedinformant.lab
 
+import io.github.hugo_cacciatori.basedinformant.core.digest.PageText
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatMessage
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptFiles
@@ -44,7 +45,7 @@ object FactCheck {
         val cards = written.topics.mapIndexed { i, t ->
             val sentences = sentences(t).mapIndexed { s, text -> CheckSentence(s + 1, text) }
             val articles = sourcesOf(t, stories[t.story]).map { s ->
-                CheckArticle(s.title, s.pageText?.take(Writer.MAX_PAGE_CHARS), if (s.pageText == null) s.facts else null)
+                CheckArticle(s.title, s.pageText?.take(PageText.MAX_CHARS), if (s.pageText == null) s.facts else null)
             }
             CheckCard(i + 1, t.title, sentences, articles)
         }

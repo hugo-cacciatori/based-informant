@@ -153,9 +153,6 @@ object Writer {
     /** Five words in a row shared with a persona note count as a copied quote (writer.txt allows four). */
     const val QUOTE_WORDS = 5
 
-    /** Article text sent per source: enough for the facts, small enough for every free model. */
-    const val MAX_PAGE_CHARS = 4_000
-
     fun request(
         model: String,
         persona: Persona,

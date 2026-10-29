@@ -38,9 +38,10 @@ enum class LinkStatus {
 
 /**
  * A check's outcome, with a short reason for the report ("HTTP 404", "unknown host", "redirect to homepage"), and for a
- * live page the publication date found in its metadata, if any.
+ * live page the publication date found in its metadata and its readable text ([PageText]), if any: the page is read
+ * once, for the date check, the writer and the fact check.
  */
-data class LinkResult(val status: LinkStatus, val reason: String = "", val pageDate: LocalDate? = null)
+data class LinkResult(val status: LinkStatus, val reason: String = "", val pageDate: LocalDate? = null, val pageText: String? = null)
 
 fun interface LinkChecker {
     suspend fun check(url: String): LinkResult
@@ -130,7 +131,7 @@ class HttpLinkChecker(
             if (code !in 200..299) return@execute LinkResult(LinkStatus.ALIVE, "HTTP $status")
             val text = response.bodyAsChannel().readRemaining(MAX_PAGE_BYTES).readByteArray().decodeToString()
             when {
-                text.isNotBlank() -> LinkResult(LinkStatus.ALIVE, "HTTP $status", PageDate.extract(text))
+                text.isNotBlank() -> LinkResult(LinkStatus.ALIVE, "HTTP $status", PageDate.extract(text), PageText.extract(text))
                 code == 200 -> LinkResult(LinkStatus.DEAD, "empty page")
                 else -> LinkResult(LinkStatus.UNKNOWN, "empty answer (HTTP $code)")
             }

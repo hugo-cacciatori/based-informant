@@ -96,17 +96,4 @@ class WriterTest {
     fun `an answer with no JSON is unreadable`() {
         assertNull(Writer.parse("Sorry, I cannot help."))
     }
-
-    @Test
-    fun `article text keeps paragraphs and drops menus and scripts`() {
-        val html = """<html><nav><p>Home | World | Sport | a long navigation paragraph that should go away</p></nav>
-            <script>var x = "<p>not text</p>";</script>
-            <article><h1>Stellarator record &amp; more</h1><p>The stellarator held a stable plasma for 40 minutes, the lab said on Tuesday.</p>
-            <p>Short.</p><p>Engineers credit a new tungsten wall coating &#8212; it sheds less material.</p></article>
-            <footer><p>Copyright notice that is long enough to count as a paragraph here.</p></footer></html>"""
-        val text = ArticleText.extract(html)!!
-        assertTrue("40 minutes" in text && "tungsten wall coating — it sheds" in text)
-        assertFalse("navigation" in text || "not text" in text || "Copyright" in text || "Short." in text)
-        assertNull(ArticleText.extract("<html><body><div>nothing</div></body></html>"))
-    }
 }

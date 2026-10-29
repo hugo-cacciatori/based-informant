@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Redesign step 4: the link check keeps each live page's readable text; the extraction now keeps lines between line breaks and table cells, not only paragraphs.
 - Persona research off for now: the persona speaks from its voice alone; the lab search adds the research only with `--persona-research`.
 - Call redesign step 3, second paid search (1,440 tokens) on gaming keywords: news found, persona research again empty.
 - Search prompt draft: no story without sources, no listed index pages, no facts about the page itself; lab input for a persona probe on gaming keywords.
