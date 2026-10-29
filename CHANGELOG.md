@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Call redesign step 3, second paid search (1,440 tokens) on gaming keywords: news found, persona research again empty.
 - Search prompt draft: no story without sources, no listed index pages, no facts about the page itself; lab input for a persona probe on gaming keywords.
 - Call redesign step 3: one paid search with the new prompt (1,440 tokens): readable answer in the new format; the persona research found nothing.
 - Lab mode `--search-call` for the call redesign's paid search (`search.txt` with the persona research and the real name); `--dry-run` sends nothing.
