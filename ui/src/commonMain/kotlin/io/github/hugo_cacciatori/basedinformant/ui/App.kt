@@ -1,7 +1,8 @@
 package io.github.hugo_cacciatori.basedinformant.ui
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -17,17 +18,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,6 +47,7 @@ import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
 import io.github.hugo_cacciatori.basedinformant.core.run.RunController
 import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
+import io.github.hugo_cacciatori.basedinformant.core.settings.AppSettings
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.settings.PresetStore
 import io.github.hugo_cacciatori.basedinformant.core.settings.PresetsModel
@@ -53,6 +55,7 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordStore
 import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsStore
+import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
 import io.github.hugo_cacciatori.basedinformant.ui.resources.Res
 import io.github.hugo_cacciatori.basedinformant.ui.resources.app_name
 import io.github.hugo_cacciatori.basedinformant.ui.resources.history_missing
@@ -148,16 +151,14 @@ fun App(
             askNotifications = { askNotifications {} },
         )
     }
-    AppTheme {
+    // The look: the stored settings at start, then Settings' own state once it has loaded them.
+    val stored by produceState<AppSettings?>(null) { value = deps.settingsStore.load() }
+    val settingsState by settings.state.collectAsStateWithLifecycle()
+    val look = if (settingsState.loaded) settingsState.settings else stored ?: AppSettings()
+    AppTheme(BuiltInThemes.pack(look.theme), look.animations) {
         val requested by openDigest.collectAsStateWithLifecycle()
         AppShell(keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened, deps.shareEmail, reminder)
     }
-}
-
-/** Material 3's default colors, following the system's light or dark mode, until the theme engine (stage 8). */
-@Composable
-fun AppTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(), content = content)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -229,8 +230,12 @@ fun AppShell(
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        // The theme's background shows around and through the screens (01-product.md section 10).
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) { padding ->
-        val modifier = Modifier.padding(padding)
+        // Text sits on the theme's surface, never straight on the background.
+        val modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.surface)
         when (screen) {
             Screen.KEYWORDS -> {
                 val state by keywords.state.collectAsStateWithLifecycle()

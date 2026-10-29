@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stage 8 step 2: the theme engine. The chosen theme colors every screen in light or dark following the phone, over a drawn background (still, drifting gradient or starfield) that pauses when the app is hidden and stays still with Animations off, battery saver or system animations off. Screens sit on the theme's surface so text stays readable. The Plain theme ships; theme packs are embedded at build time and checked for contrast.
 - Stage 8 step 1: theme packs in the core: the pack format (light and dark palettes, font, drawn background), its reader and the pack check (fields, size budget, text contrast at WCAG AA, also through translucent surfaces); Theme and Animations stored in Settings.
 - The reminder respects the days and time set: no day is preselected, and it fires at the exact time on Android 13 and later without a permission prompt.
 - Stage 7: the reminder. A free notification at the weekdays and time chosen in Settings, re-armed after it fires, at start, after a reboot or update, after time and time zone changes and permission changes; a reminder missed while the phone was off shows if under 12 hours late; Settings says when reminders may come late and links to the alarm permission. Also: search news only, keywords read in context, reference pages and empty stories dropped.

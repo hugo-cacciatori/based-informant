@@ -54,11 +54,11 @@ object PackCheck {
         }
         need("onPrimary", "primary", c.getValue("primary"))
         need("onBackground", "background", c.getValue("background"))
-        // A translucent surface shows whatever sky color is behind it; each one must stay readable.
+        // A translucent surface shows whatever sky color is behind it; each one must stay readable. Cards stacked on
+        // it draw the surface color without its transparency.
         val surface = c.getValue("surface")
-        if (surface.opaque) {
-            need("onSurface", "surface", surface)
-        } else {
+        need("onSurface", "surface", surface.copy(alpha = 255))
+        if (!surface.opaque) {
             sky.forEachIndexed { i, s -> need("onSurface", "surface over sky[$i]", surface.over(s)) }
         }
     }

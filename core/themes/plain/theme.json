@@ -1,0 +1,26 @@
+{
+  "id": "plain",
+  "name": "Plain",
+  "font": "default",
+  "light": {
+    "primary": "#2D5A8C",
+    "onPrimary": "#FFFFFF",
+    "background": "#F5F3EE",
+    "onBackground": "#1C1C1C",
+    "surface": "#E6FFFFFF",
+    "onSurface": "#1C1C1C",
+    "outline": "#767676",
+    "sky": ["#F5F3EE", "#E9EEF3"]
+  },
+  "dark": {
+    "primary": "#A8C7FA",
+    "onPrimary": "#0A2A50",
+    "background": "#121418",
+    "onBackground": "#E6E6E6",
+    "surface": "#E61C1F25",
+    "onSurface": "#E6E6E6",
+    "outline": "#8A919E",
+    "sky": ["#121418", "#1A1F28"]
+  },
+  "background": { "engine": "still" }
+}

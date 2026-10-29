@@ -38,7 +38,6 @@ class DataStoreSettingsStoreTest {
             attentionMode = AttentionMode.NICHE,
             persona = Persona.DOCTOR_WIFE,
             reminder = Reminder(on = true, days = setOf(DayOfWeek.FRIDAY, DayOfWeek.MONDAY), time = LocalTime(19, 5)),
-            theme = "night",
             animations = false,
         )
         store.save(settings)
