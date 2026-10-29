@@ -109,6 +109,10 @@ class SettingsViewModel(private val model: SettingsModel) : ViewModel(), Setting
         viewModelScope.launch { model.setPersona(persona) }
     }
 
+    override fun setBased(on: Boolean) {
+        viewModelScope.launch { model.setBased(on) }
+    }
+
     override fun setTheme(id: String) {
         viewModelScope.launch { model.setTheme(id) }
     }

@@ -62,6 +62,8 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
 import io.github.hugo_cacciatori.basedinformant.ui.resources.animations_hint
+import io.github.hugo_cacciatori.basedinformant.ui.resources.based_hint
+import io.github.hugo_cacciatori.basedinformant.ui.resources.based_section
 import io.github.hugo_cacciatori.basedinformant.ui.resources.animations_switch
 import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_drift
 import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_drift_hint
@@ -140,6 +142,7 @@ interface SettingsActions {
     fun dismissTagUndo()
     fun setAttentionMode(mode: AttentionMode)
     fun setPersona(persona: Persona)
+    fun setBased(on: Boolean)
     fun setTheme(id: String)
     fun setAnimations(on: Boolean)
     fun setModel(id: String)
@@ -199,6 +202,18 @@ fun SettingsScreen(
             label = { personaLabel(it) },
             onSelect = actions::setPersona,
         )
+        HorizontalDivider()
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(Res.string.based_section), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(Res.string.based_hint), style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(
+                checked = state.settings.based,
+                onCheckedChange = actions::setBased,
+                modifier = Modifier.testTag("based"),
+            )
+        }
         HorizontalDivider()
         Choice(
             title = Res.string.model_section,

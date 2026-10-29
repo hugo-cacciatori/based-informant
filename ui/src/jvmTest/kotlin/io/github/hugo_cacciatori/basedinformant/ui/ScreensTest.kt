@@ -4,6 +4,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
@@ -263,6 +264,22 @@ class ScreensTest {
         onNodeWithText("Dog Zapper").performScrollTo().performClick()
         waitForIdle()
         assertEquals(Persona.DOG_ZAPPER, store.settings.persona)
+    }
+
+    @Test
+    fun theBasedSwitchIsOffAndSavesWhenTurnedOn() = runComposeUiTest {
+        val store = MemorySettings()
+        val vm = SettingsViewModel(SettingsModel(store, MemorySecrets(), balanceOnly(0)))
+        setContent {
+            AppTheme {
+                val state by vm.state.collectAsStateWithLifecycle()
+                SettingsScreen(state, vm, SnackbarHostState())
+            }
+        }
+        onNodeWithText("Right-wing sources only", substring = true).assertExists()
+        onNodeWithTag("based").performScrollTo().assertIsOff().performClick()
+        waitForIdle()
+        assertEquals(true, store.settings.based)
     }
 
     @Test

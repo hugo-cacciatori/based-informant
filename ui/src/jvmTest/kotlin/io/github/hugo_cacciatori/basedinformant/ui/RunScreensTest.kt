@@ -3,6 +3,7 @@ package io.github.hugo_cacciatori.basedinformant.ui
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -74,6 +75,8 @@ internal class RunFixture(
     topics: List<String> = emptyList(),
     /** What the runner returns; it waits for [release] first, so a test can see the progress. */
     var outcomes: List<RunOutcome> = emptyList(),
+    /** The stored settings the confirmation reads. */
+    private val stored: AppSettings = AppSettings(),
 ) {
     val started = mutableListOf<RunJob>()
 
@@ -94,7 +97,7 @@ internal class RunFixture(
         override suspend fun save(keywords: List<String>) { list = keywords }
     }
     private val settings = object : SettingsStore {
-        override suspend fun load() = AppSettings()
+        override suspend fun load() = stored
         override suspend fun save(settings: AppSettings) = Unit
     }
     private val client: (String) -> RfabClient = {
@@ -258,6 +261,10 @@ class RunScreensTest {
         waitForIdle()
         onNodeWithText("rfab tokens will be spent", substring = true).assertExists()
         onNodeWithText("Average cost of the last calls: 1,440 tokens", substring = true).assertExists()
+        // Everything configured that the call uses (owner, 2026-10-29).
+        onNodeWithText("Keywords: ${FIVE.joinToString(", ")}").assertExists()
+        onNodeWithText("Interest tags: none").assertExists()
+        onNodeWithTag("confirm-settings").assertTextEquals("Attention mode: Balanced · Persona: Off · Based: off")
         onNodeWithTag("confirm-go").performClick()
         waitForIdle()
         assertIs<RunJob.Generate>(f.started.single())
@@ -272,6 +279,15 @@ class RunScreensTest {
         onNodeWithTag("outcome-ok").performClick()
         waitForIdle()
         onNodeWithTag("generate").assertExists()
+    }
+
+    @Test
+    fun theConfirmationShowsTagsAndBasedOn() = runComposeUiTest {
+        show(RunFixture(stored = AppSettings(tags = listOf("science", "policy"), based = true)))
+        onNodeWithTag("generate").performClick()
+        waitForIdle()
+        onNodeWithText("Interest tags: science, policy").assertExists()
+        onNodeWithTag("confirm-settings").assertTextContains("Based: on", substring = true)
     }
 
     @Test

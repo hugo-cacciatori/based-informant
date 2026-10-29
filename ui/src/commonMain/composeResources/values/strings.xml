@@ -78,7 +78,12 @@
     <string name="confirm_average">Average cost of the last calls: %1$s tokens</string>
     <string name="confirm_average_unknown">Average cost: not known yet</string>
     <string name="confirm_low">Your balance is below twice the average cost.</string>
-    <string name="confirm_settings">Attention mode: %1$s · Persona: %2$s</string>
+    <string name="confirm_keywords">Keywords: %1$s</string>
+    <string name="confirm_tags">Interest tags: %1$s</string>
+    <string name="confirm_tags_none">Interest tags: none</string>
+    <string name="confirm_settings">Attention mode: %1$s · Persona: %2$s · Based: %3$s</string>
+    <string name="on">on</string>
+    <string name="off">off</string>
     <string name="confirm_topics">Topic mode: %1$s</string>
     <string name="confirm_last">Last digest on this device: %1$s</string>
     <string name="confirm_last_none">No digest on this device yet.</string>
@@ -198,6 +203,10 @@
     <string name="reminder_exact_off">Reminders may come late while the phone sleeps.</string>
     <string name="reminder_exact_allow">Allow exact reminders</string>
     <string name="reminder_notifications_off">Notifications are off: allow them to get reminders.</string>
+
+    <!-- Based (01-product.md section 3, owner 2026-10-29) -->
+    <string name="based_section">Based</string>
+    <string name="based_hint">Right-wing sources only. Claims in the digest stay neutral either way.</string>
 
     <!-- Look (01-product.md section 10) -->
     <string name="theme_section">Theme</string>

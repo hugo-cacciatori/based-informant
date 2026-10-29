@@ -61,13 +61,18 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_balance_unk
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_chat_hours
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_chat_recent
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_go
+import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_keywords
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_last
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_last_none
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_low
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_settings
+import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_tags
+import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_tags_none
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_title
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_tokens
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_topics
+import io.github.hugo_cacciatori.basedinformant.ui.resources.off
+import io.github.hugo_cacciatori.basedinformant.ui.resources.on
 import io.github.hugo_cacciatori.basedinformant.ui.resources.delete
 import io.github.hugo_cacciatori.basedinformant.ui.resources.mode_keywords
 import io.github.hugo_cacciatori.basedinformant.ui.resources.mode_topics
@@ -301,8 +306,25 @@ private fun ConfirmDialog(step: GenerateStep.Confirm, actions: GenerateActions) 
                     Text(stringResource(Res.string.confirm_low), color = MaterialTheme.colorScheme.error)
                     TextButton(onClick = { uri.openUri(Links.CLAIM_TOKENS) }) { Text(stringResource(Res.string.balance_claim)) }
                 }
-                Text(stringResource(Res.string.confirm_settings, attentionLabel(prompt.attentionMode), personaLabel(prompt.persona)))
-                if (prompt.mode == DigestMode.TOPICS) Text(stringResource(Res.string.confirm_topics, prompt.keywords.joinToString(", ")))
+                // Everything the owner configured that this call uses (01-product.md section 4).
+                if (prompt.mode == DigestMode.TOPICS) {
+                    Text(stringResource(Res.string.confirm_topics, prompt.keywords.joinToString(", ")))
+                } else {
+                    Text(stringResource(Res.string.confirm_keywords, prompt.keywords.joinToString(", ")))
+                    Text(
+                        if (prompt.interestTags.isEmpty()) stringResource(Res.string.confirm_tags_none)
+                        else stringResource(Res.string.confirm_tags, prompt.interestTags.joinToString(", ")),
+                    )
+                }
+                Text(
+                    stringResource(
+                        Res.string.confirm_settings,
+                        attentionLabel(prompt.attentionMode),
+                        personaLabel(prompt.persona),
+                        stringResource(if (prompt.based) Res.string.on else Res.string.off),
+                    ),
+                    Modifier.testTag("confirm-settings"),
+                )
                 Text(
                     step.lastDigestAt?.let { stringResource(Res.string.confirm_last, formatMillis(it)) }
                         ?: stringResource(Res.string.confirm_last_none),
