@@ -244,7 +244,7 @@ class DigestRunTest {
         val topics = snapshot.copy(prompt = snapshot.prompt.copy(mode = DigestMode.TOPICS, keywords = listOf("fusion energy", "deep-sea mining")))
         val (_, digestRun) = run(free = { model, request -> if ("SEARCH_REPORT" in request.messages.single().content && model == "openrouter:minimax/minimax-m3") low else writes(model, request) })
         assertIs<RunOutcome.Stored>(digestRun.execute(topics))
-        assertEquals(2, digests.saved.single().digest.topics.size, "score 30 is under MIN_SCORE but the topic was chosen")
+        assertEquals(2, digests.saved.single().digest.topics.size, "a low score keeps a chosen topic")
         assertEquals(emptyList(), digests.saved.single().digest.missingTopics)
     }
 

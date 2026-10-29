@@ -28,8 +28,8 @@ class TrendingTest {
             topic("k1", 90), topic("k2", 40), topic("t1", 30, trending = true), topic("k3", 70),
             topic("t2", 55, trending = true), topic("t3", 20, trending = true), topic("t4", 10, trending = true),
         )
-        // k2 is below the score cut; trending topics have none and fill up to five, best first.
-        assertEquals(listOf("k1", "k3", "t2", "t1", "t3"), Selection.select(topics).map { it.id })
+        // Keyword topics first, even the weak k2 (owner, 2026-10-30); trending ones fill up to five, best first.
+        assertEquals(listOf("k1", "k3", "k2", "t2", "t1"), Selection.select(topics).map { it.id })
         // Five keyword topics leave no slot.
         val five = (1..5).map { topic("k$it", 60 + it) }
         assertEquals(five.map { it.id }.reversed(), Selection.select(five + topic("t", 99, trending = true)).map { it.id })

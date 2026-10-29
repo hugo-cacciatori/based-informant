@@ -13,18 +13,19 @@ class SelectionTest {
     )
 
     @Test
-    fun dropsBelowMinSortsAndCaps() {
+    fun sortsAndCaps() {
         val topics = listOf(49, 50, 90, 70, 70, 80, 60, 100).mapIndexed { i, s -> topic("t$i", s) }
         val selected = Selection.select(topics)
         assertEquals(Selection.MAX_TOPICS, selected.size)
         assertEquals(listOf(100, 90, 80, 70, 70), selected.map { it.score })
         // Ties keep the model's order.
         assertEquals(listOf("t3", "t4"), selected.filter { it.score == 70 }.map { it.id })
-        assertTrue(selected.none { it.score < Selection.MIN_SCORE })
     }
 
     @Test
-    fun zeroTopicsIsAValidResult() {
-        assertTrue(Selection.select(listOf(topic("low", 10))).isEmpty())
+    fun aWeakKeywordTopicIsKept() {
+        // No score cutoff (owner, 2026-10-30): keyword cards first, even weak ones.
+        assertEquals(listOf("low"), Selection.select(listOf(topic("low", 10))).map { it.id })
+        assertTrue(Selection.select(emptyList()).isEmpty())
     }
 }
