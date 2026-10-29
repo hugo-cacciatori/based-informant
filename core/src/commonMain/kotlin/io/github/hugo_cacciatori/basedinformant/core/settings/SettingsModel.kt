@@ -105,11 +105,10 @@ class SettingsModel(
 
     suspend fun setPersona(persona: Persona) = change { it.copy(persona = persona) }
 
-    /** No weekday left turns the reminder off (owner, 2026-10-29). */
+    /** Saved as set: on with no weekday sets no alarm (owner, 2026-10-29). */
     suspend fun setReminder(reminder: Reminder) {
-        val kept = if (reminder.days.isEmpty()) reminder.copy(on = false, days = Reminder().days) else reminder
-        change { it.copy(reminder = kept) }
-        onReminderChanged(kept)
+        change { it.copy(reminder = reminder) }
+        onReminderChanged(reminder)
     }
 
     /** Only models validated in the lab are offered (02-ai-call.md section 11). */

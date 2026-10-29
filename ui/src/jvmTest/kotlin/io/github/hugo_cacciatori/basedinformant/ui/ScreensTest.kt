@@ -240,7 +240,7 @@ class ScreensTest {
     }
 
     @Test
-    fun turningTheReminderOnShowsMondayAt8AndTheNextTime() = runComposeUiTest {
+    fun theReminderFiresOnlyOnTheDaysPicked() = runComposeUiTest {
         val store = MemorySettings()
         val armed = mutableListOf<Reminder>()
         reminderSettings(store, armed)
@@ -248,12 +248,14 @@ class ScreensTest {
         onNodeWithTag("reminder-switch").performScrollTo().performClick()
         waitForIdle()
         assertEquals(Reminder(on = true), store.settings.reminder)
-        assertEquals(listOf(Reminder(on = true)), armed, "the alarm is re-armed")
-        onNodeWithTag("reminder-next").performScrollTo().assertTextContains("Next reminder: Mon 2 Nov, 08:00")
+        assertEquals(emptySet(), store.settings.reminder.days, "no day is preselected")
+        onNodeWithTag("reminder-next").performScrollTo().assertTextContains("Pick at least one day: no reminder is set.")
         onNodeWithTag("reminder-day-thursday").performScrollTo().performClick()
         waitForIdle()
-        assertEquals(setOf(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), store.settings.reminder.days)
-        onNodeWithTag("reminder-next").performScrollTo().assertTextContains("Next reminder: Mon 2 Nov, 08:00")
+        assertEquals(setOf(DayOfWeek.THURSDAY), store.settings.reminder.days)
+        assertEquals(Reminder(on = true, days = setOf(DayOfWeek.THURSDAY)), armed.last(), "the alarm is re-armed")
+        // Thursday 29 Oct 10:00 UTC: today's 08:00 is past, so next Thursday.
+        onNodeWithTag("reminder-next").performScrollTo().assertTextContains("Next reminder: Thu 5 Nov, 08:00")
         onNodeWithText("Reminders may come late", substring = true).assertDoesNotExist()
     }
 
@@ -270,7 +272,7 @@ class ScreensTest {
 
     @Test
     fun withoutTheAlarmPermissionSettingsSaysRemindersMayBeLate() = runComposeUiTest {
-        reminderSettings(MemorySettings(AppSettings(reminder = Reminder(on = true))), mutableListOf(), exact = false)
+        reminderSettings(MemorySettings(AppSettings(reminder = Reminder(on = true, days = setOf(DayOfWeek.MONDAY)))), mutableListOf(), exact = false)
         onNodeWithText("Reminders may come late while the phone sleeps.").performScrollTo().assertExists()
         onNodeWithText("Allow exact reminders").assertExists()
     }

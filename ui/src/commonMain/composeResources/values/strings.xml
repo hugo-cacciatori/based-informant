@@ -192,6 +192,7 @@
     <string name="reminder_switch">Remind me</string>
     <string name="reminder_time">At %1$s</string>
     <string name="reminder_next">Next reminder: %1$s</string>
+    <string name="reminder_pick_day">Pick at least one day: no reminder is set.</string>
     <string name="reminder_exact_off">Reminders may come late while the phone sleeps.</string>
     <string name="reminder_exact_allow">Allow exact reminders</string>
     <string name="reminder_notifications_off">Notifications are off: allow them to get reminders.</string>

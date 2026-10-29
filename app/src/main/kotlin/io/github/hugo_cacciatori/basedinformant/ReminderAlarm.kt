@@ -17,9 +17,10 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 
 /**
- * The reminder's alarm (04-platforms.md section 3): one one-shot alarm for the next reminder, exact with the "Alarms &
- * reminders" permission, else inexact (it can come late while the phone sleeps). Its time is remembered, so a reminder
- * the device missed is spotted at the next wake and shown when under 12 hours late (owner, 2026-10-29).
+ * The reminder's alarm (04-platforms.md section 3): one one-shot alarm for the next reminder, always exact (owner,
+ * 2026-10-29: the set time, period), through `USE_EXACT_ALARM` on Android 13+; only on Android 12 with the permission
+ * revoked does it fall back to an inexact alarm. Its time is remembered, so a reminder the device missed is spotted at
+ * the next wake and shown when under 12 hours late.
  */
 object ReminderAlarm {
     const val ACTION = "io.github.hugo_cacciatori.basedinformant.action.REMINDER"

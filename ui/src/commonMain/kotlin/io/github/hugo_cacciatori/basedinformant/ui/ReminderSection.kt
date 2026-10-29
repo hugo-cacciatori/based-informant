@@ -37,6 +37,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_exact_off
 import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_hint
 import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_next
 import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_notifications_off
+import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_pick_day
 import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_section
 import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_switch
 import io.github.hugo_cacciatori.basedinformant.ui.resources.reminder_time
@@ -58,8 +59,8 @@ class ReminderPlatform(
 )
 
 /**
- * The reminder in Settings (01-product.md section 6, owner 2026-10-29): the switch, any weekdays, one time, the next
- * reminder, and the alarm permission. Turning it on needs notifications (section 7): refused, it stays off and says why.
+ * The reminder in Settings (01-product.md section 6, owner 2026-10-29): the switch, the weekdays the owner picks (none
+ * preselected), one time, the next reminder, and on Android 12 the alarm permission. Turning it on needs notifications (section 7): refused, it stays off and says why.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,9 +102,11 @@ fun ReminderSection(reminder: Reminder, onChange: (Reminder) -> Unit, platform: 
         TextButton(onClick = { pickingTime = true }, modifier = Modifier.testTag("reminder-time")) {
             Text(stringResource(Res.string.reminder_time, reminder.time.toString()))
         }
-        NextReminderCalculator.next(reminder, platform.nowMillis(), platform.zone())?.let { next ->
-            Text(stringResource(Res.string.reminder_next, ReminderText.at(next, platform.zone())), Modifier.testTag("reminder-next"))
-        }
+        val next = NextReminderCalculator.next(reminder, platform.nowMillis(), platform.zone())
+        Text(
+            if (next == null) stringResource(Res.string.reminder_pick_day) else stringResource(Res.string.reminder_next, ReminderText.at(next, platform.zone())),
+            Modifier.testTag("reminder-next"),
+        )
         if (!platform.exactAlarmsAllowed()) {
             Text(stringResource(Res.string.reminder_exact_off), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = platform.openExactAlarmSettings) { Text(stringResource(Res.string.reminder_exact_allow)) }

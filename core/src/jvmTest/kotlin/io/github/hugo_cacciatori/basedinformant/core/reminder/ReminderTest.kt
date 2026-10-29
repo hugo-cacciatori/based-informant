@@ -17,7 +17,7 @@ import kotlin.time.ExperimentalTime
 /** Offline: the reminder's next time and missed rule (07-testing.md, NextReminderCalculator). */
 class ReminderTest {
     private val paris = TimeZone.of("Europe/Paris")
-    private val mondayAt8 = Reminder(on = true)
+    private val mondayAt8 = Reminder(on = true, days = setOf(DayOfWeek.MONDAY))
 
     private fun at(text: String, zone: TimeZone = paris) = LocalDateTime.parse(text).toInstant(zone).toEpochMilliseconds()
 
@@ -26,8 +26,8 @@ class ReminderTest {
 
     @Test
     fun offOrWithoutDaysHasNoNextTime() {
-        assertNull(NextReminderCalculator.next(Reminder(), at("2026-10-29T10:00"), paris))
-        assertNull(NextReminderCalculator.next(Reminder(on = true, days = emptySet()), at("2026-10-29T10:00"), paris))
+        assertNull(NextReminderCalculator.next(mondayAt8.copy(on = false), at("2026-10-29T10:00"), paris))
+        assertNull(NextReminderCalculator.next(Reminder(on = true), at("2026-10-29T10:00"), paris), "no day is preselected")
     }
 
     @Test

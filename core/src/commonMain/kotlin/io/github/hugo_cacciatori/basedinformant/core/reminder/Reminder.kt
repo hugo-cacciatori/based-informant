@@ -14,12 +14,12 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 /**
- * The reminder (01-product.md section 6, owner 2026-10-29): a free notification at the chosen weekdays and one time of
- * day. It never generates anything. Monday 08:00 when first turned on.
+ * The reminder (01-product.md section 6): a free notification at the chosen weekdays and one time of day. It never
+ * generates anything. It respects the days and time the owner sets, period (owner, 2026-10-29): no day is preselected.
  */
 data class Reminder(
     val on: Boolean = false,
-    val days: Set<DayOfWeek> = setOf(DayOfWeek.MONDAY),
+    val days: Set<DayOfWeek> = emptySet(),
     val time: LocalTime = LocalTime(8, 0),
 )
 

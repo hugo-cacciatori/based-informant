@@ -125,9 +125,10 @@ class SettingsModelTest {
         val on = Reminder(on = true, days = setOf(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), time = LocalTime(7, 15))
         withAlarm.setReminder(on)
         assertEquals(on, store.settings.reminder)
-        // No weekday left turns it off and keeps Monday for next time (owner, 2026-10-29).
-        withAlarm.setReminder(on.copy(days = emptySet()))
-        assertEquals(Reminder(on = false, days = setOf(DayOfWeek.MONDAY), time = LocalTime(7, 15)), store.settings.reminder)
-        assertEquals(listOf(on, store.settings.reminder), armed)
+        // Saved as set, even with no day left: nothing is preselected (owner, 2026-10-29).
+        val none = on.copy(days = emptySet())
+        withAlarm.setReminder(none)
+        assertEquals(none, store.settings.reminder)
+        assertEquals(listOf(on, none), armed)
     }
 }

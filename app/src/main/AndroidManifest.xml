@@ -10,8 +10,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- The reminder (04-platforms.md section 3): exact when the owner allows it, re-armed after a reboot. -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- The reminder (04-platforms.md section 3): always exact (owner, 2026-10-29), re-armed after a reboot.
+         Android 13+: USE_EXACT_ALARM, granted at install; Android 12 only: SCHEDULE_EXACT_ALARM. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Android 13+: asked in context, never at first launch (01-product.md section 7). -->
