@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Call redesign step 3: one paid search with the new prompt (1,440 tokens): readable answer in the new format; the persona research found nothing.
 - Lab mode `--search-call` for the call redesign's paid search (`search.txt` with the persona research and the real name); `--dry-run` sends nothing.
 - Call redesign step 2 (lab): draft prompts for the fact check (one call per digest, unsupported and second-story sentences deleted) and the repair of an unreadable search answer (kept only when all its URLs are in the original); lab modes `--fact-check` and `--repair`; sentences no longer split after an abbreviation.
 - The lab writer deletes any sentence copying a persona note (owner, 2026-10-23); MiniMax M3 first in the writer order.

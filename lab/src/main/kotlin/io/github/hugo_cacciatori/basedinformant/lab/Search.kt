@@ -19,7 +19,7 @@ object Search {
     const val FILE = "search.txt"
     const val RESEARCH_FILE = "personas/research.txt"
 
-    /** More than the writer's 5 topics, so it has a choice. [PROPOSED] until the owner's OK (redesign step 3). */
+    /** More than the writer's 5 topics, so it has a choice (owner, 2026-10-29). */
     const val MAX_STORIES = 8
 
     fun request(
