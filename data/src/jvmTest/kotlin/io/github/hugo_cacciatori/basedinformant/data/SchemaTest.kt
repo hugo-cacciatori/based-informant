@@ -32,7 +32,7 @@ class SchemaTest {
 
     @Test
     fun everyVersionIsExported() {
-        for (version in 1..5) {
+        for (version in 1..7) {
             assertTrue(Files.exists(schemas.resolve(AppDatabase::class.qualifiedName!!).resolve("$version.json")), "missing $version.json")
         }
     }
@@ -119,6 +119,35 @@ class SchemaTest {
             connection.prepare("SELECT COUNT(*) FROM pragma_table_info('digests') WHERE name IN ('status', 'html', 'text', 'recipient')").use { statement ->
                 assertTrue(statement.step())
                 assertEquals(0L, statement.getLong(0))
+            }
+        }
+        Unit
+    }
+
+    @Test
+    fun versions5To7MoveTheDigestsTagsIntoTheSavedTopics() = runBlocking {
+        helper.createDatabase(5).use { connection ->
+            fun digest(at: Int, tags: String) = connection.execSQL(
+                "INSERT INTO digests (run_id, generated_at, subject, summary, topic_count, digest, model, attention_mode, persona, " +
+                    "tokens_billed, topic_tags, based) VALUES ($at, $at, 'S', 's', 2, '{}', 'm', 'BALANCED', 'OFF', 1440, '$tags', 0)",
+            )
+            digest(1, "[\"Club chess\", \"Seabed rules\"]")
+            digest(2, "[\"club CHESS\", \"Fusion records\", \" \"]")
+            digest(3, "[]")
+        }
+        helper.runMigrationsAndValidate(7).use { connection ->
+            // Each tag once (ignoring case), at its newest digest; blanks skipped.
+            connection.prepare("SELECT tag, saved_at FROM topics ORDER BY saved_at DESC, id ASC").use { statement ->
+                val rows = buildList { while (statement.step()) add(statement.getText(0) to statement.getLong(1)) }
+                assertEquals(listOf("club CHESS" to 2L, "Fusion records" to 2L, "Seabed rules" to 1L), rows)
+            }
+            connection.prepare("SELECT COUNT(*) FROM pragma_table_info('digests') WHERE name = 'topic_tags'").use { statement ->
+                assertTrue(statement.step())
+                assertEquals(0L, statement.getLong(0))
+            }
+            connection.prepare("SELECT COUNT(*) FROM digests").use { statement ->
+                assertTrue(statement.step())
+                assertEquals(3L, statement.getLong(0))
             }
         }
         Unit

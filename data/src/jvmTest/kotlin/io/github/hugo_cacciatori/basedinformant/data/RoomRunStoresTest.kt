@@ -136,7 +136,7 @@ class RoomRunStoresTest {
     }
 
     @Test
-    fun topicTagsComeNewestFirstEachOnce() = runBlocking {
+    fun topicsAreSavedEachOnceAndOutliveTheirDigest() = runBlocking {
         val store = RoomDigestStore(db)
         fun stored(at: Long, vararg tags: String) = StoredDigest(
             runId = at, generatedAt = at, subject = "S", summary = "s",
@@ -148,15 +148,22 @@ class RoomRunStoresTest {
         )
         store.save(stored(1, "Club chess", "Seabed rules"))
         store.save(stored(2, "Fusion records", "club CHESS"))
-        assertEquals(listOf("Fusion records", "club CHESS", "Seabed rules"), store.topicTags())
+        // Seen again (ignoring case): one topic, its first spelling, now among the newest.
+        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.topicTags())
 
-        // History: newest first, without the HTML; deleting one takes its tags out of topic mode.
+        // History: newest first, without the HTML; deleting a digest keeps its topics (owner, 2026-10-29).
         val cards = store.cards()
         assertEquals(listOf(2L, 1L), cards.map { it.at })
         assertEquals(listOf(2, 2), cards.map { it.topicCount })
         store.delete(cards.first().id)
         assertNull(store.get(cards.first().id))
-        assertEquals(listOf("Club chess", "Seabed rules"), store.topicTags())
+        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.topicTags())
+
+        // The owner deletes topics, several at once (ignoring case), and Undo puts them back in their place.
+        val gone = store.delete(listOf("CLUB CHESS", "Seabed rules"))
+        assertEquals(listOf("Fusion records"), store.topicTags())
+        store.restore(gone)
+        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.topicTags())
     }
 
     @Test

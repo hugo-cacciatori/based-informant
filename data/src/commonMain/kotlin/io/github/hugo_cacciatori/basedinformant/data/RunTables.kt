@@ -8,6 +8,7 @@ import androidx.room3.Insert
 import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import androidx.room3.Update
+import androidx.room3.Upsert
 
 // Schema v4 (04-platforms.md section 7). Enums are stored by name; lists, maps, the snapshot and the digest as JSON text
 // (StoredJson.kt), since they are read whole and never queried inside.
@@ -116,8 +117,6 @@ data class DigestEntity(
     @ColumnInfo(name = "attention_mode") val attentionMode: String,
     val persona: String,
     @ColumnInfo(name = "tokens_billed") val tokensBilled: Long?,
-    /** The digest's topic tags as a JSON list, for topic mode (schema v3; rows from v2 read "[]"). */
-    @ColumnInfo(name = "topic_tags", defaultValue = "'[]'") val topicTags: String,
     /** Right-wing sources only (schema v5; rows from v4 read off). */
     @ColumnInfo(defaultValue = "0") val based: Boolean,
 )
@@ -126,9 +125,6 @@ data class DigestEntity(
 interface DigestDao {
     @Insert
     suspend fun insert(digest: DigestEntity): Long
-
-    @Query("SELECT topic_tags FROM digests ORDER BY generated_at DESC, id DESC")
-    suspend fun topicTags(): List<String>
 
     @Query("SELECT MAX(generated_at) FROM digests")
     suspend fun lastGeneratedAt(): Long?
@@ -168,5 +164,28 @@ interface PresetDao {
     suspend fun insert(preset: PresetEntity): Long
 
     @Query("DELETE FROM presets WHERE id = :id")
+    suspend fun delete(id: Long)
+}
+
+/**
+ * A saved topic (01-product.md section 3, schema v6): every stored digest's topic tags, kept until the owner deletes
+ * them. The unique index is a backstop to the app's own rule (ignoring case); [savedAt] is when a digest last had it.
+ */
+@Entity(tableName = "topics", indices = [Index(value = ["tag"], unique = true)])
+data class TopicEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(collate = ColumnInfo.NOCASE) val tag: String,
+    @ColumnInfo(name = "saved_at") val savedAt: Long,
+)
+
+@Dao
+interface TopicDao {
+    @Query("SELECT * FROM topics ORDER BY saved_at DESC, tag ASC")
+    suspend fun all(): List<TopicEntity>
+
+    @Upsert
+    suspend fun upsert(topic: TopicEntity)
+
+    @Query("DELETE FROM topics WHERE id = :id")
     suspend fun delete(id: Long)
 }

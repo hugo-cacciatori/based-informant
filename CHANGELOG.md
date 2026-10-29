@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stage 10 step 2: saved topics. Every digest's topics are kept in their own list until deleted, even when the digest is deleted; database schema v7 moves the existing topics over and keeps every digest.
 - Weak keyword cards are kept before trending ones: the score cutoff is gone.
 
 - Stage 10 step 1: a digest takes 1 to 5 keywords; the search fills free slots with today's trending news so a digest aims for five cards; topic mode works with no topic picked (all trending); presets hold 1 to 5 keywords; with Based, older right-wing articles count before a keyword is given up.

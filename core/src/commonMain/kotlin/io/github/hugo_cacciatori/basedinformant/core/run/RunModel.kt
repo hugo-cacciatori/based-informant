@@ -157,12 +157,26 @@ interface RunStore {
 interface DigestStore {
     suspend fun save(digest: StoredDigest): Long
 
-    /** The topic tags of stored digests, newest first, each once (ignoring case): the choices of topic mode. */
+    /**
+     * The saved topics, most recently seen first, each once (ignoring case): the choices of topic mode. Every stored
+     * digest's topic tags are saved, and stay until the owner deletes them (01-product.md section 3, owner 2026-10-29).
+     */
     suspend fun topicTags(): List<String>
 
     /** When the newest digest was stored on this device, for the confirmation dialog; null before the first. */
     suspend fun lastGeneratedAt(): Long?
 }
+
+/** Deleting saved topics (01-product.md section 3): one or several at once, with Undo. */
+interface TopicStore {
+    /** Deletes [tags] (ignoring case) and returns them as they were, for [restore]. */
+    suspend fun delete(tags: Collection<String>): List<SavedTopic>
+
+    suspend fun restore(topics: List<SavedTopic>)
+}
+
+/** A saved topic and when a digest last had it. */
+data class SavedTopic(val tag: String, val savedAt: Long)
 
 interface CallLog {
     suspend fun record(call: CallRecord)

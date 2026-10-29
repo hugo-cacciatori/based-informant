@@ -14,7 +14,9 @@ import io.github.hugo_cacciatori.basedinformant.core.run.RunRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
 import io.github.hugo_cacciatori.basedinformant.core.run.RunState
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
+import io.github.hugo_cacciatori.basedinformant.core.run.SavedTopic
 import io.github.hugo_cacciatori.basedinformant.core.run.StoredDigest
+import io.github.hugo_cacciatori.basedinformant.core.run.TopicStore
 import io.github.hugo_cacciatori.basedinformant.core.settings.Preset
 import io.github.hugo_cacciatori.basedinformant.core.settings.PresetStore
 import kotlinx.coroutines.Dispatchers
@@ -75,22 +77,38 @@ class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : Run
     )
 }
 
-class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore {
-    override suspend fun save(digest: StoredDigest): Long = db.digests().insert(
-        with(digest) {
-            DigestEntity(
-                runId = runId, generatedAt = generatedAt, subject = subject,
-                summary = summary, topicCount = topicCount, digest = StoredJson.json.encodeToString(Digest.serializer(), this.digest),
-                model = model, attentionMode = attentionMode, persona = persona, tokensBilled = tokensBilled,
-                topicTags = StoredJson.strings(this.digest.topics.mapNotNull { it.topicTag }.distinct()),
-                based = based,
-            )
-        },
-    )
+class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore, TopicStore {
+    /** Stores the digest and saves its topic tags, a tag already saved (ignoring case) only seen again. */
+    override suspend fun save(digest: StoredDigest): Long = db.withWriteTransaction {
+        val id = db.digests().insert(
+            with(digest) {
+                DigestEntity(
+                    runId = runId, generatedAt = generatedAt, subject = subject,
+                    summary = summary, topicCount = topicCount, digest = StoredJson.json.encodeToString(Digest.serializer(), this.digest),
+                    model = model, attentionMode = attentionMode, persona = persona, tokensBilled = tokensBilled, based = based,
+                )
+            },
+        )
+        val saved = db.topics().all().associateBy { it.tag.lowercase() }
+        digest.digest.topics.mapNotNull { it.topicTag?.trim()?.takeIf(String::isNotEmpty) }.distinctBy { it.lowercase() }.forEach { tag ->
+            val old = saved[tag.lowercase()]
+            db.topics().upsert(old?.copy(savedAt = digest.generatedAt) ?: TopicEntity(tag = tag, savedAt = digest.generatedAt))
+        }
+        id
+    }
 
-    override suspend fun topicTags(): List<String> {
-        val seen = mutableSetOf<String>()
-        return db.digests().topicTags().flatMap(StoredJson::stringList).filter { seen.add(it.lowercase()) }
+    override suspend fun topicTags(): List<String> = db.topics().all().map { it.tag }
+
+    override suspend fun delete(tags: Collection<String>): List<SavedTopic> = db.withWriteTransaction {
+        val keys = tags.map { it.lowercase() }.toSet()
+        val gone = db.topics().all().filter { it.tag.lowercase() in keys }
+        gone.forEach { db.topics().delete(it.id) }
+        gone.map { SavedTopic(it.tag, it.savedAt) }
+    }
+
+    override suspend fun restore(topics: List<SavedTopic>) = db.withWriteTransaction {
+        val saved = db.topics().all().map { it.tag.lowercase() }.toSet()
+        topics.filter { it.tag.lowercase() !in saved }.forEach { db.topics().upsert(TopicEntity(tag = it.tag, savedAt = it.savedAt)) }
     }
 
     override suspend fun lastGeneratedAt(): Long? = db.digests().lastGeneratedAt()
