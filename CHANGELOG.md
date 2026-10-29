@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Redesign step 5: two paid searches (2,880 tokens) compared the app's own search request with a free-written one: 3 valid stories each, but the written request's stories each mixed several events.
 - Redesign step 5 (lab): a free model can write the plain-language search request (draft prompt, guard, `--search-request`; `--search-call --request` sends a saved one); compared by eye on four free models.
 - Redesign step 4: template v2 in the app's core: the paid call only searches; free models write the digest, with the copied-quote removal, the fact check and the repair of an unreadable answer; Write again; topic tags, subject and card summary from the writer. The one-call template, the curated memory and the mixed-story phrase list are removed; the lab runs on the same code.
 - Redesign step 4: the link check keeps each live page's readable text; the extraction now keeps lines between line breaks and table cells, not only paragraphs.
