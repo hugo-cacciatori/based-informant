@@ -13,8 +13,8 @@ class DigestViewTest {
 
     private fun source(url: String) = Source("S", "Example Wire", url, "en", LocalDate(2026, 10, 17))
 
-    private fun topic(id: String, vararg urls: String, newDevelopment: String? = null) = Topic(
-        id = id, continues = null, newDevelopment = newDevelopment, title = "Title $id", summary = "Summary $id.",
+    private fun topic(id: String, vararg urls: String) = Topic(
+        id = id, title = "Title $id", summary = "Summary $id.",
         detail = null, keywords = listOf("chess"), score = 50, scoreParts = null, sources = urls.map(::source),
     )
 
@@ -35,13 +35,12 @@ class DigestViewTest {
     fun cardsKeepTheDigestOrderAndLabelTheirSources() {
         val view = DigestViews.build(
             digest(
-                topic("a", "https://example.com/a", newDevelopment = "a vote"),
+                topic("a", "https://example.com/a"),
                 topic("b", "https://example.com/b", "javascript:alert(1)"),
             ),
             meta,
         )
         assertEquals(listOf("Title a", "Title b"), view.cards.map { it.title })
-        assertEquals("New: a vote", view.cards[0].newDevelopment)
         assertEquals("Matched: chess", view.cards[0].matched)
         assertEquals("1 source", view.cards[0].singleSourceLabel)
         assertNull(view.cards[1].singleSourceLabel)

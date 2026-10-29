@@ -14,7 +14,7 @@ class SizeCapTest {
     private val meta = RenderMeta(personaDisplayName = null, model = "test:model")
 
     private fun topic(id: String, score: Int, detailChars: Int?) = Topic(
-        id = id, continues = null, newDevelopment = null, title = "Title $id", summary = "Summary $id.",
+        id = id, title = "Title $id", summary = "Summary $id.",
         detail = detailChars?.let { "Detail $id " + "x".repeat(it) }, keywords = listOf("chess"), score = score,
         scoreParts = null,
         sources = listOf(Source("S", "Example Wire", "https://example.com/$id", "en", LocalDate(2026, 10, 17))),

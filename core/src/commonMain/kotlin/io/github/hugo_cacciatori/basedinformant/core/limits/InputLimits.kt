@@ -13,8 +13,6 @@ object InputLimits {
     const val KEYWORD_MAX_CHARS = 50
     const val TAGS_MAX = 15
     const val TAG_MAX_CHARS = 30
-    const val MEMORY_MAX_ENTRIES = 60
-    const val MEMORY_LINE_MAX_CHARS = 120
     const val RECIPIENT_MAX_CHARS = 254
 }
 
@@ -28,8 +26,6 @@ sealed interface LimitViolation {
     data class TooManyTags(val count: Int) : LimitViolation
     data class TagTooLong(val index: Int, val length: Int) : LimitViolation
     data class BlankTag(val index: Int) : LimitViolation
-    data class TooManyMemoryEntries(val count: Int) : LimitViolation
-    data class MemoryLineTooLong(val index: Int, val length: Int) : LimitViolation
     data class RecipientTooLong(val length: Int) : LimitViolation
 }
 
@@ -81,14 +77,6 @@ object InputChecks {
                 text.isEmpty() -> add(LimitViolation.BlankTag(index))
                 length > InputLimits.TAG_MAX_CHARS -> add(LimitViolation.TagTooLong(index, length))
             }
-        }
-    }
-
-    fun memory(lines: List<String>): List<LimitViolation> = buildList {
-        if (lines.size > InputLimits.MEMORY_MAX_ENTRIES) add(LimitViolation.TooManyMemoryEntries(lines.size))
-        lines.forEachIndexed { index, line ->
-            val length = line.charCount()
-            if (length > InputLimits.MEMORY_LINE_MAX_CHARS) add(LimitViolation.MemoryLineTooLong(index, length))
         }
     }
 

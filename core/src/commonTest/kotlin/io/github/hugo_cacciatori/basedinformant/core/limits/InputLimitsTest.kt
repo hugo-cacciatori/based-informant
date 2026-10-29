@@ -38,10 +38,6 @@ class InputLimitsTest {
         assertEquals(listOf(LimitViolation.TagTooLong(0, 31)), InputChecks.tags(listOf("t".repeat(31))))
         assertEquals(listOf(LimitViolation.BlankTag(0)), InputChecks.tags(listOf(" ")))
 
-        assertTrue(InputChecks.memory(List(60) { "m".repeat(120) }).isEmpty())
-        assertEquals(listOf(LimitViolation.TooManyMemoryEntries(61)), InputChecks.memory(List(61) { "m" }))
-        assertEquals(listOf(LimitViolation.MemoryLineTooLong(0, 121)), InputChecks.memory(listOf("m".repeat(121))))
-
         assertTrue(InputChecks.recipient("a".repeat(242) + "@example.com").isEmpty())
         assertEquals(listOf(LimitViolation.RecipientTooLong(255)), InputChecks.recipient("a".repeat(243) + "@example.com"))
     }

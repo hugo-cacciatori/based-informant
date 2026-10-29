@@ -4,13 +4,12 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.LinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkResult
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkStatus
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
-import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptBuilder
 import io.github.hugo_cacciatori.basedinformant.core.rfab.Balance
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ModelCatalog
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
-import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
+import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
@@ -24,21 +23,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-/** Offline: a temporary repo root, synthetic inputs and fixtures, and a fake rfab client. */
+/** Offline: a temporary repo root, synthetic inputs, and a fake rfab client. */
 class LabTest {
     private val repo = File("").absoluteFile.parentFile
     private val root = Files.createTempDirectory("lab-test").toFile().apply {
-        repo.resolve(Lab.DEFAULT_INPUT).copyTo(resolve(Lab.DEFAULT_INPUT))
-        repo.resolve(Lab.FIXTURE_DIR).copyRecursively(resolve(Lab.FIXTURE_DIR))
-        resolve("search.txt").writeText("Result 1: a synthetic search result about chess.")
+        for (name in listOf(Lab.DEFAULT_INPUT, "lab/inputs/search-answer-synthetic.json", "lab/inputs/writer.json", "lab/inputs/search-call.json", "lab/inputs/repair-cut.txt")) {
+            repo.resolve(name).copyTo(resolve(name))
+        }
     }
     private val output = ByteArrayOutputStream()
-    private val testPrompt = PromptBuilder(
-        mapOf("template.txt" to "TEST TEMPLATE", "digest.schema.json" to "{}", "voices/neutral.txt" to "TEST VOICE"),
-    )
 
     @AfterTest
     fun cleanUp() {
@@ -59,15 +55,19 @@ class LabTest {
             RfabResult.Ok(Json.decodeFromString(ModelCatalog.serializer(), modelsJson), modelsJson)
     }
 
+    private val freeCatalog = """{"models":[{"model":"free:m","rateMultiplier":0},{"model":"openrouter:perplexity/sonar","rateMultiplier":0.36}]}"""
+
+    private val written = """{"template_version": 2, "opening": "Hi.", "closing": "Bye.", "subject": "Plasma and seabeds", "card_summary": "Two stories",
+        "topics": [{"story": 1, "topic_tag": "Stellarator research", "title": "Stellarator record", "summary": "A plasma lasted 40 minutes.",
+        "detail": null, "keywords": ["fusion energy"], "relevance": 50, "sources": [1, 2]}]}"""
+
     private fun lab(
         client: RfabClient? = null,
         key: String? = "rfab_placeholder_lab_test_00",
-        prompt: PromptBuilder = testPrompt,
         links: LinkChecker = LinkChecker { LinkResult(LinkStatus.ALIVE) },
     ) = Lab(
         root = root,
         out = PrintStream(output, true),
-        promptBuilder = prompt,
         loadKey = { key },
         clientFor = { client ?: error("no client expected") },
         linkChecker = { links },
@@ -84,15 +84,15 @@ class LabTest {
     @Test
     fun commandLineParsing() {
         assertEquals(LabCommand.Help, LabCommand.parse(emptyList()))
-        assertEquals(LabCommand.Fixture("good", null), LabCommand.parse(listOf("--fixture", "good")))
-        assertEquals(LabCommand.DryRun("x.json", "roach-king", null), LabCommand.parse(listOf("--live", "--dry-run", "--input", "x.json", "--persona", "roach-king")))
-        assertEquals(LabCommand.Free("free:m", "s.txt", null, null), LabCommand.parse(listOf("--free", "free:m", "--search", "s.txt")))
-        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--live")) }
-        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--live", "--dry-run", "--confirm-paid")) }
-        assertEquals(LabCommand.Live(null, null, null), LabCommand.parse(listOf("--live", "--confirm-paid")))
-        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--fixture", "a", "--models")) }
-        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--free", "m")) }
-        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--fixture")) }
+        assertEquals(LabCommand.SearchCall(null, null, null, false), LabCommand.parse(listOf("--search-call", "--dry-run")))
+        assertEquals(LabCommand.SearchCall("x.json", null, null, true, true), LabCommand.parse(listOf("--search-call", "--confirm-paid", "--input", "x.json", "--persona-research")))
+        assertEquals(LabCommand.Repair("free:m", "b.txt"), LabCommand.parse(listOf("--repair", "free:m", "--broken", "b.txt")))
+        assertEquals(LabCommand.FactCheck("free:m", "dir", null, null, "a.json"), LabCommand.parse(listOf("--fact-check", "free:m", "--run", "dir", "--answer", "a.json")))
+        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--search-call")) }
+        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--search-call", "--dry-run", "--confirm-paid")) }
+        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--write", "m")) }
+        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--repair", "m", "--models")) }
+        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--fixture", "good")) }
         assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--bogus")) }
     }
 
@@ -115,186 +115,75 @@ class LabTest {
     }
 
     @Test
-    fun fixtureWritesTheDigestFiles() {
-        assertEquals(0, run(lab(), "--fixture", "good"))
-        val dir = runDir()
-        assertEquals("20261018-120000-fixture", dir.name)
-        for (name in listOf("raw.json", "digest.json", "digest.html", "digest.txt", "digest.eml", "report.txt")) {
-            assertTrue(dir.resolve(name).isFile, "missing $name")
-        }
-        val digest = Json.parseToJsonElement(dir.resolve("digest.json").readText()).toString()
-        assertTrue("\"template_version\":1" in digest)
-        assertTrue("stellarator-record-run" in digest && "club-chess-open" !in digest)
-        assertTrue("multipart/alternative" in dir.resolve("digest.eml").readText())
-        assertTrue("valid topics: 3; selected: 2" in printed)
-    }
-
-    @Test
-    fun unreadableFixtureFailsAndKeepsTheRaw() {
-        assertEquals(1, run(lab(), "--fixture", "malformed"))
-        assertTrue(runDir().resolve("raw.json").isFile)
-        assertTrue("unreadable answer: NOT_JSON" in printed)
-    }
-
-    @Test
-    fun dryRunBuildsWithoutSending() {
-        assertEquals(0, run(lab(), "--live", "--dry-run"))
-        val request = runDir().resolve("request.json").readText()
-        assertTrue("TEST TEMPLATE" in request && "fusion energy" in request)
-        assertFalse("rfab_" in request)
-        assertTrue("payload:" in printed && "estimate:" in printed)
-    }
-
-    @Test
-    fun dryRunWaitsForMissingPromptFiles() {
-        assertEquals(1, run(lab(prompt = PromptBuilder(emptyMap())), "--live", "--dry-run"))
-        assertTrue("core/prompt/template.txt is not written yet" in printed)
-    }
-
-    @Test
-    fun freeRefusesAModelNotShownAtZero() {
-        for (models in listOf("""{"models":[{"model":"free:m","rateMultiplier":0.36}]}""", """{"models":[{"model":"other:m","rateMultiplier":0}]}""")) {
-            output.reset()
-            val client = FakeClient(models, content = "{}")
-            assertEquals(1, run(lab(client), "--free", "free:m", "--search", "search.txt"))
-            assertTrue(client.chats.isEmpty())
-            assertTrue("nothing sent" in printed)
-        }
-    }
-
-    @Test
-    fun freeSendsOnceToAZeroModelAndProcessesTheAnswer() {
-        val good = root.resolve(Lab.FIXTURE_DIR).resolve("good.json").readText()
-        val client = FakeClient("""{"models":[{"model":"free:m","rateMultiplier":0}]}""", content = good)
-        assertEquals(0, run(lab(client), "--free", "free:m", "--search", "search.txt"))
-        val sent = client.chats.single()
-        assertEquals("free:m", sent.model)
-        assertTrue(sent.messages.last().content.contains("<<<SEARCH_RESULTS\nResult 1"))
-        val dir = runDir()
-        assertEquals("{\"raw\":true}", dir.resolve("raw.json").readText())
-        assertTrue(dir.resolve("digest.html").isFile && dir.resolve("models.json").isFile)
-        assertTrue("tokensBilled: 0" in printed)
-        assertFalse("WARNING" in printed)
-    }
-
-    @Test
     fun writeSendsTheSearchReportToAFreeModelAndRendersTheDigest() {
-        for (name in listOf("lab/inputs/search-answer-synthetic.json", "lab/inputs/writer.json")) repo.resolve(name).copyTo(root.resolve(name))
-        val written = """{"template_version": 2, "opening": "Hi.", "closing": "Bye.", "subject": "Plasma and seabeds", "card_summary": "Two stories",
-            "topics": [{"story": 1, "topic_tag": "Stellarator research", "title": "Stellarator record", "summary": "A plasma lasted 40 minutes.",
-            "detail": null, "keywords": ["fusion energy"], "relevance": 50, "sources": [1, 2]}]}"""
-        val client = FakeClient("""{"models":[{"model":"free:m","rateMultiplier":0}]}""", content = written)
+        val client = FakeClient(freeCatalog, content = written)
         assertEquals(
             0,
             run(lab(client), "--write", "free:m", "--search-answer", "lab/inputs/search-answer-synthetic.json", "--input", "lab/inputs/writer.json", "--persona", "roach-king"),
         )
         val sent = client.chats.single()
         assertTrue("<<<SEARCH_REPORT" in sent.messages.single().content && "VOICE" in sent.systemPrompt)
-        assertTrue("copied quotes: none" in printed && "valid topics: 1; selected: 1" in printed)
-        assertTrue(runDir().resolve("digest.html").isFile)
+        assertTrue("copied quotes: none" in printed && "topics: 1 written; selected: 1" in printed, printed)
+        assertTrue(runDir().resolve("digest.html").isFile && runDir().resolve(Lab.WRITER_ANSWER).isFile)
     }
 
     @Test
-    fun freeWarnsWhenAFreeModelBills() {
-        val good = root.resolve(Lab.FIXTURE_DIR).resolve("good.json").readText()
-        val client = FakeClient("""{"models":[{"model":"free:m","rateMultiplier":0}]}""", content = good, billed = 12)
-        run(lab(client), "--free", "free:m", "--search", "search.txt")
-        assertTrue("WARNING: a free model billed 12 tokens" in printed)
-        assertTrue("| 2026-10-18 | free-model format test | free:m | 3 /" in printed)
-    }
-
-    private val sonarCatalog = """{"models":[{"model":"openrouter:perplexity/sonar","rateMultiplier":0.36}]}"""
-
-    @Test
-    fun livePaidCallSendsOnceChecksLinksAndPrintsTheLogLine() {
-        val good = root.resolve(Lab.FIXTURE_DIR).resolve("good.json").readText()
-        val client = FakeClient(sonarCatalog, content = good, billed = 6_000)
-        val links = LinkChecker { url -> if ("ocean.example.com" in url) LinkResult(LinkStatus.DEAD, "HTTP 404") else LinkResult(LinkStatus.ALIVE) }
-        assertEquals(0, run(lab(client, links = links), "--live", "--confirm-paid"))
-        val sent = client.chats.single()
-        assertEquals("openrouter:perplexity/sonar", sent.model)
-        assertEquals(1, sent.messages.size)
-        assertTrue("rate: 0.36x" in printed)
-        assertTrue("links: 4 alive, 0 unknown (kept), 1 dead; 80% kept (bar: 80%) PASS" in printed)
-        assertTrue("| 2026-10-18 | paid template test | openrouter:perplexity/sonar | 3 /" in printed)
-        assertTrue("dead link: https://ocean.example.com/seabed-vote (HTTP 404)" in printed)
-        assertFalse("STOP RULE" in printed)
-        assertTrue(runDir().resolve("raw.json").isFile && runDir().resolve("digest.html").isFile)
-    }
-
-    @Test
-    fun liveWarnsWhenOverTheStopRule() {
-        val good = root.resolve(Lab.FIXTURE_DIR).resolve("good.json").readText()
-        run(lab(FakeClient(sonarCatalog, content = good, billed = 15_001)), "--live", "--confirm-paid")
-        assertTrue("STOP RULE: this call billed 15001 tokens" in printed)
-    }
-
-    @Test
-    fun liveRefusesAModelMissingFromTheCatalog() {
-        val client = FakeClient("""{"models":[]}""", content = "{}")
-        assertEquals(1, run(lab(client), "--live", "--confirm-paid"))
+    fun writeRefusesAModelNotShownAtZero() {
+        val client = FakeClient("""{"models":[{"model":"free:m","rateMultiplier":0.5}]}""", content = written)
+        assertEquals(1, run(lab(client), "--write", "free:m", "--search-answer", "lab/inputs/search-answer-synthetic.json"))
         assertTrue(client.chats.isEmpty())
-        assertTrue("not in rfab's models list; nothing sent" in printed)
     }
 
     @Test
-    fun groupSizeParsing() {
-        assertEquals(LabCommand.DryRun(null, null, null, 5), LabCommand.parse(listOf("--live", "--dry-run", "--group-size", "5")))
-        assertEquals(LabCommand.Live(null, null, null, 2), LabCommand.parse(listOf("--live", "--confirm-paid", "--group-size", "2")))
-        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--live", "--dry-run", "--group-size", "0")) }
-        assertFailsWith<LabUsageError> { LabCommand.parse(listOf("--live", "--dry-run", "--group-size", "five")) }
-    }
-
-    @Test
-    fun splitDryRunBuildsOneRequestPerGroup() {
-        assertEquals(0, run(lab(), "--live", "--dry-run", "--group-size", "2"))
-        val dir = runDir()
-        val first = Json.decodeFromString(ChatRequest.serializer(), dir.resolve("request-1.json").readText()).messages.single().content
-        val second = Json.decodeFromString(ChatRequest.serializer(), dir.resolve("request-2.json").readText()).messages.single().content
-        assertTrue("\"fusion energy\"" in first && "\"chess\"" !in first)
-        assertTrue("\"chess\"" in second && "\"fusion energy\"" !in second)
-        assertTrue("calls: 2 (groups of 2)" in printed)
-        assertTrue("call 2: chess" in printed)
-    }
-
-    @Test
-    fun splitPaidRunSendsEachGroupOnceAndMergesTheAnswers() {
-        val good = root.resolve(Lab.FIXTURE_DIR).resolve("good.json").readText()
-        val client = FakeClient(sonarCatalog, content = good, billed = 1_440)
-        assertEquals(0, run(lab(client), "--live", "--confirm-paid", "--group-size", "2"))
-        assertEquals(2, client.chats.size)
-        val dir = runDir()
-        assertTrue(dir.resolve("raw-1.json").isFile && dir.resolve("raw-2.json").isFile)
-        assertTrue("total billed: 2880 tokens over 2 calls" in printed)
-        assertTrue("| 2026-10-18 | paid template test | openrouter:perplexity/sonar | 2 /" in printed)
-        assertTrue("| 2026-10-18 | paid template test | openrouter:perplexity/sonar | 1 /" in printed)
-        // The second answer repeats the first one's stories: they are dropped, not shown twice.
-        assertTrue("TOPIC_DUPLICATE_STORY call=2" in printed)
-        assertTrue("valid topics: 3; selected: 2" in printed)
-    }
-
-    @Test
-    fun splitPaidRunStopsAtTheFirstFailedCall() {
-        val good = root.resolve(Lab.FIXTURE_DIR).resolve("good.json").readText()
-        val client = object : RfabClient {
-            var chats = 0
-            override suspend fun chat(request: ChatRequest): RfabResult<ChatResponse> =
-                if (++chats == 1) RfabResult.Ok(ChatResponse(success = true, content = good, tokensBilled = 1_440), "{}")
-                else RfabResult.Error(RfabError.KEY_REFUSED, 401)
-            override suspend fun balance(): RfabResult<Balance> = RfabResult.Ok(Balance(tokenBalance = 1000), "{}")
-            override suspend fun models(): RfabResult<ModelCatalog> =
-                RfabResult.Ok(Json.decodeFromString(ModelCatalog.serializer(), sonarCatalog), sonarCatalog)
+    fun aSavedFactCheckIsReadAgainWithoutACall() {
+        val folder = root.resolve("lab-out/old-write").apply { mkdirs() }
+        repo.resolve("lab/inputs/search-answer-synthetic.json").copyTo(folder.resolve("search-answer.json"))
+        folder.resolve(Lab.WRITER_ANSWER).writeText(written.replace("A plasma lasted 40 minutes.", "A plasma lasted 40 minutes. It cost 2 billion."))
+        val saved = root.resolve("check-raw.json").apply {
+            writeText("""{"success": true, "content": "{\"cards\": [{\"card\": 1, \"unsupported\": [2]}]}"}""")
         }
-        val input = root.resolve("five.json")
-        input.writeText(root.resolve(Lab.DEFAULT_INPUT).readText().replace(
-            "\"keywords\": [\"fusion energy\", \"deep-sea mining\", \"chess\"]",
-            "\"keywords\": [\"fusion energy\", \"deep-sea mining\", \"chess\", \"volcanoes\", \"coral reefs\"]",
+        assertEquals(0, run(lab(key = null), "--fact-check", "free:m", "--run", folder.path, "--input", "lab/inputs/writer.json", "--answer", saved.path))
+        // No page text in the synthetic answer: the check cannot delete, as in the app.
+        assertTrue("finding: FACT_UNCHECKED_NO_PAGE" in printed, printed)
+    }
+
+    @Test
+    fun searchCallDryRunSendsNothingAndLeavesThePersonaResearchOff() {
+        assertEquals(0, run(lab(key = null), "--search-call", "--input", "lab/inputs/search-call.json", "--dry-run"))
+        val request = Json.decodeFromString(ChatRequest.serializer(), runDir().resolve("request.json").readText())
+        assertTrue("\nPERSONA RESEARCH\n" !in request.systemPrompt)
+        assertTrue("\"max_stories\":8" in request.messages.single().content)
+        assertTrue("research off" in printed)
+    }
+
+    @Test
+    fun aPaidSearchIsSentOnceThenCheckedForFree() {
+        val answer = repo.resolve("lab/inputs/search-answer-synthetic.json").readText()
+        val client = FakeClient(freeCatalog, content = answer, billed = 1_440)
+        val links = LinkChecker { LinkResult(LinkStatus.ALIVE, pageDate = LocalDate(2026, 10, 16), pageText = "Page text.") }
+        assertEquals(0, run(lab(client, links = links), "--search-call", "--input", "lab/inputs/writer.json", "--confirm-paid"))
+        assertEquals(1, client.chats.size)
+        assertTrue("| 2026-10-18 | paid search | openrouter:perplexity/sonar |" in printed, printed)
+        val checked = SearchAnswer.decode(runDir().resolve("search-checked.json").readText())
+        assertTrue(checked.stories.isNotEmpty() && checked.stories.all { s -> s.sources.all { it.pageText == "Page text." } })
+        assertTrue("after the checks:" in printed)
+    }
+
+    @Test
+    fun aRepairIsAcceptedOnlyWithTheOriginalsUrls() {
+        val good = FakeClient(freeCatalog, content = repo.resolve("lab/inputs/search-answer-synthetic.json").readText())
+        assertEquals(0, run(lab(good), "--repair", "free:m", "--broken", "lab/inputs/repair-cut.txt"))
+        assertTrue("REJECTED: URLs not in the original answer: https://chess.example.com/open-record" in printed, printed)
+        output.reset()
+        root.resolve("lab-out").deleteRecursively()
+        val cut = repo.resolve("lab/inputs/repair-cut.txt").readText()
+        val onlyKnown = SearchAnswer(searchedAt = "2026-10-18", stories = listOf(
+            SearchAnswer.Story(keywords = listOf("fusion energy"), sources = listOf(SearchAnswer.SearchSource(title = "t", publisher = "p", url = "https://science.example.com/2026/10/stellarator-record"))),
         ))
-        assertEquals(0, run(lab(client), "--live", "--confirm-paid", "--group-size", "2", "--input", "five.json"))
-        assertEquals(2, client.chats)
-        assertTrue("call 2/3: call failed: KEY_REFUSED" in printed)
-        assertTrue("stopped: the remaining 1 calls were not sent" in printed)
-        assertTrue("CALL_UNREADABLE call=2" in printed)
+        assertTrue("https://science.example.com/2026/10/stellarator-record" in cut)
+        assertEquals(0, run(lab(FakeClient(freeCatalog, content = onlyKnown.encode())), "--repair", "free:m", "--broken", "lab/inputs/repair-cut.txt"))
+        assertTrue("ACCEPTED: 1 stories" in printed, printed)
+        assertNotNull(runDir().resolve("search-answer.json").takeIf { it.isFile })
     }
 
     private val grokCatalog = """{"models":[{"model":"openrouter:x-ai/grok-4.20","rateMultiplier":0.172}]}"""
@@ -361,7 +250,7 @@ class LabTest {
 
     @Test
     fun noKeyMeansNoCall() {
-        assertEquals(1, run(lab(key = null), "--free", "free:m", "--search", "search.txt"))
+        assertEquals(1, run(lab(key = null), "--search-call", "--confirm-paid"))
         assertTrue("sh scripts/set-rfab-key" in printed)
         assertFalse("rfab_placeholder" in printed)
     }
@@ -386,17 +275,20 @@ class LabTest {
 
     @Test
     fun outputFoldersNeverCollide() {
-        run(lab(), "--fixture", "good")
-        run(lab(), "--fixture", "good")
+        run(lab(key = null), "--search-call", "--dry-run")
+        run(lab(key = null), "--search-call", "--dry-run")
         assertEquals(
-            listOf("20261018-120000-fixture", "20261018-120000-fixture-2"),
+            listOf("20261018-120000-search-dry-run", "20261018-120000-search-dry-run-2"),
             root.resolve("lab-out").listFiles()!!.map { it.name }.sorted(),
         )
     }
 
     @Test
-    fun syntheticInputIsValid() {
-        val input = LabInput.read(repo.resolve(Lab.DEFAULT_INPUT))
-        assertIs<PromptBuilder.Result.Built>(testPrompt.build(input.toPromptInput("m")))
+    fun theCommittedInputsAreValid() {
+        for (name in listOf(Lab.DEFAULT_INPUT, "lab/inputs/synthetic-15.json", "lab/inputs/synthetic-merge.json", "lab/inputs/writer.json", "lab/inputs/search-call.json", "lab/inputs/search-call-games.json")) {
+            LabInput.read(repo.resolve(name)).toPromptInput("m")
+        }
+        assertNotNull(LegacyAnswer.read(repo.resolve("lab/inputs/search-answer-synthetic.json").readText()))
+        assertNotNull(LegacyAnswer.read(repo.resolve("core/src/jvmTest/resources/fixtures/good.json").readText()), "a template-v1 answer turns into a search answer")
     }
 }

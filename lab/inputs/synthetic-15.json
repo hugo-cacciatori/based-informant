@@ -16,9 +16,13 @@
     "video game preservation",
     "wine harvest"
   ],
-  "interest_tags": ["science", "engineering", "policy", "sport"],
+  "interest_tags": [
+    "science",
+    "engineering",
+    "policy",
+    "sport"
+  ],
   "attention_mode": "balanced",
   "persona": "off",
-  "last_digest": null,
-  "memory": []
+  "last_digest": null
 }

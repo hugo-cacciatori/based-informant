@@ -1,0 +1,70 @@
+package io.github.hugo_cacciatori.basedinformant.core.digest
+
+/** What the run knows that the answers are checked against. */
+data class ValidationContext(
+    /** The owner's keywords from the run's snapshot. */
+    val keywords: List<String>,
+    val window: RecencyWindow,
+)
+
+/**
+ * Something a free check dropped or noticed, for the call history. Kinds and positions only, never model text.
+ * [story] is the story's number in the search answer, [source] the source's number, [topic] the written topic's index,
+ * [sentence] the fact check's sentence number.
+ */
+data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null, val topic: Int? = null, val sentence: Int? = null) {
+    enum class Kind {
+        /** The search answer was unreadable and a free model rebuilt it (02-ai-call.md section 12, item 10). */
+        ANSWER_REPAIRED,
+        STORY_NO_SOURCE,
+        STORY_NOT_LINKED_TO_KEYWORDS,
+        STORY_NO_LIVE_SOURCE,
+        SOURCE_MISSING_FIELD,
+        SOURCE_NOT_HTTPS,
+
+        /** The URL looks like a homepage, index, archive, event or calendar page (source-type filter). */
+        SOURCE_NOT_AN_ARTICLE,
+        SOURCE_BAD_DATE,
+        SOURCE_OUTSIDE_WINDOW,
+        SOURCE_DUPLICATE_URL,
+        SOURCE_DEAD_LINK,
+        SOURCE_PAGE_DATE_OUTSIDE_WINDOW,
+        SOURCE_DATE_CORRECTED,
+
+        /** The writer named a story or source the search answer does not have, or another story's source. */
+        TOPIC_UNKNOWN_STORY,
+        TOPIC_FOREIGN_SOURCE,
+        TOPIC_TAG_CUT,
+
+        /** A written sentence shared five words in a row with a persona note and was deleted. */
+        QUOTE_DELETED,
+        FACT_UNSUPPORTED,
+        FACT_SECOND_STORY,
+
+        /** The fact check marked a whole card as another story: ignored (owner, 2026-10-29). */
+        FACT_SECOND_STORY_IGNORED,
+        FACT_UNCHECKED_NO_PAGE,
+        FACT_BAD_SENTENCE_NUMBER,
+        FACT_NOT_CHECKED,
+        TOPIC_DROPPED_TWO_STORIES,
+        TOPIC_DROPPED_EMPTY,
+    }
+}
+
+/** Only `https` links with a host and no whitespace are ever shown (03-rendering.md section 1). */
+internal fun isHttpsUrl(url: String): Boolean {
+    if (!url.startsWith("https://", ignoreCase = true)) return false
+    if (url.any { it.isWhitespace() || it.isISOControl() }) return false
+    val host = url.substring("https://".length).takeWhile { it != '/' && it != '?' && it != '#' }
+    return host.isNotEmpty() && !host.startsWith('.') && !host.contains('@')
+}
+
+/** Lower-cased scheme and host, no fragment, no trailing slash: two spellings of one page compare equal. */
+internal fun normalizeUrl(url: String): String {
+    val noFragment = url.substringBefore('#')
+    val schemeEnd = noFragment.indexOf("://")
+    val hostEnd = noFragment.indexOfAny(charArrayOf('/', '?'), startIndex = schemeEnd + 3).let { if (it < 0) noFragment.length else it }
+    val head = noFragment.substring(0, hostEnd).lowercase()
+    val rest = noFragment.substring(hostEnd).trimEnd('/')
+    return head + rest
+}

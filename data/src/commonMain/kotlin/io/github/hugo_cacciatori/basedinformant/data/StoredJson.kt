@@ -4,7 +4,6 @@ import io.github.hugo_cacciatori.basedinformant.core.check.CheckAttempt
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckEntry
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
 import io.github.hugo_cacciatori.basedinformant.core.check.Refusal
-import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedTopic
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
@@ -25,7 +24,7 @@ internal object StoredJson {
     data class Snapshot(
         val keywords: List<String>,
         val tags: List<String>,
-        val memory: List<Memory>,
+        val knownTopicTags: List<String> = emptyList(),
         val attentionMode: String,
         val persona: String,
         val today: LocalDate,
@@ -38,17 +37,6 @@ internal object StoredJson {
     )
 
     @Serializable
-    data class Memory(
-        val id: String,
-        val title: String,
-        val gist: String,
-        val firstFeatured: LocalDate,
-        val lastFeatured: LocalDate,
-        val timesFeatured: Int,
-        val lastScore: Int,
-    )
-
-    @Serializable
     data class Attempt(val model: String, val result: String, val error: String? = null, val tokensBilled: Long? = null)
 
     @Serializable
@@ -58,7 +46,7 @@ internal object StoredJson {
         json.encodeToString(
             Snapshot.serializer(),
             Snapshot(
-                keywords, interestTags, memory.map(::memory), attentionMode.name, persona.name, today, lastDigestDate,
+                keywords, interestTags, knownTopicTags, attentionMode.name, persona.name, today, lastDigestDate,
                 wideWindow, model, snapshot.personaDisplayName, snapshot.emailOn, snapshot.recipient,
             ),
         )
@@ -70,23 +58,19 @@ internal object StoredJson {
             PromptInput(
                 keywords = s.keywords,
                 interestTags = s.tags,
-                memory = s.memory.map(::topic),
                 attentionMode = AttentionMode.valueOf(s.attentionMode),
                 persona = Persona.valueOf(s.persona),
                 today = s.today,
                 lastDigestDate = s.lastDigestDate,
                 wideWindow = s.wideWindow,
                 model = s.model,
+                knownTopicTags = s.knownTopicTags,
             ),
             s.personaDisplayName,
             s.emailOn,
             s.recipient,
         )
     }
-
-    fun memory(t: CuratedTopic) = Memory(t.id, t.title, t.gist, t.firstFeatured, t.lastFeatured, t.timesFeatured, t.lastScore)
-
-    fun topic(m: Memory) = CuratedTopic(m.id, m.title, m.gist, m.firstFeatured, m.lastFeatured, m.timesFeatured, m.lastScore)
 
     fun strings(list: List<String>): String = json.encodeToString(list)
 

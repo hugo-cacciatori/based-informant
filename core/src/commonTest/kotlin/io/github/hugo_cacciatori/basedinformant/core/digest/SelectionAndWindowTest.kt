@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 class SelectionTest {
     private fun topic(id: String, score: Int) = Topic(
-        id = id, continues = null, newDevelopment = null, title = id, summary = id, detail = null,
+        id = id, title = id, summary = id, detail = null,
         keywords = listOf("k"), score = score, scoreParts = null,
         sources = listOf(Source("t", "p", "https://example.com/$id", "en", LocalDate(2026, 10, 18))),
     )

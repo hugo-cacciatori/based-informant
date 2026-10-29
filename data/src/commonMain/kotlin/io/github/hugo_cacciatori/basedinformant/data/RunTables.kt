@@ -61,6 +61,7 @@ data class CallEntity(
     val error: String?,
     @ColumnInfo(name = "valid_topics") val validTopics: Int,
     @ColumnInfo(name = "selected_topics") val selectedTopics: Int,
+    /** Unused since template v2 (no repeat avoidance, owner 2026-10-23): always 0, dropped with schema v3 (redesign step 6). */
     val repeats: Int,
     val issues: String,
 )
@@ -122,6 +123,7 @@ interface DigestDao {
     suspend fun get(id: Long): DigestEntity?
 }
 
+/** Unused since template v2 (the curated memory is gone, owner 2026-10-23): dropped with schema v3 (redesign step 6). */
 @Entity(tableName = "curated_topics")
 data class CuratedTopicEntity(
     @PrimaryKey val id: String,

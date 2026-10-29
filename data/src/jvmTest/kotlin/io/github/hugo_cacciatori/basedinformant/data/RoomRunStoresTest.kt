@@ -8,8 +8,8 @@ import io.github.hugo_cacciatori.basedinformant.core.check.Refusal
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 import io.github.hugo_cacciatori.basedinformant.core.digest.Source
+import io.github.hugo_cacciatori.basedinformant.core.digest.ScoreParts
 import io.github.hugo_cacciatori.basedinformant.core.digest.Topic
-import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedTopic
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
@@ -43,19 +43,17 @@ class RoomRunStoresTest {
         folder.deleteRecursively()
     }
 
-    private val memory = CuratedTopic("club-chess-open", "Club chess open", "A synthetic open.", LocalDate(2026, 10, 1), LocalDate(2026, 10, 18), 2, 71)
-
     private fun snapshot(model: String = "openrouter:perplexity/sonar") = RunSnapshot(
         PromptInput(
             keywords = listOf("fusion energy", "chess"),
             interestTags = listOf("science"),
-            memory = listOf(memory),
             attentionMode = AttentionMode.NICHE,
             persona = Persona.ROACH_KING,
             today = LocalDate(2026, 10, 20),
             lastDigestDate = LocalDate(2026, 10, 18),
             wideWindow = true,
             model = model,
+            knownTopicTags = listOf("Club chess"),
         ),
         personaDisplayName = "The Roach King",
         emailOn = true,
@@ -107,18 +105,24 @@ class RoomRunStoresTest {
         assertEquals("{\"content\": \"second\"}", RoomRunStore(db, rawFiles(folder)).raw(7))
         assertTrue(folder.resolve("raw/7.json").isFile)
         assertFalse(folder.resolve("raw/7.json.tmp").exists())
+        assertNull(runs.search(7))
+        runs.saveSearch(7, "{\"stories\": []}")
+        assertEquals("{\"stories\": []}", RoomRunStore(db, rawFiles(folder)).search(7))
+        assertTrue(folder.resolve("raw/7-search.json").isFile)
     }
 
     @Test
     fun aDigestComesBackWhole() = runBlocking {
         val digest = Digest(
-            templateVersion = 1,
+            templateVersion = 2,
             generatedAt = LocalDate(2026, 10, 20),
             opening = "Hello.",
             closing = null,
+            subject = "Chess news",
+            cardSummary = "A chess title.",
             topics = listOf(
                 Topic(
-                    "t1", null, null, "A title", "A summary.", null, listOf("chess"), 80, null,
+                    "t1", "Club chess", "A title", "A summary.", null, listOf("chess"), 80, ScoreParts(50, 30),
                     listOf(Source("A source", "Example News", "https://example.com/a", "en", LocalDate(2026, 10, 19))),
                 ),
             ),
@@ -134,29 +138,19 @@ class RoomRunStoresTest {
     }
 
     @Test
-    fun memoryIsReplacedWhole() = runBlocking {
-        val store = RoomMemoryStore(db)
-        val other = memory.copy(id = "other", lastFeatured = LocalDate(2026, 10, 19))
-        store.save(listOf(memory, other))
-        assertEquals(listOf(other, memory), store.load())
-        store.save(listOf(memory))
-        assertEquals(listOf(memory), store.load())
-    }
-
-    @Test
     fun callsAndChecksAreLogged() = runBlocking {
         val log = RoomCallLog(db)
         log.record(
             CallRecord(
-                runId = 1, at = 2, model = "m", templateVersion = 1, keywords = listOf("chess"), tags = listOf("science"),
+                runId = 1, at = 2, model = "m", templateVersion = 2, keywords = listOf("chess"), tags = listOf("science"),
                 attentionMode = "BALANCED", persona = "OFF", wideWindow = false, promptChars = 900, latencyMillis = 7_000,
-                tokensBilled = 1_440, error = null, validTopics = 3, selectedTopics = 2, repeats = 1,
-                issues = mapOf(Issue.Kind.TOPIC_MIXED_STORIES to 1),
+                tokensBilled = 1_440, error = null, validTopics = 3, selectedTopics = 2,
+                issues = mapOf(Issue.Kind.FACT_SECOND_STORY to 1),
             ),
         )
         val call = db.calls().all().single()
         assertEquals("[\"chess\"]", call.keywords)
-        assertEquals("{\"TOPIC_MIXED_STORIES\":1}", call.issues)
+        assertEquals("{\"FACT_SECOND_STORY\":1}", call.issues)
 
         val refusal = Refusal(CheckEntry(CheckEntry.Kind.TAG, 0, "xqzvbt"), "random letters")
         val attempts = listOf(

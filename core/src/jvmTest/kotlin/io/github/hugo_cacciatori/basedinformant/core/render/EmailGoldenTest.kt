@@ -26,7 +26,7 @@ class EmailGoldenTest {
             topics = listOf(
                 first.copy(
                     title = "<script>alert('x')</script> & co",
-                    newDevelopment = "<img src=x onerror=alert(1)>",
+                    summary = "<img src=x onerror=alert(1)>",
                     detail = "</details><a href=\"javascript:alert(1)\">click</a>",
                     sources = listOf(first.sources.first().copy(url = "javascript:alert(1)", publisher = "<i>Wire</i>")),
                 ),

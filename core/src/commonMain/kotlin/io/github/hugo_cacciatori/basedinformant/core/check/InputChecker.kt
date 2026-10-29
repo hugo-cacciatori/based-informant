@@ -34,30 +34,9 @@ class InputChecker(private val client: RfabClient, private val models: List<Stri
         val entries = InputCheck.entries(keywords, tags)
         if (entries.isEmpty()) return CheckOutcome.Passed(emptyList())
         val catalog = (client.models() as? RfabResult.Ok)?.value ?: return CheckOutcome.NoAnswer(emptyList(), modelsListRead = false)
-        val attempts = mutableListOf<CheckAttempt>()
-        for (model in models) {
-            if (catalog.multiplierOf(model) != 0.0) {
-                attempts += CheckAttempt(model, CheckAttempt.Result.NOT_FREE)
-                continue
-            }
-            when (val response = client.chat(InputCheck.request(model, entries))) {
-                is RfabResult.Error -> {
-                    attempts += CheckAttempt(model, CheckAttempt.Result.FAILED, response.kind, response.tokensBilled)
-                    if (response.kind == RfabError.KEY_REFUSED) break
-                }
-                is RfabResult.Ok -> {
-                    val billed = response.value.tokensBilled
-                    val refusals = response.value.content?.let { InputCheck.parse(it, entries) }
-                    if (refusals == null) {
-                        attempts += CheckAttempt(model, CheckAttempt.Result.UNREADABLE, tokensBilled = billed)
-                        continue
-                    }
-                    attempts += CheckAttempt(model, CheckAttempt.Result.ANSWERED, tokensBilled = billed)
-                    return if (refusals.isEmpty()) CheckOutcome.Passed(attempts) else CheckOutcome.Refused(refusals, attempts)
-                }
-            }
-        }
-        return CheckOutcome.NoAnswer(attempts)
+        val result = FreeModels.first(client, catalog, models, { InputCheck.request(it, entries) }, { InputCheck.parse(it, entries) })
+        val refusals = result.value ?: return CheckOutcome.NoAnswer(result.attempts)
+        return if (refusals.isEmpty()) CheckOutcome.Passed(result.attempts) else CheckOutcome.Refused(refusals, result.attempts)
     }
 
     companion object {

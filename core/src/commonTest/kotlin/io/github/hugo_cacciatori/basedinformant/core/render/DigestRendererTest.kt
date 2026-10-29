@@ -14,7 +14,7 @@ class DigestRendererTest {
     private val meta = RenderMeta(personaDisplayName = null, model = "test:model")
 
     private fun topic(title: String = "A title", url: String = "https://example.com/a", score: Int = 77) = Topic(
-        id = "a", continues = null, newDevelopment = null, title = title, summary = "A summary.",
+        id = "a", title = title, summary = "A summary.",
         detail = "More text.", keywords = listOf("chess", "fusion energy"), score = score, scoreParts = null,
         sources = listOf(Source("S", "Example Wire", url, "en", LocalDate(2026, 10, 17))),
     )

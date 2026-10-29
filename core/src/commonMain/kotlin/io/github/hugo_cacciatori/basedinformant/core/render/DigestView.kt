@@ -1,7 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.render
 
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
-import io.github.hugo_cacciatori.basedinformant.core.digest.DigestValidator
+import io.github.hugo_cacciatori.basedinformant.core.digest.isHttpsUrl
 import io.github.hugo_cacciatori.basedinformant.core.digest.Source
 import io.github.hugo_cacciatori.basedinformant.core.digest.Topic
 import kotlinx.datetime.LocalDate
@@ -35,8 +35,6 @@ data class DigestView(
 
 data class CardView(
     val title: String,
-    /** "New: ...", for a topic that continues an earlier one. */
-    val newDevelopment: String?,
     val summary: String,
     /** "Matched: x, y"; the score is never shown. */
     val matched: String,
@@ -68,7 +66,8 @@ object DigestViews {
         val date = formatDate(digest.generatedAt)
         val count = topicCount(digest.topics.size)
         return DigestView(
-            subject = "$TITLE · $date · $count",
+            // The writer's subject in the voice (02-ai-call.md section 12, item 14), else the plain one.
+            subject = digest.subject ?: "$TITLE · $date · $count",
             headerLine = listOfNotNull(date, count, meta.personaDisplayName).joinToString(" · "),
             title = TITLE,
             opening = digest.opening,
@@ -98,7 +97,6 @@ object DigestViews {
 
     private fun card(topic: Topic) = CardView(
         title = topic.title,
-        newDevelopment = topic.newDevelopment?.let { "New: $it" },
         summary = topic.summary,
         matched = "Matched: ${topic.keywords.joinToString(", ")}",
         detail = topic.detail,
@@ -106,9 +104,9 @@ object DigestViews {
         sources = topic.sources.map(::source),
     )
 
-    // The validator already allows only https; checked again here because the views are the last line.
+    // The search check already allows only https; checked again here because the views are the last line.
     private fun source(s: Source) = SourceView(
-        label = "${s.publisher}, ${formatDate(s.published)}, ${s.language}",
-        url = s.url.takeIf(DigestValidator::isHttpsUrl),
+        label = listOf(s.publisher, formatDate(s.published), s.language).filter { it.isNotBlank() }.joinToString(", "),
+        url = s.url.takeIf(::isHttpsUrl),
     )
 }

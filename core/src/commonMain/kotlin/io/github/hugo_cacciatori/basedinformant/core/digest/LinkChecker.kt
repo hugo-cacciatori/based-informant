@@ -13,16 +13,9 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.takeFrom
 import io.ktor.utils.io.readRemaining
-import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.plus
 import kotlinx.io.readByteArray
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlin.coroutines.cancellation.CancellationException
 
 /** What a source URL turned out to be (02-ai-call.md section 8). */
@@ -200,59 +193,4 @@ data class LinkReport(
 
     /** Share of sources kept (alive or unknown), 0.0-1.0; 1.0 when there were none. */
     val keptShare get() = if (total == 0) 1.0 else (alive + unknown).toDouble() / total
-}
-
-/**
- * Drops dead sources and sources whose page date is outside [window], corrects dates that differ from the page, then
- * drops topics left with no source (02-ai-call.md section 8). Checks run in parallel.
- */
-object LinkStage {
-    const val PARALLEL_CHECKS = 8
-
-    /** Same tolerance as the validator: a page dated one day after the window may be in a later time zone. */
-    private val FUTURE_TOLERANCE = DatePeriod(days = 1)
-
-    suspend fun apply(digest: Digest, checker: LinkChecker, window: RecencyWindow? = null): Triple<Digest, List<Issue>, LinkReport> {
-        val urls = digest.topics.flatMap { t -> t.sources.map { it.url } }.distinct()
-        val semaphore = Semaphore(PARALLEL_CHECKS)
-        val statuses = coroutineScope {
-            urls.map { url -> async { url to semaphore.withPermit { checker.check(url) } } }.awaitAll()
-        }.toMap()
-        val issues = mutableListOf<Issue>()
-        var corrected = 0
-        var outside = 0
-        val topics = digest.topics.mapIndexedNotNull { topicIndex, topic ->
-            val live = topic.sources.mapIndexedNotNull { sourceIndex, s ->
-                val result = statuses.getValue(s.url)
-                val pageDate = result.pageDate
-                when {
-                    result.status == LinkStatus.DEAD -> null.also { issues += Issue(Issue.Kind.SOURCE_DEAD_LINK, topicIndex, sourceIndex) }
-                    pageDate == null -> s
-                    window != null && (pageDate < window.start || pageDate > window.end.plus(FUTURE_TOLERANCE)) ->
-                        null.also {
-                            outside++
-                            issues += Issue(Issue.Kind.SOURCE_PAGE_DATE_OUTSIDE_WINDOW, topicIndex, sourceIndex)
-                        }
-                    pageDate != s.published -> s.copy(published = pageDate).also {
-                        corrected++
-                        issues += Issue(Issue.Kind.SOURCE_DATE_CORRECTED, topicIndex, sourceIndex)
-                    }
-                    else -> s
-                }
-            }
-            if (live.isEmpty()) null.also { issues += Issue(Issue.Kind.TOPIC_NO_LIVE_SOURCE, topicIndex) }
-            else topic.copy(sources = live)
-        }
-        val all = digest.topics.flatMap { t -> t.sources.map { statuses.getValue(it.url).status } }
-        val report = LinkReport(
-            alive = all.count { it == LinkStatus.ALIVE },
-            unknown = all.count { it == LinkStatus.UNKNOWN },
-            dead = all.count { it == LinkStatus.DEAD },
-            deadLinks = statuses.filterValues { it.status == LinkStatus.DEAD }.map { (url, r) -> "$url (${r.reason})" },
-            datesFound = statuses.values.count { it.pageDate != null },
-            datesCorrected = corrected,
-            datesOutsideWindow = outside,
-        )
-        return Triple(digest.copy(topics = topics), issues, report)
-    }
 }

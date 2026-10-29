@@ -1,6 +1,5 @@
 package io.github.hugo_cacciatori.basedinformant.lab
 
-import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedTopic
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
@@ -23,37 +22,20 @@ data class LabInput(
     /** Defaults to the computer's date. */
     val today: String? = null,
     @SerialName("last_digest") val lastDigest: String? = null,
-    val memory: List<MemoryEntry> = emptyList(),
-    /** Topic tags of earlier digests, for the redesign's writer (02-ai-call.md section 9). */
+    /** Topic tags of earlier digests, for the writer (02-ai-call.md section 9). */
     @SerialName("known_topic_tags") val knownTopicTags: List<String> = emptyList(),
 ) {
-    @Serializable
-    data class MemoryEntry(
-        val id: String,
-        val title: String,
-        val gist: String,
-        @SerialName("first_featured") val firstFeatured: String,
-        @SerialName("last_featured") val lastFeatured: String,
-        @SerialName("times_featured") val timesFeatured: Int,
-        @SerialName("last_score") val lastScore: Int,
-    )
-
     fun todayDate(): LocalDate = today?.let(LocalDate::parse) ?: LocalDate.parse(java.time.LocalDate.now().toString())
 
     fun toPromptInput(model: String, personaOverride: Persona? = null): PromptInput = PromptInput(
         keywords = keywords,
         interestTags = interestTags,
-        memory = memory.map {
-            CuratedTopic(
-                it.id, it.title, it.gist, LocalDate.parse(it.firstFeatured), LocalDate.parse(it.lastFeatured),
-                it.timesFeatured, it.lastScore,
-            )
-        },
         attentionMode = parseAttention(attentionMode),
         persona = personaOverride ?: parsePersona(persona),
         today = todayDate(),
         lastDigestDate = lastDigest?.let(LocalDate::parse),
         model = model,
+        knownTopicTags = knownTopicTags,
     )
 
     companion object {

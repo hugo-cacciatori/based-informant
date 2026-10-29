@@ -1,134 +1,219 @@
 package io.github.hugo_cacciatori.basedinformant.core.run
 
+import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
+import io.github.hugo_cacciatori.basedinformant.core.digest.LinkChecker
+import io.github.hugo_cacciatori.basedinformant.core.digest.LinkResult
+import io.github.hugo_cacciatori.basedinformant.core.digest.LinkStatus
 import io.github.hugo_cacciatori.basedinformant.core.fakes.FakeCallLog
 import io.github.hugo_cacciatori.basedinformant.core.fakes.FakeDigestStore
-import io.github.hugo_cacciatori.basedinformant.core.fakes.FakeMemoryStore
 import io.github.hugo_cacciatori.basedinformant.core.fakes.FakeRunStore
-import io.github.hugo_cacciatori.basedinformant.core.fakes.OneAnswerRfab
+import io.github.hugo_cacciatori.basedinformant.core.fakes.ScriptedRfab
 import io.github.hugo_cacciatori.basedinformant.core.fakes.allAlive
-import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedTopic
+import io.github.hugo_cacciatori.basedinformant.core.fakes.okResponse
+import io.github.hugo_cacciatori.basedinformant.core.fakes.responseBody
+import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
+import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/** Offline: the run of template v2 (02-ai-call.md section 12) on a synthetic search answer and scripted free models. */
 class DigestRunTest {
     private val runs = FakeRunStore()
     private val digests = FakeDigestStore()
-    private val memory = FakeMemoryStore()
     private val calls = FakeCallLog()
     private var clock = 1_000L
-
-    private val seabedMemory = CuratedTopic(
-        "seabed-mining-talks", "Seabed mining talks resume", "Delegates met again.",
-        LocalDate(2026, 10, 1), LocalDate(2026, 10, 10), 2, 66,
-    )
 
     private val snapshot = RunSnapshot(
         prompt = PromptInput(
             keywords = listOf("fusion energy", "deep-sea mining", "chess"),
             interestTags = listOf("science"),
-            memory = listOf(seabedMemory),
             attentionMode = AttentionMode.BALANCED,
             persona = Persona.OFF,
             today = LocalDate(2026, 10, 18),
             lastDigestDate = null,
+            knownTopicTags = listOf("Deep-sea mining rules"),
         ),
         personaDisplayName = null,
         emailOn = false,
         recipient = null,
     )
 
+    private val search = fixture("search-synthetic.json")
+
     private fun fixture(name: String) = requireNotNull(javaClass.getResource("/fixtures/$name")) { name }.readText()
 
-    /** rfab's response body around [content], as the client receives it. */
-    private fun body(content: String?, tokens: Long = 1_440) = buildJsonObject {
-        put("success", JsonPrimitive(true))
-        put("model", JsonPrimitive("openrouter:perplexity/sonar"))
-        content?.let { put("content", JsonPrimitive(it)) }
-        put("tokensBilled", JsonPrimitive(tokens))
-    }.toString()
+    /** A writer answer on the synthetic search: stellarator (story 1) and the seabed vote (story 2). */
+    private val written = """{"template_version": 2, "opening": "Hello.", "closing": "Bye.", "subject": "Plasma record and a seabed vote",
+        "card_summary": "A plasma record and a mining vote.", "topics": [
+        {"story": 1, "topic_tag": "Stellarator research", "title": "Stellarator holds plasma for 40 minutes",
+         "summary": "A research stellarator held a stable plasma for 40 minutes. It cost 2 billion.", "detail": "The lab plans a one-hour campaign.",
+         "keywords": ["fusion energy"], "relevance": 50, "sources": [1, 2]},
+        {"story": 2, "topic_tag": "Deep-sea mining rules", "title": "Seabed body sets a moratorium vote",
+         "summary": "The council agreed to vote on a 10-year moratorium.", "detail": null,
+         "keywords": ["deep-sea mining"], "relevance": 45, "sources": [3]}]}"""
 
-    private fun ok(content: String?): RfabResult<ChatResponse> {
-        val raw = body(content)
-        return RfabResult.Ok(Json { ignoreUnknownKeys = true }.decodeFromString(ChatResponse.serializer(), raw), raw)
+    private val factCheck = """{"cards": [{"card": 1, "unsupported": [{"s": 2, "why": "no cost"}]}, {"card": 2}]}"""
+
+    /** MiniMax writes and checks; every other free model is at its limit. */
+    private fun writes(model: String, request: ChatRequest): String? = when {
+        model != "openrouter:minimax/minimax-m3" -> null
+        "SEARCH_REPORT" in request.messages.single().content -> written
+        "CHECK_DATA" in request.messages.single().content -> factCheck
+        else -> null
     }
 
-    private fun run(answer: RfabResult<ChatResponse>) = DigestRun(runs, digests, memory, calls, OneAnswerRfab(answer), allAlive) {
-        clock += 500
-        clock
-    }
+    /** The pages' text, so the fact check may delete: every link alive with a short text. */
+    private val withPages = LinkChecker { LinkResult(LinkStatus.ALIVE, pageText = "The stellarator held plasma for 40 minutes.") }
+
+    private fun run(
+        paid: RfabResult<ChatResponse> = okResponse(search, 1_440),
+        free: (String, ChatRequest) -> String? = ::writes,
+        links: LinkChecker = withPages,
+    ) = ScriptedRfab(paid, free).let { client -> client to DigestRun(runs, digests, calls, client, links) { clock += 500; clock } }
 
     @Test
-    fun aReadableAnswerIsStoredSavedAndRemembered() = runBlocking {
-        val outcome = run(ok(fixture("good.json"))).execute(snapshot)
-        val stored = assertIs<RunOutcome.Stored>(outcome)
+    fun aSearchIsWrittenCheckedAndStored() = runBlocking {
+        val (client, digestRun) = run()
+        val stored = assertIs<RunOutcome.Stored>(digestRun.execute(snapshot))
         assertEquals(2, stored.topicCount)
         assertEquals(1_440, stored.tokensBilled)
+        assertEquals(1, client.paidCalls)
 
-        val digest = digests.saved.single()
-        assertEquals(DigestStatus.SAVED, digest.status)
-        assertEquals("News digest · 18 Oct 2026 · 2 topics", digest.subject)
-        assertTrue(digest.html.startsWith("<!DOCTYPE html>"))
-        assertEquals(digest.digest.topics.size, digest.topicCount)
+        val saved = digests.saved.single()
+        assertEquals(DigestStatus.SAVED, saved.status)
+        assertEquals("Plasma record and a seabed vote", saved.subject)
+        assertEquals("A plasma record and a mining vote.", saved.summary)
+        val first = saved.digest.topics.first()
+        assertEquals(2, saved.digest.templateVersion)
+        assertEquals("Stellarator research", first.topicTag)
+        assertEquals("A research stellarator held a stable plasma for 40 minutes.", first.summary, "the fact check deleted the cost")
+        assertEquals(78, first.score, "relevance 50 + the search's attention 28")
+        assertEquals(listOf("https://science.example.com/2026/10/stellarator-record", "https://sciences.example.org/stellarator-record"), first.sources.map { it.url })
 
         val record = runs.runs.getValue(stored.runId)
         assertEquals(RunState.DONE, record.state)
-        assertEquals(stored.digestId, record.digestId)
         assertTrue(runs.raws.getValue(stored.runId).contains("stellarator"), "the raw answer is kept")
-        // Email off: the delivered topics join the curated memory at once.
-        assertTrue(memory.entries.any { it.id == "stellarator-record-run" })
+        assertTrue(SearchAnswer.decode(runs.searches.getValue(stored.runId)).stories.all { s -> s.sources.all { it.pageText != null } })
     }
 
     @Test
-    fun withEmailOnTheDigestWaitsForTheSendAndTheMemoryWaitsForDelivery() = runBlocking {
-        run(ok(fixture("good.json"))).execute(snapshot.copy(emailOn = true, recipient = "reader@example.com"))
-        assertEquals(DigestStatus.GENERATED, digests.saved.single().status)
-        assertEquals("reader@example.com", digests.saved.single().recipient)
-        assertEquals(emptyList(), memory.entries)
+    fun theWriterGetsTheKnownTagsAndNoPersonaNotesWithPersonaOff() = runBlocking {
+        var writerRequest: ChatRequest? = null
+        val (_, digestRun) = run(free = { model, request ->
+            if ("SEARCH_REPORT" in request.messages.single().content) writerRequest = request
+            writes(model, request)
+        })
+        digestRun.execute(snapshot)
+        val message = writerRequest!!.messages.single().content
+        assertTrue("\"known_topic_tags\":[\"Deep-sea mining rules\"]" in message)
+        assertTrue("electricity bill" !in message, "persona notes go only to a persona voice")
     }
 
     @Test
-    fun theCallHistoryRecordsParametersAndResults() = runBlocking {
-        run(ok(fixture("good.json"))).execute(snapshot)
+    fun theCallHistoryRecordsParametersAndWhatTheChecksFound() = runBlocking {
+        run().second.execute(snapshot)
         val call = calls.calls.single()
         assertEquals(listOf("fusion energy", "deep-sea mining", "chess"), call.keywords)
-        assertEquals(listOf("science"), call.tags)
-        assertEquals("balanced", call.attentionMode)
-        assertEquals("off", call.persona)
+        assertEquals(2, call.templateVersion)
         assertEquals(1_440, call.tokensBilled)
-        assertEquals(3, call.validTopics)
+        assertEquals(2, call.validTopics)
         assertEquals(2, call.selectedTopics)
-        // The seabed topic continues one already delivered.
-        assertEquals(1, call.repeats)
+        assertEquals(1, call.issues[Issue.Kind.FACT_UNSUPPORTED])
         assertNull(call.error)
         assertEquals(500, call.latencyMillis)
-        assertTrue(call.promptChars > 1_000)
     }
 
     @Test
-    fun anEmptyDigestStoresNothingAndOffersTheWiderWindowOnce() = runBlocking {
-        val outcome = assertIs<RunOutcome.Empty>(run(ok(fixture("empty.json"))).execute(snapshot))
-        assertTrue(outcome.canWiden)
+    fun withNoFreeWriterTheSearchIsKeptAndWriteAgainWritesItForFree() = runBlocking {
+        val (_, down) = run(free = { _, _ -> null })
+        val outcome = assertIs<RunOutcome.NotWritten>(down.execute(snapshot))
+        assertEquals(RunError.WRITE_FAILED, runs.runs.getValue(outcome.runId).error)
         assertEquals(emptyList(), digests.saved)
+
+        val (client, back) = run(paid = okResponse(null))
+        assertIs<RunOutcome.Stored>(back.writeAgain(outcome.runId))
+        assertEquals(0, client.paidCalls, "Write again never sends the paid search")
+        assertNull(back.writeAgain(outcome.runId), "only a run left unwritten")
+    }
+
+    @Test
+    fun withNoFactCheckTheCardsStayAsWritten() = runBlocking {
+        val (_, digestRun) = run(free = { model, request -> if ("CHECK_DATA" in request.messages.single().content) null else writes(model, request) })
+        assertIs<RunOutcome.Stored>(digestRun.execute(snapshot))
+        assertTrue("2 billion" in digests.saved.single().digest.topics.first().summary)
+        assertEquals(1, calls.calls.single().issues[Issue.Kind.FACT_NOT_CHECKED])
+    }
+
+    @Test
+    fun theFactCheckRunsOnlyOnMiniMaxThenKimi() = runBlocking {
+        val (client, digestRun) = run(free = { model, request -> if ("CHECK_DATA" in request.messages.single().content) null else writes(model, request) })
+        digestRun.execute(snapshot)
+        assertEquals(listOf("openrouter:minimax/minimax-m3", "openrouter:minimax/minimax-m3", "openrouter:moonshotai/kimi-k2.6"), client.freeCalls)
+    }
+
+    @Test
+    fun anUnreadableSearchIsRepairedWhenEveryUrlIsInIt() = runBlocking {
+        val broken = "Sorry, here it is: " + search.dropLast(3)
+        val (_, digestRun) = run(paid = okResponse(broken, 1_440), free = { model, request ->
+            if ("BROKEN_REPORT" in request.messages.single().content) search else writes(model, request)
+        })
+        assertIs<RunOutcome.Stored>(digestRun.execute(snapshot))
+        assertEquals(1, calls.calls.single().issues[Issue.Kind.ANSWER_REPAIRED])
+    }
+
+    @Test
+    fun aRepairThatInventsAUrlIsRefusedAndReadAgainWorksLater() = runBlocking {
+        val invented = search.replace("https://ocean.example.com/seabed-vote", "https://ocean.example.com/made-up")
+        val (_, digestRun) = run(paid = okResponse("Not JSON at all: https://science.example.com/2026/10/stellarator-record", 1_440), free = { model, request ->
+            if ("BROKEN_REPORT" in request.messages.single().content) invented else writes(model, request)
+        })
+        val outcome = assertIs<RunOutcome.Unreadable>(digestRun.execute(snapshot))
+        assertEquals(RunError.UNREADABLE, runs.runs.getValue(outcome.runId).error)
+
+        // Simulates an update whose parser can read the kept answer: the raw file now holds a readable one.
+        runs.raws[outcome.runId] = responseBody(search, 1_440)
+        val (client, later) = run(paid = okResponse(null))
+        assertIs<RunOutcome.Stored>(later.readAgain(outcome.runId))
+        assertEquals(0, client.paidCalls, "Read again is not a paid call")
+        assertNull(later.readAgain(outcome.runId))
+    }
+
+    @Test
+    fun aSearchWithNoStoryLeftIsEmptyAndOffersTheWiderWindowOnce() = runBlocking {
+        val none = """{"template_version": 2, "searched_at": "2026-10-18", "stories": [
+            {"keywords": ["chess"], "what_happened": "No qualifying story was found.", "attention": 0, "sources": []}]}"""
+        val outcome = assertIs<RunOutcome.Empty>(run(paid = okResponse(none, 1_440)).second.execute(snapshot))
+        assertTrue(outcome.canWiden)
         assertEquals(RunError.EMPTY, runs.runs.getValue(outcome.runId).error)
+        assertEquals(1, calls.calls.single().issues[Issue.Kind.STORY_NO_SOURCE])
 
         val wide = snapshot.copy(prompt = snapshot.prompt.copy(wideWindow = true))
-        val second = assertIs<RunOutcome.Empty>(run(ok(fixture("empty.json"))).execute(wide))
-        assertEquals(false, second.canWiden)
-        assertEquals(true, calls.calls.last().wideWindow)
+        assertEquals(false, assertIs<RunOutcome.Empty>(run(paid = okResponse(none, 1_440)).second.execute(wide)).canWiden)
+    }
+
+    @Test
+    fun deadLinksAreDroppedBeforeTheWriterSeesThem() = runBlocking {
+        var report = ""
+        val links = LinkChecker { url -> if ("ocean" in url) LinkResult(LinkStatus.DEAD, "HTTP 404") else LinkResult(LinkStatus.ALIVE) }
+        run(links = links, free = { model, request ->
+            if ("SEARCH_REPORT" in request.messages.single().content) report = request.messages.single().content
+            writes(model, request)
+        }).second.execute(snapshot)
+        assertTrue("ocean.example.com/seabed-vote" !in report)
+        // The writer named the dead source: the story's live one is used instead.
+        assertEquals(listOf("https://wire.example.net/council-agenda"), digests.saved.single().digest.topics[1].sources.map { it.url })
+        assertEquals(1, calls.calls.single().issues[Issue.Kind.TOPIC_FOREIGN_SOURCE])
     }
 
     @Test
@@ -139,24 +224,6 @@ class DigestRunTest {
     }
 
     @Test
-    fun anUnreadableAnswerIsKeptAndReadAgainProcessesItForFree() = runBlocking {
-        val outcome = assertIs<RunOutcome.Unreadable>(run(ok("Sorry, I cannot help with that.")).execute(snapshot))
-        assertEquals(RunError.UNREADABLE, runs.runs.getValue(outcome.runId).error)
-
-        // Simulates an update whose parser can read the kept answer: the raw file now holds a readable one.
-        runs.raws[outcome.runId] = body(fixture("good.json"))
-        val noPaidCall = DigestRun(runs, digests, memory, calls, OneAnswerRfab(ok(null)), allAlive) { clock }
-        assertIs<RunOutcome.Stored>(noPaidCall.readAgain(outcome.runId))
-        assertEquals(1, calls.calls.size, "Read again is not a paid call")
-    }
-
-    @Test
-    fun readAgainOnlyWorksOnAnUnreadableRun() = runBlocking {
-        val stored = assertIs<RunOutcome.Stored>(run(ok(fixture("good.json"))).execute(snapshot))
-        assertNull(run(ok(null)).readAgain(stored.runId))
-    }
-
-    @Test
     fun refusalsBillNothingAndAreNeverResent() = runBlocking {
         val cases = mapOf(
             RfabError.KEY_REFUSED to RunError.KEY_REFUSED,
@@ -164,45 +231,35 @@ class DigestRunTest {
             RfabError.UNAVAILABLE to RunError.UNAVAILABLE,
         )
         for ((kind, expected) in cases) {
-            val client = OneAnswerRfab(RfabResult.Error(kind, 401))
-            val outcome = DigestRun(runs, digests, memory, calls, client, allAlive) { clock }.execute(snapshot)
-            assertEquals(expected, assertIs<RunOutcome.Refused>(outcome).error)
-            assertEquals(1, client.chats)
+            val (client, digestRun) = run(paid = RfabResult.Error(kind, 401))
+            assertEquals(expected, assertIs<RunOutcome.Refused>(digestRun.execute(snapshot)).error)
+            assertEquals(1, client.paidCalls)
         }
         assertEquals(emptyList(), digests.saved)
     }
 
     @Test
     fun aLostAnswerIsInterruptedAndABilledFailureSaysSo() = runBlocking {
-        assertIs<RunOutcome.Interrupted>(run(RfabResult.Error(RfabError.NETWORK)).execute(snapshot))
-        assertIs<RunOutcome.Interrupted>(run(RfabResult.Error(RfabError.FAILED_MAYBE_BILLED, 502)).execute(snapshot))
-        val billed = assertIs<RunOutcome.FailedBilled>(run(RfabResult.Error(RfabError.FAILED_BILLED, 500, tokensBilled = 1_440)).execute(snapshot))
-        assertEquals(1_440, billed.tokensBilled)
+        assertIs<RunOutcome.Interrupted>(run(paid = RfabResult.Error(RfabError.NETWORK)).second.execute(snapshot))
+        assertIs<RunOutcome.Interrupted>(run(paid = RfabResult.Error(RfabError.FAILED_MAYBE_BILLED, 502)).second.execute(snapshot))
+        val billed = assertIs<RunOutcome.FailedBilled>(run(paid = RfabResult.Error(RfabError.FAILED_BILLED, 500, tokensBilled = 1_440)).second.execute(snapshot))
         assertEquals(1_440, runs.runs.getValue(billed.runId).tokensBilled)
     }
 
     @Test
     fun anUnexpectedBodyIsKeptAsUnreadable() = runBlocking {
-        val outcome = run(RfabResult.Error(RfabError.BAD_RESPONSE, 200, raw = "<html>oops</html>")).execute(snapshot)
-        val unreadable = assertIs<RunOutcome.Unreadable>(outcome)
-        assertEquals("<html>oops</html>", runs.raws[unreadable.runId])
+        val outcome = run(paid = RfabResult.Error(RfabError.BAD_RESPONSE, 200, raw = "<html>oops</html>")).second.execute(snapshot)
+        assertEquals("<html>oops</html>", runs.raws[assertIs<RunOutcome.Unreadable>(outcome).runId])
     }
 
     @Test
-    fun oneRunAtATime() = runBlocking {
-        runs.start(snapshot, 0)
-        val client = OneAnswerRfab(ok(fixture("good.json")))
-        assertEquals(RunOutcome.Busy, DigestRun(runs, digests, memory, calls, client, allAlive) { clock }.execute(snapshot))
-        assertEquals(0, client.chats)
-    }
-
-    @Test
-    fun anInputTheBuilderRefusesSendsNothing() = runBlocking {
+    fun oneRunAtATimeAndAnOverLimitInputSendsNothing() = runBlocking {
         val tooMany = snapshot.copy(prompt = snapshot.prompt.copy(keywords = List(6) { "k$it" }))
-        val client = OneAnswerRfab(ok(fixture("good.json")))
-        assertEquals(RunOutcome.NotBuilt, DigestRun(runs, digests, memory, calls, client, allAlive) { clock }.execute(tooMany))
-        assertEquals(0, client.chats)
-        assertEquals(emptyMap(), runs.runs)
+        val (client, digestRun) = run()
+        assertEquals(RunOutcome.NotBuilt, digestRun.execute(tooMany))
+        runs.start(snapshot, 0)
+        assertEquals(RunOutcome.Busy, digestRun.execute(snapshot))
+        assertEquals(0, client.paidCalls)
     }
 
     @Test
@@ -210,31 +267,26 @@ class DigestRunTest {
         val calling = runs.start(snapshot, 0)!!
         runs.update(runs.runs.getValue(calling).copy(state = RunState.INTERRUPTED))
         val received = runs.start(snapshot, 0)!!
-        runs.saveRaw(received, body(fixture("good.json")))
+        runs.saveRaw(received, responseBody(search, 1_440))
         runs.update(runs.runs.getValue(received).copy(state = RunState.RECEIVED, tokensBilled = 1_440))
         runs.update(runs.runs.getValue(calling).copy(state = RunState.CALLING))
 
-        val client = OneAnswerRfab(ok(null))
-        val outcomes = DigestRun(runs, digests, memory, calls, client, allAlive) { clock }.recover()
-        assertEquals(0, client.chats)
+        val (client, digestRun) = run(paid = okResponse(null))
+        val outcomes = digestRun.recover()
+        assertEquals(0, client.paidCalls)
         assertTrue(outcomes.any { it is RunOutcome.Interrupted })
         assertTrue(outcomes.any { it is RunOutcome.Stored })
-        assertEquals(RunState.INTERRUPTED, runs.runs.getValue(calling).state)
         assertEquals(RunState.DONE, runs.runs.getValue(received).state)
     }
 
     @Test
-    fun theSummaryShowsTheTopThreeByScore() {
-        val digest = Json { ignoreUnknownKeys = true }.decodeFromString(
-            io.github.hugo_cacciatori.basedinformant.core.digest.Digest.serializer(),
-            fixture("good.json"),
-        )
-        assertEquals(
-            "Test stellarator holds plasma for a record 40 minutes · Seabed authority schedules a moratorium vote · " +
-                "A regional chess open draws a record field",
-            DigestSummary.of(digest),
-        )
-        val five = digest.copy(topics = digest.topics + digest.topics.take(2))
-        assertTrue(DigestSummary.of(five).endsWith(" +2 more"))
+    fun theSummaryIsTheWritersLineOrTheTopThreeTitles() = runBlocking {
+        run().second.execute(snapshot)
+        val digest = digests.saved.single().digest
+        assertEquals("A plasma record and a mining vote.", DigestSummary.of(digest))
+        val plain = digest.copy(cardSummary = null, topics = digest.topics + digest.topics + digest.topics)
+        assertTrue(DigestSummary.of(plain).startsWith("Stellarator holds plasma for 40 minutes · "))
+        assertTrue(DigestSummary.of(plain).endsWith(" +3 more"))
+        assertTrue(allAlive.check("https://x.example.com/a").pageText == null)
     }
 }

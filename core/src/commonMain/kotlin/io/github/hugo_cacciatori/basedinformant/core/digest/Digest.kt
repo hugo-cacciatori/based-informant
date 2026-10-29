@@ -5,9 +5,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * A validated digest. Built from the preliminary contract of 02-ai-call.md section 7: the real schema comes out
- * of the template session (`core/prompt/digest.schema.json`), and this model follows it then.
- * Serialized with the contract's field names: that JSON is what History stores per digest.
+ * A digest as History stores it (template v2, 02-ai-call.md section 12): the free writer's text joined with the paid
+ * search's checked sources. Serialized with these field names: that JSON is what History stores per digest.
  */
 @Serializable
 data class Digest(
@@ -16,35 +15,37 @@ data class Digest(
     val opening: String?,
     val closing: String?,
     val topics: List<Topic>,
+    /** The email subject in the digest's voice, or null to use the plain one (03-rendering.md section 1). */
+    val subject: String? = null,
+    /** The History card's one line in the digest's voice (01-product.md section 5), or null to list the titles. */
+    @SerialName("card_summary") val cardSummary: String? = null,
 )
 
 @Serializable
 data class Topic(
     val id: String,
-    /** Id of the curated topic this one continues, or null. */
-    val continues: String?,
-    @SerialName("new_development") val newDevelopment: String?,
+    /** The ongoing subject, reused across digests (02-ai-call.md section 9). */
+    @SerialName("topic_tag") val topicTag: String? = null,
     val title: String,
     val summary: String,
     /** The longer "More" text. */
     val detail: String?,
     /** The owner's keywords the topic matched, shown on the card. */
     val keywords: List<String>,
-    /** 0-100, the model's estimate. Never shown as measured data. */
+    /** 0-100, the models' estimate. Never shown as measured data. */
     val score: Int,
     @SerialName("score_parts") val scoreParts: ScoreParts?,
     val sources: List<Source>,
 )
 
+/** The writer's relevance and the search's attention (template v2: no repeat penalty, owner 2026-10-23). */
 @Serializable
-data class ScoreParts(val relevance: Int, val attention: Int, @SerialName("repeat_penalty") val repeatPenalty: Int) {
-    /** relevance + attention - repeat penalty, kept within 0-100 (template v1). */
-    fun total(): Int = (relevance + attention - repeatPenalty).coerceIn(0, 100)
+data class ScoreParts(val relevance: Int, val attention: Int) {
+    fun total(): Int = (relevance + attention).coerceIn(0, 100)
 
     companion object {
         const val MAX_RELEVANCE = 60
         const val MAX_ATTENTION = 40
-        const val MAX_REPEAT_PENALTY = 50
     }
 }
 

@@ -75,7 +75,6 @@ object DigestRenderer {
     private fun card(card: CardView): String = buildString {
         append("<div style=\"margin:0 0 16px;padding:16px;background-color:#ffffff;border:1px solid #d0d0ca;border-radius:8px;\">\n")
         append("<h2 style=\"margin:0 0 8px;font-size:18px;color:#1d1d1b;\">").append(esc(card.title)).append("</h2>\n")
-        card.newDevelopment?.let { append(paragraph(it, "margin:0 0 8px;font-style:italic;")) }
         append(paragraph(card.summary, "margin:0 0 8px;"))
         append(paragraph(card.matched, "margin:0 0 8px;font-size:13px;color:#5a5a55;"))
         card.detail?.let {
@@ -116,7 +115,6 @@ object DigestRenderer {
         view.emptyMessage?.let { append(it).append("\n\n") }
         view.cards.forEachIndexed { i, c ->
             append(i + 1).append(". ").append(c.title).append('\n')
-            c.newDevelopment?.let { append(it).append('\n') }
             append(c.summary).append('\n')
             append(c.matched).append('\n')
             c.detail?.let { append(DigestViews.MORE).append(": ").append(it).append('\n') }

@@ -1,59 +1,67 @@
 package io.github.hugo_cacciatori.basedinformant.core.run
 
+import io.github.hugo_cacciatori.basedinformant.core.check.FreeModels
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
-import io.github.hugo_cacciatori.basedinformant.core.digest.DigestPipeline
+import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkChecker
+import io.github.hugo_cacciatori.basedinformant.core.digest.Selection
 import io.github.hugo_cacciatori.basedinformant.core.digest.ValidationContext
 import io.github.hugo_cacciatori.basedinformant.core.limits.KeywordRules
-import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedMemory
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
-import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptBuilder
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 import io.github.hugo_cacciatori.basedinformant.core.render.DigestRenderer
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderMeta
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
+import io.github.hugo_cacciatori.basedinformant.core.rfab.ModelCatalog
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
+import io.github.hugo_cacciatori.basedinformant.core.search.Repair
+import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
+import io.github.hugo_cacciatori.basedinformant.core.search.SearchCheck
+import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
+import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
+import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
+import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
+import io.github.hugo_cacciatori.basedinformant.core.writer.Writer
 import kotlinx.serialization.json.Json
 
 /**
- * One digest run (01-product.md section 4, robustness rules of 4.1): one paid call, its raw answer saved before any
- * parsing, then the free checks, and a stored digest when at least one topic survives. Never re-sends a call: a
- * new attempt always needs a new confirmation. Email (stage 5) starts from a digest stored as `GENERATED`.
+ * One digest run (01-product.md section 4, robustness rules of 4.1; 02-ai-call.md section 12): one paid search, its raw
+ * answer saved before any parsing, then everything else for free: the repair of an unreadable answer, the source and
+ * link checks with the pages' text, the free writer, the copied-quote removal, the fact check, selection, and a stored
+ * digest when at least one topic survives. Never re-sends the paid call: a new search always needs a new confirmation.
+ * [client] is used for the free models too and must not retry (`KtorRfabClient(maxAttempts = 1)`).
  */
 class DigestRun(
     private val runs: RunStore,
     private val digests: DigestStore,
-    private val memory: MemoryStore,
     private val calls: CallLog,
     private val client: RfabClient,
     private val linkChecker: LinkChecker,
-    private val promptBuilder: PromptBuilder = PromptBuilder(),
     /** Milliseconds since the epoch. */
     private val now: () -> Long,
 ) {
     /** The run the owner just confirmed. */
     suspend fun execute(snapshot: RunSnapshot): RunOutcome {
-        // Built before the run exists: an input the builder refuses never reaches rfab.
-        val request = (promptBuilder.build(snapshot.prompt) as? PromptBuilder.Result.Built)?.request
-            ?: return RunOutcome.NotBuilt
+        // Built before the run exists: an input over the limits never reaches rfab.
+        val request = (SearchRequest.build(snapshot.prompt) as? SearchRequest.Result.Built)?.request ?: return RunOutcome.NotBuilt
         val startedAt = now()
         val runId = runs.start(snapshot, startedAt) ?: return RunOutcome.Busy
         val record = RunRecord(runId, startedAt, RunState.CALLING, snapshot)
         val result = client.chat(request)
         val latency = now() - startedAt
 
-        val (outcome, processed) = when (result) {
+        val (outcome, report) = when (result) {
             is RfabResult.Ok -> {
                 runs.saveRaw(runId, result.raw)
                 val received = record.copy(state = RunState.RECEIVED, tokensBilled = result.value.tokensBilled)
                 runs.update(received)
                 process(received, result.raw)
             }
-            is RfabResult.Error -> failed(record, result) to null
+            is RfabResult.Error -> failed(record, result) to Report()
         }
-        calls.record(callRecord(record, request, latency, outcome, processed))
+        calls.record(callRecord(record, request, latency, outcome, report))
         return outcome
     }
 
@@ -79,29 +87,65 @@ class DigestRun(
         return process(record, raw).first
     }
 
-    private suspend fun process(record: RunRecord, raw: String): Pair<RunOutcome, DigestPipeline.Result.Processed?> {
-        val snapshot = record.snapshot
-        val content = contentOf(raw)
-            ?: return unreadable(record) to null
-        val context = ValidationContext(snapshot.prompt.keywords.map(KeywordRules::normalize), snapshot.prompt.window())
-        val processed = when (val result = DigestPipeline.process(content, context, linkChecker)) {
-            is DigestPipeline.Result.Unreadable -> return unreadable(record) to null
-            is DigestPipeline.Result.Processed -> result
-        }
-        val digest = processed.digest
-        if (digest.topics.isEmpty()) {
-            finish(record, RunState.FAILED, RunError.EMPTY)
-            return RunOutcome.Empty(record.id, record.tokensBilled, canWiden = !snapshot.prompt.wideWindow) to processed
-        }
-        val digestId = store(record, digest)
-        finish(record, RunState.DONE, error = null, digestId = digestId)
-        return RunOutcome.Stored(record.id, digestId, digest.topics.size, record.tokensBilled) to processed
+    /** **Write again** on a run whose search no free model wrote (02-ai-call.md section 12): free. Null when not possible. */
+    suspend fun writeAgain(runId: Long): RunOutcome? {
+        val record = runs.get(runId)?.takeIf { it.error == RunError.WRITE_FAILED } ?: return null
+        val answer = runs.search(runId)?.let(SearchAnswer::decode) ?: return null
+        val catalog = (client.models() as? RfabResult.Ok)?.value ?: return notWritten(record)
+        return write(record, answer, catalog, Report()).first
     }
+
+    /** What the free stages found, for the call history. */
+    private data class Report(val issues: List<Issue> = emptyList(), val validTopics: Int = 0, val selectedTopics: Int = 0)
+
+    private suspend fun process(record: RunRecord, raw: String): Pair<RunOutcome, Report> {
+        val snapshot = record.snapshot
+        val content = contentOf(raw) ?: return unreadable(record) to Report()
+        val catalog = (client.models() as? RfabResult.Ok)?.value
+        val issues = mutableListOf<Issue>()
+        val parsed = SearchParser.parse(content)
+            ?: catalog?.let { repair(it, content) }?.also { issues += Issue(Issue.Kind.ANSWER_REPAIRED) }
+            ?: return unreadable(record) to Report(issues)
+        val context = ValidationContext(snapshot.prompt.keywords.map(KeywordRules::normalize), snapshot.prompt.window())
+        val (checked, checkIssues) = SearchCheck.apply(parsed, context)
+        val linked = SearchLinks.apply(checked, linkChecker, context.window)
+        issues += checkIssues + linked.issues
+        val answer = linked.answer
+        if (answer.stories.isEmpty()) return empty(record) to Report(issues)
+        runs.saveSearch(record.id, answer.encode())
+        if (catalog == null) return notWritten(record) to Report(issues)
+        return write(record, answer, catalog, Report(issues))
+    }
+
+    /** The free writer, then the copied-quote removal, the fact check and selection. */
+    private suspend fun write(record: RunRecord, answer: SearchAnswer, catalog: ModelCatalog, before: Report): Pair<RunOutcome, Report> {
+        val input = record.snapshot.prompt
+        val written = FreeModels.first(client, catalog, FreeModels.WRITER, { Writer.request(it, input, answer) }, Writer::parse).value
+            ?: return notWritten(record) to before
+        val (clean, copies) = Writer.removeCopies(written, answer)
+        // No free model for the fact check: the cards stay as written (owner, 2026-10-29).
+        val check = FreeModels.first(client, catalog, FreeModels.CHECKER, { FactCheck.request(it, clean, answer) }, FactCheck::parse).value
+        val (checked, facts) = check?.let { FactCheck.apply(clean, answer, it) } ?: (clean to emptyList())
+        val (digest, joined) = Writer.toDigest(checked, answer, input)
+        val selected = digest.copy(topics = Selection.select(digest.topics))
+        val report = Report(
+            before.issues + (copies + facts + joined).map { it.issue } + listOfNotNull(Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null }),
+            digest.topics.size,
+            selected.topics.size,
+        )
+        if (selected.topics.isEmpty()) return empty(record) to report
+        val digestId = store(record, selected)
+        finish(record, RunState.DONE, error = null, digestId = digestId)
+        return RunOutcome.Stored(record.id, digestId, selected.topics.size, record.tokensBilled) to report
+    }
+
+    private suspend fun repair(catalog: ModelCatalog, broken: String): SearchAnswer? =
+        FreeModels.first(client, catalog, FreeModels.CHECKER, { Repair.request(it, broken) }, { Repair.accept(broken, it) }).value
 
     private suspend fun store(record: RunRecord, digest: Digest): Long {
         val snapshot = record.snapshot
         val rendered = DigestRenderer.render(digest, RenderMeta(snapshot.personaDisplayName, snapshot.prompt.model))
-        val id = digests.save(
+        return digests.save(
             StoredDigest(
                 runId = record.id,
                 status = if (snapshot.emailOn) DigestStatus.GENERATED else DigestStatus.SAVED,
@@ -119,9 +163,16 @@ class DigestRun(
                 tokensBilled = record.tokensBilled,
             ),
         )
-        // Email off: the topics count as delivered now. Email on: on delivery (stage 5).
-        if (!snapshot.emailOn) memory.save(CuratedMemory.record(memory.load(), digest.topics, snapshot.prompt.today))
-        return id
+    }
+
+    private suspend fun empty(record: RunRecord): RunOutcome {
+        finish(record, RunState.FAILED, RunError.EMPTY)
+        return RunOutcome.Empty(record.id, record.tokensBilled, canWiden = !record.snapshot.prompt.wideWindow)
+    }
+
+    private suspend fun notWritten(record: RunRecord): RunOutcome {
+        finish(record, RunState.FAILED, RunError.WRITE_FAILED)
+        return RunOutcome.NotWritten(record.id, record.tokensBilled)
     }
 
     private suspend fun unreadable(record: RunRecord): RunOutcome {
@@ -162,16 +213,8 @@ class DigestRun(
     private suspend fun finish(record: RunRecord, state: RunState, error: RunError?, digestId: Long? = null) =
         runs.update(record.copy(state = state, error = error, digestId = digestId, finishedAt = now()))
 
-    private fun callRecord(
-        record: RunRecord,
-        request: ChatRequest,
-        latency: Long,
-        outcome: RunOutcome,
-        processed: DigestPipeline.Result.Processed?,
-    ): CallRecord {
+    private fun callRecord(record: RunRecord, request: ChatRequest, latency: Long, outcome: RunOutcome, report: Report): CallRecord {
         val prompt = record.snapshot.prompt
-        val remembered = prompt.memory.mapTo(mutableSetOf()) { it.id }
-        val selected = processed?.digest?.topics.orEmpty()
         return CallRecord(
             runId = record.id,
             at = record.startedAt,
@@ -186,16 +229,16 @@ class DigestRun(
             latencyMillis = latency,
             tokensBilled = outcome.tokensBilled(),
             error = outcome.error(),
-            validTopics = processed?.validTopicCount ?: 0,
-            selectedTopics = selected.size,
-            repeats = selected.count { it.continues != null || it.id in remembered },
-            issues = processed?.issues.orEmpty().groupingBy { it.kind }.eachCount(),
+            validTopics = report.validTopics,
+            selectedTopics = report.selectedTopics,
+            issues = report.issues.groupingBy { it.kind }.eachCount(),
         )
     }
 
     private fun RunOutcome.tokensBilled(): Long? = when (this) {
         is RunOutcome.Stored -> tokensBilled
         is RunOutcome.Empty -> tokensBilled
+        is RunOutcome.NotWritten -> tokensBilled
         is RunOutcome.Unreadable -> tokensBilled
         is RunOutcome.FailedBilled -> tokensBilled
         else -> null
@@ -204,6 +247,7 @@ class DigestRun(
     private fun RunOutcome.error(): RunError? = when (this) {
         is RunOutcome.Stored -> null
         is RunOutcome.Empty -> RunError.EMPTY
+        is RunOutcome.NotWritten -> RunError.WRITE_FAILED
         is RunOutcome.Unreadable -> RunError.UNREADABLE
         is RunOutcome.Refused -> error
         is RunOutcome.FailedBilled -> RunError.FAILED_BILLED
@@ -223,12 +267,13 @@ class DigestRun(
     }
 }
 
-/** The History card's summary (01-product.md section 5, [PROPOSED]): the top 3 titles by score, then "+N more". */
+/** The History card's summary (01-product.md section 5): the writer's line in the voice, else the top 3 titles and "+N more". */
 object DigestSummary {
     const val SHOWN = 3
     const val TITLE_MAX_CHARS = 60
 
     fun of(digest: Digest): String {
+        digest.cardSummary?.let { return it }
         val titles = digest.topics.sortedByDescending { it.score }.map { ellipsize(it.title) }
         val shown = titles.take(SHOWN).joinToString(" · ")
         val more = titles.size - SHOWN

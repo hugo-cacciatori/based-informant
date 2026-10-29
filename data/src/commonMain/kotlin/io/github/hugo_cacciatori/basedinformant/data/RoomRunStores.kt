@@ -4,12 +4,10 @@ import androidx.room3.withWriteTransaction
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
-import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedTopic
 import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStatus
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
-import io.github.hugo_cacciatori.basedinformant.core.run.MemoryStore
 import io.github.hugo_cacciatori.basedinformant.core.run.RunError
 import io.github.hugo_cacciatori.basedinformant.core.run.RunRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
@@ -19,7 +17,6 @@ import io.github.hugo_cacciatori.basedinformant.core.run.StoredDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.LocalDate
 
 /** The runs in Room, their raw answers in [raw] (04-platforms.md section 7). */
 class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : RunStore {
@@ -51,6 +48,10 @@ class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : Run
     override suspend fun saveRaw(runId: Long, content: String) = withContext(Dispatchers.IO) { raw.save(runId, content) }
 
     override suspend fun raw(runId: Long): String? = withContext(Dispatchers.IO) { raw.read(runId) }
+
+    override suspend fun saveSearch(runId: Long, answer: String) = withContext(Dispatchers.IO) { raw.saveSearch(runId, answer) }
+
+    override suspend fun search(runId: Long): String? = withContext(Dispatchers.IO) { raw.readSearch(runId) }
 
     override suspend fun recentCosts(model: String, limit: Int): List<Long> = db.runs().recentCosts(model, limit)
 
@@ -87,26 +88,6 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore {
     }
 }
 
-/** The curated memory: a save replaces every entry in one transaction. */
-class RoomMemoryStore(private val db: AppDatabase) : MemoryStore {
-    override suspend fun load(): List<CuratedTopic> = db.curatedTopics().all().map {
-        CuratedTopic(
-            it.id, it.title, it.gist, LocalDate.parse(it.firstFeatured), LocalDate.parse(it.lastFeatured), it.timesFeatured, it.lastScore,
-        )
-    }
-
-    override suspend fun save(entries: List<CuratedTopic>) = db.withWriteTransaction {
-        db.curatedTopics().deleteAll()
-        db.curatedTopics().insertAll(
-            entries.map {
-                CuratedTopicEntity(
-                    it.id, it.title, it.gist, it.firstFeatured.toString(), it.lastFeatured.toString(), it.timesFeatured, it.lastScore,
-                )
-            },
-        )
-    }
-}
-
 /** The call history (01-product.md section 4.5): written here, never shown in the app. */
 class RoomCallLog(private val db: AppDatabase) : CallLog {
     override suspend fun record(call: CallRecord) {
@@ -117,7 +98,7 @@ class RoomCallLog(private val db: AppDatabase) : CallLog {
                     keywords = StoredJson.strings(keywords), tags = StoredJson.strings(tags), attentionMode = attentionMode,
                     persona = persona, wideWindow = wideWindow, promptChars = promptChars, latencyMillis = latencyMillis,
                     tokensBilled = tokensBilled, error = error?.name, validTopics = validTopics, selectedTopics = selectedTopics,
-                    repeats = repeats, issues = StoredJson.counts(issues.mapKeys { it.key.name }),
+                    repeats = 0, issues = StoredJson.counts(issues.mapKeys { it.key.name }),
                 )
             },
         )

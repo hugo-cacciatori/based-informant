@@ -5,8 +5,7 @@ News digest · 18 Oct 2026 · 1 topic
 <b>Bold</b> & "quoted" 'text'
 
 1. <script>alert('x')</script> & co
-New: <img src=x onerror=alert(1)>
-A research stellarator held a stable plasma for 40 minutes, four times its previous best. The team credits new wall coatings. Independent physicists call it a step, not a breakthrough.
+<img src=x onerror=alert(1)>
 Matched: fusion energy
 More: </details><a href="javascript:alert(1)">click</a>
 1 source:

@@ -3,12 +3,11 @@ package io.github.hugo_cacciatori.basedinformant.core.run
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
-import io.github.hugo_cacciatori.basedinformant.core.memory.CuratedTopic
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 
 /**
  * Everything one run uses, taken when the owner confirms (01-product.md section 4 step 3), so later changes in
- * Settings never affect it. The keywords, tags and memory are in [prompt].
+ * Settings never affect it. The keywords, tags and known topic tags are in [prompt].
  */
 data class RunSnapshot(
     val prompt: PromptInput,
@@ -38,6 +37,9 @@ enum class RunError {
     /** The answer was read, but no topic survived the checks. */
     EMPTY,
 
+    /** The search was read, but no free model wrote the digest: the search is kept for **Write again**, for free. */
+    WRITE_FAILED,
+
     /** The app lost the answer after the request may have left: maybe billed, never re-sent. */
     INTERRUPTED,
 }
@@ -64,7 +66,7 @@ data class StoredDigest(
     val subject: String,
     val html: String,
     val text: String,
-    /** The card summary: the top 3 titles by score, then "+N more". */
+    /** The card summary: the writer's line in the voice, else the top 3 titles by score, then "+N more". */
     val summary: String,
     val topicCount: Int,
     val digest: Digest,
@@ -95,8 +97,6 @@ data class CallRecord(
     val error: RunError?,
     val validTopics: Int = 0,
     val selectedTopics: Int = 0,
-    /** Selected topics that continue one already delivered (curated memory). */
-    val repeats: Int = 0,
     val issues: Map<Issue.Kind, Int> = emptyMap(),
 )
 
@@ -112,6 +112,9 @@ sealed interface RunOutcome {
 
     /** Nothing survived the checks; [canWiden] offers the second call with a wider window. */
     data class Empty(val runId: Long, val tokensBilled: Long?, val canWiden: Boolean) : RunOutcome
+
+    /** No free model wrote the digest; the search is kept and **Write again** runs the free cycle on it, for free. */
+    data class NotWritten(val runId: Long, val tokensBilled: Long?) : RunOutcome
 
     /** The answer could not be read; it is kept, and **Read again** can process it after an update. */
     data class Unreadable(val runId: Long, val tokensBilled: Long?) : RunOutcome
@@ -143,18 +146,17 @@ interface RunStore {
 
     suspend fun raw(runId: Long): String?
 
+    /** The checked search answer with the pages' text, kept for **Write again** (02-ai-call.md section 12). */
+    suspend fun saveSearch(runId: Long, answer: String)
+
+    suspend fun search(runId: Long): String?
+
     /** Tokens billed by the latest finished calls with [model], newest first, for the average cost. */
     suspend fun recentCosts(model: String, limit: Int): List<Long>
 }
 
 interface DigestStore {
     suspend fun save(digest: StoredDigest): Long
-}
-
-interface MemoryStore {
-    suspend fun load(): List<CuratedTopic>
-
-    suspend fun save(entries: List<CuratedTopic>)
 }
 
 interface CallLog {

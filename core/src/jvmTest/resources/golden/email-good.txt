@@ -12,7 +12,6 @@ More: The run used a lower-power heating mode. The next campaign aims for an hou
 - Exemple Sciences, 17 Oct 2026, fr: https://sciences.example.org/stellarator-record
 
 2. Seabed authority schedules a moratorium vote
-New: The council scheduled a vote for next month.
 The council of an international seabed body set a date to vote on a mining moratorium. Twelve member states back a pause; two mining applicants object.
 Matched: Deep-Sea Mining
 - Example Ocean News, 14 Oct 2026, en: https://ocean.example.com/seabed-vote
