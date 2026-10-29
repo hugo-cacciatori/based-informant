@@ -1,6 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,11 +15,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +32,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.hugo_cacciatori.basedinformant.core.key.BalanceDisplay
@@ -72,11 +78,13 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.presets
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_add
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_add_label
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_count
-import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_delete
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_deleted
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_edit
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keyword_edit_title
+import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_delete_ticked
+import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_deleted
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_empty
+import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_select_all
 import io.github.hugo_cacciatori.basedinformant.ui.resources.open_settings
 import io.github.hugo_cacciatori.basedinformant.ui.resources.save
 import io.github.hugo_cacciatori.basedinformant.ui.resources.undo
@@ -87,7 +95,7 @@ import org.jetbrains.compose.resources.stringResource
 interface KeywordsActions {
     fun add(text: String, onDone: () -> Unit)
     fun edit(index: Int, text: String, onDone: () -> Unit)
-    fun delete(index: Int)
+    fun delete(indices: Set<Int>)
     fun undo()
     fun dismissUndo()
     fun dismissRefusal()
@@ -108,25 +116,22 @@ fun KeywordsScreen(
 ) {
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
     var presetsOpen by rememberSaveable { mutableStateOf(false) }
+    // The ticked keywords, by their lowercase text (unique in the list), so a change elsewhere never shifts them.
+    var ticked by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val tickedIndices = state.keywords.indices.filter { state.keywords[it].lowercase() in ticked }.toSet()
     val mode = run.generate.mode
 
-    // The Undo offer lasts as long as the snackbar (a few seconds), or until the next edit.
-    val undo = state.undo
-    LaunchedEffect(undo) {
-        if (undo == null) return@LaunchedEffect
+    // After a delete or a loaded preset, Undo brings the previous list back for as long as the snackbar shows (a few
+    // seconds), or until the next edit.
+    val restore = state.restore
+    LaunchedEffect(restore) {
+        if (restore == null) return@LaunchedEffect
         val result = snackbar.showSnackbar(
-            message = getString(Res.string.keyword_deleted, undo.text),
-            actionLabel = getString(Res.string.undo),
-            duration = SnackbarDuration.Short,
-        )
-        if (result == SnackbarResult.ActionPerformed) actions.undo() else actions.dismissUndo()
-    }
-    // The same for a loaded preset: Undo brings the previous list back.
-    val replaced = state.replaced
-    LaunchedEffect(replaced) {
-        if (replaced == null) return@LaunchedEffect
-        val result = snackbar.showSnackbar(
-            message = getString(Res.string.preset_loaded),
+            message = when {
+                restore.presetLoaded -> getString(Res.string.preset_loaded)
+                restore.deleted.size == 1 -> getString(Res.string.keyword_deleted, restore.deleted.single())
+                else -> getString(Res.string.keywords_deleted, restore.deleted.size)
+            },
             actionLabel = getString(Res.string.undo),
             duration = SnackbarDuration.Short,
         )
@@ -143,23 +148,50 @@ fun KeywordsScreen(
             item {
                 // While the edit dialog is open, a refusal belongs to it.
                 AddKeyword(state.refusal.takeIf { editing == null }, actions)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val selectAll = stringResource(Res.string.keywords_select_all)
+                    TriStateCheckbox(
+                        state = when {
+                            tickedIndices.isEmpty() -> ToggleableState.Off
+                            tickedIndices.size == state.keywords.size -> ToggleableState.On
+                            else -> ToggleableState.Indeterminate
+                        },
+                        onClick = {
+                            ticked = if (tickedIndices.size == state.keywords.size) emptyList()
+                            else state.keywords.map { it.lowercase() }
+                        },
+                        enabled = state.keywords.isNotEmpty(),
+                        modifier = Modifier.semantics { contentDescription = selectAll }.testTag("select-all"),
+                    )
                     Text(
                         stringResource(Res.string.keyword_count, state.keywords.size, InputLimits.KEYWORDS_MAX),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.weight(1f).padding(vertical = 8.dp),
                     )
-                    TextButton(
-                        onClick = { run.presetActions.open(); presetsOpen = true },
-                        modifier = Modifier.testTag("presets-open"),
-                    ) { Text(stringResource(Res.string.presets)) }
+                    if (tickedIndices.isNotEmpty()) {
+                        TextButton(
+                            onClick = { actions.delete(tickedIndices); ticked = emptyList() },
+                            modifier = Modifier.testTag("delete-ticked"),
+                        ) { Text(stringResource(Res.string.keywords_delete_ticked, tickedIndices.size)) }
+                    } else {
+                        TextButton(
+                            onClick = { run.presetActions.open(); presetsOpen = true },
+                            modifier = Modifier.testTag("presets-open"),
+                        ) { Text(stringResource(Res.string.presets)) }
+                    }
                 }
             }
             if (state.loaded && state.keywords.isEmpty()) {
                 item { Text(stringResource(Res.string.keywords_empty), Modifier.padding(vertical = 8.dp)) }
             }
             itemsIndexed(state.keywords, key = { _, keyword -> keyword.lowercase() }) { index, keyword ->
-                KeywordRow(keyword, onEdit = { editing = index }, onDelete = { actions.delete(index) })
+                val key = keyword.lowercase()
+                KeywordRow(
+                    keyword,
+                    ticked = key in ticked,
+                    onTick = { on -> ticked = if (on) ticked + key else ticked - key },
+                    onEdit = { editing = index },
+                )
                 HorizontalDivider()
             }
         }
@@ -252,15 +284,21 @@ private fun AddKeyword(refusal: TextListRules.Refusal?, actions: KeywordsActions
     }
 }
 
+/** A tap on the row ticks it for Delete; the pencil edits it (01-product.md section 3). */
 @Composable
-private fun KeywordRow(keyword: String, onEdit: () -> Unit, onDelete: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(keyword, Modifier.weight(1f))
+private fun KeywordRow(keyword: String, ticked: Boolean, onTick: (Boolean) -> Unit, onEdit: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.weight(1f).heightIn(min = 48.dp)
+                .toggleable(value = ticked, role = Role.Checkbox, onValueChange = onTick)
+                .testTag("keyword-row"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(checked = ticked, onCheckedChange = null)
+            Text(keyword, Modifier.padding(start = 12.dp))
+        }
         IconButton(onClick = onEdit) {
             Icon(Icons.Filled.Edit, contentDescription = stringResource(Res.string.keyword_edit, keyword))
-        }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.keyword_delete, keyword))
         }
     }
 }

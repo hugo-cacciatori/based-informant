@@ -140,9 +140,53 @@ class ScreensTest {
                 KeywordsScreen(state, vm, SnackbarHostState(), onOpenSettings = {})
             }
         }
-        onNodeWithContentDescription("Delete solar").performClick()
+        // Presets shows until a keyword is ticked; then Delete (N) takes its place.
+        onNodeWithTag("presets-open").assertExists()
+        onNodeWithText("solar").performClick()
+        onNodeWithTag("delete-ticked").assertTextContains("Delete (1)").performClick()
         waitForIdle()
         assertEquals(listOf("wind"), store.keywords)
+        onNodeWithTag("presets-open").assertExists()
+    }
+
+    @Test
+    fun selectAllClearsTheListAndUndoBringsItBack() = runComposeUiTest {
+        val store = MemoryKeywords(listOf("solar", "wind", "tides"))
+        val vm = KeywordsViewModel(KeywordsModel(store, MemorySecrets(TEST_KEY), balanceOnly(120_174)))
+        val snackbar = SnackbarHostState()
+        setContent {
+            AppTheme {
+                val state by vm.state.collectAsStateWithLifecycle()
+                androidx.compose.foundation.layout.Box {
+                    KeywordsScreen(state, vm, snackbar, onOpenSettings = {})
+                    androidx.compose.material3.SnackbarHost(snackbar)
+                }
+            }
+        }
+        onNodeWithContentDescription("Select all keywords").performClick()
+        onNodeWithTag("delete-ticked").assertTextContains("Delete (3)").performClick()
+        waitForIdle()
+        assertEquals(emptyList(), store.keywords)
+        onNodeWithText("Deleted 3 keywords").assertExists()
+        onNodeWithText("Undo").performClick()
+        waitForIdle()
+        assertEquals(listOf("solar", "wind", "tides"), store.keywords)
+    }
+
+    @Test
+    fun theEditButtonStaysAndTickingDoesNotEdit() = runComposeUiTest {
+        val store = MemoryKeywords(listOf("solar", "wind"))
+        val vm = KeywordsViewModel(KeywordsModel(store, MemorySecrets(TEST_KEY), balanceOnly(120_174)))
+        setContent {
+            AppTheme {
+                val state by vm.state.collectAsStateWithLifecycle()
+                KeywordsScreen(state, vm, SnackbarHostState(), onOpenSettings = {})
+            }
+        }
+        onNodeWithText("wind").performClick()
+        onNodeWithTag("keyword-edit-input").assertDoesNotExist()
+        onNodeWithContentDescription("Edit wind").performClick()
+        onNodeWithTag("keyword-edit-input").assertExists()
     }
 
     @Test

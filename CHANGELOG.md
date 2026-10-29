@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keywords: a checkbox on each keyword and a select-all checkbox; Delete (N) removes the ticked keywords at once, with Undo bringing the whole list back. The per-row delete button is gone; Edit stays.
 - Stage 8 done: the themes were checked on a phone in light and dark, with Animations off and in battery saver.
 - Stage 8 step 4: Settings gets a Theme choice (Plain, Night, Drift, each with a one-line mood) and an Animations switch; the look changes at once.
 - Stage 8 step 3: two more themes, Night (a twinkling starfield) and Drift (slowly drifting colors), each in light and dark.

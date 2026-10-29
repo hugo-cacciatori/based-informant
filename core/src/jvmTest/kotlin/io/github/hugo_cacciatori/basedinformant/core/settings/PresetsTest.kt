@@ -68,7 +68,7 @@ class PresetsTest {
         keywords.undo()
         assertEquals(five, keywords.state.value.keywords)
         assertEquals(five, keywordStore.keywords)
-        assertNull(keywords.state.value.replaced)
+        assertNull(keywords.state.value.restore)
     }
 
     @Test

@@ -49,8 +49,8 @@ class KeywordsViewModel(val model: KeywordsModel) : ViewModel(), KeywordsActions
         viewModelScope.launch { if (model.edit(index, text)) onDone() }
     }
 
-    override fun delete(index: Int) {
-        viewModelScope.launch { model.delete(index) }
+    override fun delete(indices: Set<Int>) {
+        viewModelScope.launch { model.delete(indices) }
     }
 
     override fun undo() {

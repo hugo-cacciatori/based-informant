@@ -19,7 +19,9 @@
     <string name="keyword_count">%1$d of %2$d keywords</string>
     <string name="keywords_empty">No keywords yet. Add the topics you want news about.</string>
     <string name="keyword_edit">Edit %1$s</string>
-    <string name="keyword_delete">Delete %1$s</string>
+    <string name="keywords_select_all">Select all keywords</string>
+    <string name="keywords_delete_ticked">Delete (%1$d)</string>
+    <string name="keywords_deleted">Deleted %1$d keywords</string>
     <string name="keyword_edit_title">Edit keyword</string>
     <string name="keyword_deleted">Deleted %1$s</string>
     <string name="undo">Undo</string>

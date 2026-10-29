@@ -74,18 +74,36 @@ class KeywordsModelTest {
     @Test
     fun deleteOffersUndoUntilTheNextEdit() = runBlocking {
         model.load()
-        model.delete(0)
+        model.delete(setOf(0))
         assertEquals(emptyList(), store.keywords)
+        assertEquals(Restore(listOf("solar power"), listOf("solar power")), model.state.value.restore)
         assertEquals(listOf(GenerateBlock.NO_KEY, GenerateBlock.TOO_FEW_KEYWORDS), model.state.value.generateBlocks)
         model.undo()
         assertEquals(listOf("solar power"), store.keywords)
-        assertNull(model.state.value.undo)
+        assertNull(model.state.value.restore)
 
-        model.delete(0)
+        model.delete(setOf(0))
         model.add("other")
-        assertNull(model.state.value.undo)
+        assertNull(model.state.value.restore)
         model.undo()
         assertEquals(listOf("other"), store.keywords)
+    }
+
+    @Test
+    fun severalKeywordsAreDeletedAtOnceAndUndoneTogether() = runBlocking {
+        store.keywords = five
+        model.load()
+        val saves = store.saves
+        model.delete(setOf(0, 2, 4))
+        assertEquals(listOf(five[1], five[3]), store.keywords)
+        assertEquals(listOf(five[0], five[2], five[4]), model.state.value.restore?.deleted)
+        assertEquals(saves + 1, store.saves)
+        model.undo()
+        assertEquals(five, store.keywords)
+        // Nothing ticked: nothing changes, nothing saved.
+        model.delete(emptySet())
+        assertEquals(saves + 2, store.saves)
+        assertNull(model.state.value.restore)
     }
 
     @Test

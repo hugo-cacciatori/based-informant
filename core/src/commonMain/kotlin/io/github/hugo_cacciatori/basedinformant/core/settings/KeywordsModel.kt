@@ -19,16 +19,19 @@ data class KeywordsState(
     val keywords: List<String> = emptyList(),
     /** The last refused edit, shown as a message until the next edit. */
     val refusal: TextListRules.Refusal? = null,
-    /** The last deleted keyword, while its Undo is offered. */
-    val undo: TextListRules.Removed? = null,
-    /** The list a loaded preset replaced, while its Undo is offered (01-product.md section 3). */
-    val replaced: List<String>? = null,
+    /** The last delete or loaded preset, while its Undo is offered (01-product.md section 3). */
+    val restore: Restore? = null,
     val hasKey: Boolean = false,
     val runActive: Boolean = false,
     /** The balance line above Generate; null while it is read. */
     val balance: BalanceDisplay? = null,
 ) {
     val generateBlocks: List<GenerateBlock> get() = GenerateRules.blocks(hasKey, keywords.size, runActive)
+}
+
+/** A change Undo takes back: [previous] is the list before it; [deleted] the keywords removed, empty for a preset. */
+data class Restore(val previous: List<String>, val deleted: List<String>) {
+    val presetLoaded: Boolean get() = deleted.isEmpty()
 }
 
 /**
@@ -62,33 +65,31 @@ class KeywordsModel(
 
     suspend fun edit(index: Int, text: String): Boolean = apply { rules.edit(it, index, text) }
 
-    suspend fun delete(index: Int) = mutex.withLock {
-        val deleted = rules.delete(_state.value.keywords, index)
-        store.save(deleted.list)
-        _state.update { it.copy(keywords = deleted.list, refusal = null, undo = deleted.removed, replaced = null) }
+    /** Deletes the keywords at [indices] at once (owner, 2026-10-29); Undo brings the previous list back. */
+    suspend fun delete(indices: Set<Int>) = mutex.withLock {
+        val previous = _state.value.keywords
+        val deleted = previous.filterIndexed { i, _ -> i in indices }
+        if (deleted.isEmpty()) return@withLock
+        val list = previous.filterIndexed { i, _ -> i !in indices }
+        store.save(list)
+        _state.update { it.copy(keywords = list, refusal = null, restore = Restore(previous, deleted)) }
     }
 
     /** A preset replaces the whole list (owner, 2026-10-23); Undo brings the previous one back. */
     suspend fun replace(keywords: List<String>) = mutex.withLock {
         val previous = _state.value.keywords
         store.save(keywords)
-        _state.update { it.copy(keywords = keywords, refusal = null, undo = null, replaced = previous) }
+        _state.update { it.copy(keywords = keywords, refusal = null, restore = Restore(previous, emptyList())) }
     }
 
     suspend fun undo() = mutex.withLock {
-        _state.value.replaced?.let { previous ->
-            store.save(previous)
-            _state.update { it.copy(keywords = previous, replaced = null) }
-            return@withLock
-        }
-        val removed = _state.value.undo ?: return@withLock
-        val list = rules.undo(_state.value.keywords, removed)
-        if (list != _state.value.keywords) store.save(list)
-        _state.update { it.copy(keywords = list, undo = null) }
+        val restore = _state.value.restore ?: return@withLock
+        store.save(restore.previous)
+        _state.update { it.copy(keywords = restore.previous, restore = null) }
     }
 
     /** The Undo offer ends after a few seconds (the UI's timer) or on the next edit. */
-    fun dismissUndo() = _state.update { it.copy(undo = null, replaced = null) }
+    fun dismissUndo() = _state.update { it.copy(restore = null) }
 
     fun dismissRefusal() = _state.update { it.copy(refusal = null) }
 
@@ -99,7 +100,7 @@ class KeywordsModel(
         when (val result = edit(_state.value.keywords)) {
             is EditResult.Done -> {
                 store.save(result.list)
-                _state.update { it.copy(keywords = result.list, refusal = null, undo = null, replaced = null) }
+                _state.update { it.copy(keywords = result.list, refusal = null, restore = null) }
                 true
             }
             is EditResult.Refused -> {
