@@ -32,7 +32,7 @@ class SchemaTest {
 
     @Test
     fun everyVersionIsExported() {
-        for (version in 1..4) {
+        for (version in 1..5) {
             assertTrue(Files.exists(schemas.resolve(AppDatabase::class.qualifiedName!!).resolve("$version.json")), "missing $version.json")
         }
     }
@@ -119,6 +119,31 @@ class SchemaTest {
             connection.prepare("SELECT COUNT(*) FROM pragma_table_info('digests') WHERE name IN ('status', 'html', 'text', 'recipient')").use { statement ->
                 assertTrue(statement.step())
                 assertEquals(0L, statement.getLong(0))
+            }
+        }
+        Unit
+    }
+
+    @Test
+    fun version4To5KeepsCallsAndDigestsAndReadsThemAsBasedOff() = runBlocking {
+        helper.createDatabase(4).use { connection ->
+            connection.execSQL(
+                "INSERT INTO digests (run_id, generated_at, subject, summary, topic_count, digest, model, attention_mode, persona, " +
+                    "tokens_billed, topic_tags) VALUES (1, 5, 'S', 's', 1, '{}', 'm', 'BALANCED', 'OFF', 1440, '[]')",
+            )
+            connection.execSQL(
+                "INSERT INTO calls (run_id, at, model, template_version, keywords, tags, attention_mode, persona, prompt_chars, " +
+                    "latency_ms, tokens_billed, error, valid_topics, selected_topics, issues, mode) VALUES " +
+                    "(1, 2, 'm', 2, '[]', '[]', 'balanced', 'off', 900, 7000, 1440, NULL, 3, 2, '{}', 'keywords')",
+            )
+        }
+        helper.runMigrationsAndValidate(5).use { connection ->
+            for (table in listOf("digests", "calls")) {
+                connection.prepare("SELECT based, tokens_billed FROM $table").use { statement ->
+                    assertTrue(statement.step(), table)
+                    assertEquals(0L, statement.getLong(0), table)
+                    assertEquals(1440L, statement.getLong(1), table)
+                }
             }
         }
         Unit

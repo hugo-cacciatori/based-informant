@@ -42,6 +42,7 @@ class DataStoreSettingsStore(private val store: DataStore<Preferences>) : Settin
             // A theme a later version removed reads as the default.
             theme = prefs[THEME]?.takeIf { it in BuiltInThemes.IDS } ?: defaults.theme,
             animations = prefs[ANIMATIONS] ?: defaults.animations,
+            based = prefs[BASED] ?: defaults.based,
         )
     }
 
@@ -60,6 +61,7 @@ class DataStoreSettingsStore(private val store: DataStore<Preferences>) : Settin
             prefs[REMINDER_TIME] = settings.reminder.time.toString()
             prefs[THEME] = settings.theme
             prefs[ANIMATIONS] = settings.animations
+            prefs[BASED] = settings.based
         }
     }
 
@@ -82,6 +84,7 @@ class DataStoreSettingsStore(private val store: DataStore<Preferences>) : Settin
         private val MODEL = stringPreferencesKey("model")
         private val THEME = stringPreferencesKey("theme")
         private val ANIMATIONS = booleanPreferencesKey("animations")
+        private val BASED = booleanPreferencesKey("based")
         private val REMINDER_ON = booleanPreferencesKey("reminder_on")
         private val REMINDER_DAYS = stringPreferencesKey("reminder_days")
         private val REMINDER_TIME = stringPreferencesKey("reminder_time")

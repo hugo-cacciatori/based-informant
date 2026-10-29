@@ -28,14 +28,16 @@ import kotlinx.coroutines.IO
         KeywordEntity::class, RunEntity::class, CallEntity::class, CheckEntity::class, DigestEntity::class,
         PresetEntity::class,
     ],
-    version = 4,
+    version = 5,
     // v2 only adds tables (2026-10-20); v3 (2026-10-29, template v2) drops the curated memory and two unused call
     // columns, and adds presets, the digests' topic tags and the call mode; v4 (2026-10-29, Share) drops the digests'
-    // stored mail and email state. Room writes them; SchemaTest checks them.
+    // stored mail and email state; v5 (2026-10-29, Based) adds the Based flag to calls and digests. Room writes them;
+    // SchemaTest checks them.
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3, spec = Migration2To3::class),
         AutoMigration(from = 3, to = 4, spec = Migration3To4::class),
+        AutoMigration(from = 4, to = 5),
     ],
 )
 @ConstructedBy(AppDatabaseConstructor::class)

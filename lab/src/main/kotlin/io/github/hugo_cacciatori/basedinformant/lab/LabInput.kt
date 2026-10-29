@@ -26,6 +26,8 @@ data class LabInput(
     val mode: String = "keywords",
     /** Topic tags of earlier digests, for the writer (02-ai-call.md section 9). */
     @SerialName("known_topic_tags") val knownTopicTags: List<String> = emptyList(),
+    /** Right-wing sources only (02-ai-call.md section 4). */
+    val based: Boolean = false,
 ) {
     fun todayDate(): LocalDate = today?.let(LocalDate::parse) ?: LocalDate.parse(java.time.LocalDate.now().toString())
 
@@ -37,6 +39,7 @@ data class LabInput(
         today = todayDate(),
         model = model,
         knownTopicTags = knownTopicTags,
+        based = based,
         mode = DigestMode.entries.firstOrNull { it.name.equals(mode, ignoreCase = true) } ?: throw LabUsageError("unknown mode \"$mode\" (keywords, topics)"),
     )
 

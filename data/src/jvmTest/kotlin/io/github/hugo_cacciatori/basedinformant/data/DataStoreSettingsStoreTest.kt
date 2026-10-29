@@ -40,6 +40,7 @@ class DataStoreSettingsStoreTest {
             reminder = Reminder(on = true, days = setOf(DayOfWeek.FRIDAY, DayOfWeek.MONDAY), time = LocalTime(19, 5)),
             theme = "night",
             animations = false,
+            based = true,
         )
         store.save(settings)
         assertEquals(settings, store.load())

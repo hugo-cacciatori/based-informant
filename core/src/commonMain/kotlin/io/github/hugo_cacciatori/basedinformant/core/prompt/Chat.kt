@@ -40,6 +40,8 @@ data class PromptInput(
     /** The topic tags of stored digests, newest first, for the writer to reuse (02-ai-call.md section 9). */
     val knownTopicTags: List<String> = emptyList(),
     val mode: DigestMode = DigestMode.KEYWORDS,
+    /** Right-wing sources only (02-ai-call.md section 4). */
+    val based: Boolean = false,
 ) {
     /** Topic mode does not use the interest tags (owner, 2026-10-23). */
     fun tagsSent(): List<String> = if (mode == DigestMode.TOPICS) emptyList() else interestTags

@@ -46,6 +46,13 @@ class WriterTest {
     }
 
     @Test
+    fun `the writer knows whether Based is on`() {
+        fun request(based: Boolean) = Writer.request("m", input.copy(based = based), synthetic).messages.single().content
+        assertTrue("\"based\":true" in request(true))
+        assertTrue("\"based\":false" in request(false))
+    }
+
+    @Test
     fun `five words in a row from a persona note count as a copied quote`() {
         val notes = listOf("Forty minutes of plasma is cool and all, but call me when my electricity bill goes down, chat.")
         assertEquals(

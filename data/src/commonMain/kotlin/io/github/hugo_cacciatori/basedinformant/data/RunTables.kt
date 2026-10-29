@@ -70,6 +70,8 @@ data class CallEntity(
     val issues: String,
     /** "keywords" or "topics" (schema v3; rows from v2 read "keywords"). */
     @ColumnInfo(defaultValue = "'keywords'") val mode: String,
+    /** Right-wing sources only (schema v5; rows from v4 read off). */
+    @ColumnInfo(defaultValue = "0") val based: Boolean,
 )
 
 @Dao
@@ -116,6 +118,8 @@ data class DigestEntity(
     @ColumnInfo(name = "tokens_billed") val tokensBilled: Long?,
     /** The digest's topic tags as a JSON list, for topic mode (schema v3; rows from v2 read "[]"). */
     @ColumnInfo(name = "topic_tags", defaultValue = "'[]'") val topicTags: String,
+    /** Right-wing sources only (schema v5; rows from v4 read off). */
+    @ColumnInfo(defaultValue = "0") val based: Boolean,
 )
 
 @Dao

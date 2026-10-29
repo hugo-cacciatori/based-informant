@@ -33,6 +33,8 @@ internal object StoredJson {
         val mode: String = "KEYWORDS",
         val model: String,
         val personaDisplayName: String?,
+        /** Snapshots from before Based (2026-10-29) read off. */
+        val based: Boolean = false,
     )
 
     @Serializable
@@ -46,7 +48,7 @@ internal object StoredJson {
             Snapshot.serializer(),
             Snapshot(
                 keywords, interestTags, knownTopicTags, attentionMode.name, persona.name, today,
-                mode.name, model, snapshot.personaDisplayName,
+                mode.name, model, snapshot.personaDisplayName, based,
             ),
         )
     }
@@ -63,6 +65,7 @@ internal object StoredJson {
                 mode = DigestMode.valueOf(s.mode),
                 model = s.model,
                 knownTopicTags = s.knownTopicTags,
+                based = s.based,
             ),
             s.personaDisplayName,
         )

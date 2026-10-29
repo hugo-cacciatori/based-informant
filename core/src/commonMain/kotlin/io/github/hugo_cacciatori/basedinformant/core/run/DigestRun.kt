@@ -170,6 +170,7 @@ class DigestRun(
                 attentionMode = snapshot.prompt.attentionMode.name.lowercase(),
                 persona = snapshot.prompt.persona.name.lowercase(),
                 tokensBilled = record.tokensBilled,
+                based = snapshot.prompt.based,
             ),
         )
     }
@@ -234,6 +235,7 @@ class DigestRun(
             attentionMode = prompt.attentionMode.name.lowercase(),
             persona = prompt.persona.name.lowercase(),
             mode = prompt.mode.name.lowercase(),
+            based = prompt.based,
             promptChars = request.systemPrompt.length + request.messages.sumOf { it.content.length },
             latencyMillis = latency,
             tokensBilled = outcome.tokensBilled(),

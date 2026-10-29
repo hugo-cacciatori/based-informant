@@ -66,6 +66,7 @@ data class StoredDigest(
     val attentionMode: String,
     val persona: String,
     val tokensBilled: Long?,
+    val based: Boolean = false,
 )
 
 /** One paid call, for the call history (01-product.md section 4.5). Never shown in the app. */
@@ -80,6 +81,7 @@ data class CallRecord(
     val persona: String,
     /** "keywords" or "topics". */
     val mode: String,
+    val based: Boolean = false,
     /** Characters of the system prompt and the user message together. */
     val promptChars: Int,
     val latencyMillis: Long,

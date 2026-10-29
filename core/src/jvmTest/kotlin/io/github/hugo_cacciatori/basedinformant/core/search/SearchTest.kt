@@ -5,6 +5,7 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.LinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkResult
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkStatus
 import io.github.hugo_cacciatori.basedinformant.core.digest.ValidationContext
+import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptFiles
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
@@ -121,6 +122,20 @@ class SearchTest {
         val request = assertIs<SearchRequest.Result.Built>(SearchRequest.build(input)).request
         assertTrue(request.messages.single().content.startsWith("Find the most recent news about each of these topics, reading each one in the context of the others:"))
         assertTrue("\nNEWS ONLY\n" in request.systemPrompt)
+    }
+
+    @Test
+    fun basedAsksForRightWingSourcesInTheMessageAndThePrompt() {
+        val input = PromptInput(listOf("energy prices", "chess"), emptyList(), AttentionMode.BALANCED, Persona.OFF, LocalDate(2026, 10, 29))
+        fun request(based: Boolean) = assertIs<SearchRequest.Result.Built>(SearchRequest.build(input.copy(based = based))).request
+        val on = request(based = true)
+        assertTrue("\nBASED\n" in on.systemPrompt)
+        assertTrue("Use right-wing sources only" in on.messages.single().content)
+        // Off, the request is exactly what it was before Based (owner, 2026-10-29: nothing else changes).
+        val off = request(based = false)
+        assertTrue("BASED" !in off.systemPrompt)
+        assertTrue("right-wing" !in off.messages.single().content)
+        assertEquals(off.systemPrompt + "\n\n" + PromptFiles.all.getValue("based.txt").trim(), on.systemPrompt)
     }
 
     @Test

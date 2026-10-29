@@ -106,6 +106,8 @@ class SettingsModel(
 
     suspend fun setPersona(persona: Persona) = change { it.copy(persona = persona) }
 
+    suspend fun setBased(on: Boolean) = change { it.copy(based = on) }
+
     /** Only built-in themes (01-product.md section 10). */
     suspend fun setTheme(id: String): Boolean {
         if (id !in BuiltInThemes.IDS) return false

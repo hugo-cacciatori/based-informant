@@ -53,6 +53,7 @@ class RoomRunStoresTest {
             model = model,
             knownTopicTags = listOf("Club chess"),
             mode = DigestMode.TOPICS,
+            based = true,
         ),
         personaDisplayName = "The Roach King",
     )
@@ -196,10 +197,11 @@ class RoomRunStoresTest {
                 runId = 1, at = 2, model = "m", templateVersion = 2, keywords = listOf("chess"), tags = listOf("science"),
                 attentionMode = "BALANCED", persona = "OFF", mode = "topics", promptChars = 900, latencyMillis = 7_000,
                 tokensBilled = 1_440, error = null, validTopics = 3, selectedTopics = 2,
-                issues = mapOf(Issue.Kind.FACT_SECOND_STORY to 1),
+                issues = mapOf(Issue.Kind.FACT_SECOND_STORY to 1), based = true,
             ),
         )
         val call = db.calls().all().single()
+        assertEquals(true, call.based)
         assertEquals("[\"chess\"]", call.keywords)
         assertEquals("{\"FACT_SECOND_STORY\":1}", call.issues)
 

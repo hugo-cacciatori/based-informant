@@ -83,6 +83,7 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore {
                 summary = summary, topicCount = topicCount, digest = StoredJson.json.encodeToString(Digest.serializer(), this.digest),
                 model = model, attentionMode = attentionMode, persona = persona, tokensBilled = tokensBilled,
                 topicTags = StoredJson.strings(this.digest.topics.mapNotNull { it.topicTag }.distinct()),
+                based = based,
             )
         },
     )
@@ -105,7 +106,7 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore {
             runId = it.runId, generatedAt = it.generatedAt, subject = it.subject,
             summary = it.summary, topicCount = it.topicCount,
             digest = StoredJson.json.decodeFromString(Digest.serializer(), it.digest), model = it.model,
-            attentionMode = it.attentionMode, persona = it.persona, tokensBilled = it.tokensBilled,
+            attentionMode = it.attentionMode, persona = it.persona, tokensBilled = it.tokensBilled, based = it.based,
         )
     }
 }
@@ -120,7 +121,7 @@ class RoomCallLog(private val db: AppDatabase) : CallLog {
                     keywords = StoredJson.strings(keywords), tags = StoredJson.strings(tags), attentionMode = attentionMode,
                     persona = persona, promptChars = promptChars, latencyMillis = latencyMillis,
                     tokensBilled = tokensBilled, error = error?.name, validTopics = validTopics, selectedTopics = selectedTopics,
-                    issues = StoredJson.counts(issues.mapKeys { it.key.name }), mode = mode,
+                    issues = StoredJson.counts(issues.mapKeys { it.key.name }), mode = mode, based = based,
                 )
             },
         )

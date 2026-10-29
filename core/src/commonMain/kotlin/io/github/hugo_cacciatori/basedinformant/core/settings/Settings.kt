@@ -5,7 +5,7 @@ enum class AttentionMode { HOTTEST, BALANCED, NICHE }
 
 /**
  * The voice the AI writes in (01-product.md section 9). [voiceFile] names the file in `core/prompt/voices/`;
- * [OFF] uses the lens voice once lenses exist, and the neutral voice until then.
+ * [OFF] uses the neutral voice.
  */
 enum class Persona(val voiceFile: String) {
     OFF("neutral"),

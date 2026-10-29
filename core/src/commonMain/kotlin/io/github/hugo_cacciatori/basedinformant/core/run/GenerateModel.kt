@@ -119,6 +119,7 @@ class GenerateModel(
                 model = current.model,
                 knownTopicTags = digests.topicTags(),
                 mode = mode,
+                based = current.based,
             ),
             personaDisplayName = personaName(current.persona),
         )
