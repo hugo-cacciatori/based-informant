@@ -35,6 +35,12 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
         /** Dated after tomorrow: impossible for published news (one day of tolerance for time zones). */
         SOURCE_DATE_IN_FUTURE,
         SOURCE_DUPLICATE_URL,
+
+        /** Based is on and the free outlet check did not call the outlet right-wing (owner, 2026-10-30). */
+        SOURCE_NOT_RIGHT_WING,
+
+        /** Based is on but no free model answered the outlet check: the sources were kept unchecked. */
+        OUTLETS_NOT_CHECKED,
         SOURCE_DEAD_LINK,
         SOURCE_PAGE_DATE_IN_FUTURE,
         SOURCE_DATE_CORRECTED,

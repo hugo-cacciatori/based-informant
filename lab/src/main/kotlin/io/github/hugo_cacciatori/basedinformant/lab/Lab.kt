@@ -17,6 +17,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import io.github.hugo_cacciatori.basedinformant.core.search.Repair
+import io.github.hugo_cacciatori.basedinformant.core.search.OutletCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
@@ -43,6 +44,8 @@ import java.io.PrintStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
+import io.github.hugo_cacciatori.basedinformant.core.check.FreeModels
+import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 
 /** The parsed command line (02-ai-call.md section 11). */
 sealed interface LabCommand {
@@ -76,6 +79,9 @@ sealed interface LabCommand {
 
     /** The free repair (02-ai-call.md section 12, item 10) of an unreadable search answer saved in [broken]. */
     data class Repair(val model: String, val broken: String) : LabCommand
+
+    /** The free outlet check of Based (02-ai-call.md section 4) on a saved search answer. */
+    data class OutletCheck(val model: String, val searchAnswer: String) : LabCommand
 
     /** The free input check (02-ai-call.md section 12) on a fixed list, once per free model in [models]. */
     data class CheckInput(val models: List<String>, val list: String?) : LabCommand
@@ -143,6 +149,10 @@ sealed interface LabCommand {
                     flags.getValue("--repair")!!,
                     flags["--broken"] ?: throw LabUsageError("--repair needs --broken <file>"),
                 )
+                "--outlet-check" in flags -> OutletCheck(
+                    flags.getValue("--outlet-check")!!,
+                    flags["--search-answer"] ?: throw LabUsageError("--outlet-check needs --search-answer <file>"),
+                )
                 "--check-input" in flags -> CheckInput(
                     flags["--model"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }
                         ?: throw LabUsageError("--check-input needs --model <id>[,<id>...] (free models only)"),
@@ -153,9 +163,9 @@ sealed interface LabCommand {
             }
         }
 
-        private val MODES = listOf("--write", "--search-call", "--fact-check", "--repair", "--probe", "--check-input", "--models", "--balance")
+        private val MODES = listOf("--write", "--search-call", "--fact-check", "--repair", "--outlet-check", "--probe", "--check-input", "--models", "--balance")
         private val VALUED = setOf(
-            "--write", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken",
+            "--write", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken", "--outlet-check",
         )
         private val SWITCHES = setOf(
             "--search-call", "--persona-research", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--fetch-articles", "--models", "--balance", "--help",
@@ -181,6 +191,10 @@ sealed interface LabCommand {
             |                                           --answer re-reads a saved fact-check raw.json, sending nothing
             |  --repair <model> --broken FILE           free: rebuild an unreadable search answer; accepted only when
             |                                           every URL is in the original; refuses unless the model is at 0x
+            |  --outlet-check <model> --search-answer FILE
+            |                                           free: Based's outlet check on a saved search answer: which
+            |                                           outlets the model calls right-wing, which sources would go;
+            |                                           refuses unless the model is at 0x
             |  --probe --model ID [--keyword K] [--input FILE] --dry-run | --confirm-paid
             |                                           does the model search the web? asks for one article from the
             |                                           window on one keyword (default: the input's first) and checks
@@ -219,6 +233,7 @@ class Lab(
         is LabCommand.SearchCall -> searchCall(command)
         is LabCommand.FactCheck -> factCheck(command)
         is LabCommand.Repair -> repair(command)
+        is LabCommand.OutletCheck -> outletCheck(command)
         is LabCommand.Probe -> probe(command)
         is LabCommand.CheckInput -> checkInput(command)
         LabCommand.Models -> models()
@@ -336,9 +351,15 @@ class Lab(
             s.sources.forEach { src -> report.line("  source ${src.n}: ${src.publisher} | ${src.published} | ${src.facts.size} facts | ${src.url}") }
         }
         val (checked, issues) = SearchCheck.apply(answer, ValidationContext(prompt.keywords, prompt.today))
-        val linked = SearchLinks.apply(checked, linkChecker(), prompt.today)
+        // Based: the free outlet check, as the app runs it (owner, 2026-10-30).
+        val (sourced, outletIssues) = if (!prompt.based || checked.stories.isEmpty()) checked to emptyList<Issue>() else {
+            val verdict = FreeModels.first(client, models.value, FreeModels.CHECKER, { OutletCheck.request(it, checked) }, OutletCheck::parse)
+            report.line("outlet check: ${verdict.model ?: "no free model answered"}")
+            verdict.value?.let { OutletCheck.apply(checked, it) } ?: (checked to listOf(Issue(Issue.Kind.OUTLETS_NOT_CHECKED)))
+        }
+        val linked = SearchLinks.apply(sourced, linkChecker(), prompt.today)
         dir.resolve("search-checked.json").writeText(pretty.encodeToString(SearchAnswer.serializer(), linked.answer))
-        (issues + linked.issues).forEach { report.line(finding(Finding(it))) }
+        (issues + outletIssues + linked.issues).forEach { report.line(finding(Finding(it))) }
         val l = linked.report
         report.line("links: ${l.alive} alive, ${l.unknown} unknown (kept), ${l.dead} dead; page dates: ${l.datesFound} found, ${l.datesCorrected} corrected, ${l.datesInFuture} in the future")
             .line("after the checks: ${linked.answer.stories.size} stories, ${linked.answer.urls().size} sources, ${linked.answer.stories.sumOf { s -> s.sources.count { it.pageText != null } }} with page text")
@@ -425,6 +446,30 @@ class Lab(
                 report.line("story ${i + 1}: ${s.whatHappened ?: "-"} | ${s.sources.size} sources, ${s.sources.sumOf { it.facts.size }} facts, ${s.personaNotes.size} notes")
             }
         }
+        report.write(out)
+        return 0
+    }
+
+    /** Based's outlet check on a saved answer: one free call, the verdict per outlet and the sources it would drop. */
+    private suspend fun outletCheck(command: LabCommand.OutletCheck): Int {
+        val file = root.resolve(command.searchAnswer).takeIf { it.isFile } ?: File(command.searchAnswer)
+        if (!file.isFile) throw LabUsageError("no search answer ${command.searchAnswer}")
+        val answer = SearchAnswer.decode(file.readText()).numbered()
+        val key = loadKey() ?: return noKey()
+        out.println(KeyLoader.describe(key))
+        val client = clientFor(key)
+        val dir = outDir("outlet-check")
+        val report = Report(dir).line("mode: outlet-check ${command.model}, answer ${file.name}")
+        notFree(client, command.model)?.let { return refuse(report, it) }
+        val content = send(client, listOf(Call(emptyList(), OutletCheck.request(command.model, answer))), dir, report, paid = false, command.model, "free outlet check")
+            .singleOrNull() ?: return refuse(report, "no answer from the outlet check")
+        val rightWing = OutletCheck.parse(content) ?: return refuse(report, "unreadable outlet check: raw.json is kept")
+        OutletCheck.outlets(answer).forEachIndexed { i, o ->
+            report.line("${if ((i + 1) in rightWing) "RIGHT-WING" else "dropped   "} ${o.publisher} (${o.domain})")
+        }
+        val (kept, issues) = OutletCheck.apply(answer, rightWing)
+        issues.forEach { report.line(finding(Finding(it))) }
+        report.line("kept: ${kept.stories.size} of ${answer.stories.size} stories, ${kept.urls().size} of ${answer.urls().size} sources")
         report.write(out)
         return 0
     }

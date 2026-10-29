@@ -21,6 +21,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import io.github.hugo_cacciatori.basedinformant.core.search.Repair
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchCheck
+import io.github.hugo_cacciatori.basedinformant.core.search.OutletCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
@@ -110,8 +111,9 @@ class DigestRun(
             ?: return unreadable(record) to Report(issues)
         val context = ValidationContext(snapshot.prompt.keywords.map(KeywordRules::normalize), snapshot.prompt.today)
         val (checked, checkIssues) = SearchCheck.apply(parsed, context)
-        val linked = SearchLinks.apply(checked, linkChecker, context.today)
-        issues += checkIssues + linked.issues
+        val (sourced, outletIssues) = if (snapshot.prompt.based) outlets(checked, catalog) else checked to emptyList()
+        val linked = SearchLinks.apply(sourced, linkChecker, context.today)
+        issues += checkIssues + outletIssues + linked.issues
         val answer = linked.answer
         if (answer.stories.isEmpty()) return empty(record) to Report(issues)
         runs.saveSearch(record.id, answer.encode())
@@ -150,6 +152,17 @@ class DigestRun(
         val topics = Selection.select(digest.topics)
         val missing = input.keywords.filter { tag -> topics.none { t -> t.keywords.any { it.equals(tag.trim(), ignoreCase = true) } } }
         return digest.copy(topics = topics, missingTopics = missing.takeIf { topics.isNotEmpty() }.orEmpty())
+    }
+
+    /**
+     * Based: the free outlet check drops every source whose outlet is not judged right-wing (owner, 2026-10-30). With no
+     * free model, the sources stay, noted as unchecked.
+     */
+    private suspend fun outlets(answer: SearchAnswer, catalog: ModelCatalog?): Pair<SearchAnswer, List<Issue>> {
+        if (answer.stories.isEmpty()) return answer to emptyList()
+        val rightWing = catalog?.let { FreeModels.first(client, it, FreeModels.CHECKER, { m -> OutletCheck.request(m, answer) }, OutletCheck::parse).value }
+            ?: return answer to listOf(Issue(Issue.Kind.OUTLETS_NOT_CHECKED))
+        return OutletCheck.apply(answer, rightWing)
     }
 
     private suspend fun repair(catalog: ModelCatalog, broken: String): SearchAnswer? =
