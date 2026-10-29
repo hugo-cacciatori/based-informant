@@ -17,6 +17,9 @@ class ArticleUrlTest {
             "https://news.example.com/news?id=12",
             "https://www.example.com/video/storm-hits-coast",
             "https://news.example.com/live-updates/storm-hits-coast",
+            // Words that only look like reference pages.
+            "https://news.example.com/world/aboutface-in-talks",
+            "https://news.example.com/2026/10/27/agency-publishes-new-visa-rules",
         )) assertTrue(ArticleUrl.looksLikeArticle(url), url)
     }
 
@@ -46,6 +49,21 @@ class ArticleUrlTest {
             "https://www.usgs.gov/programs/VHP/volcano-updates",
             "https://news.example.com/live-updates/",
             "https://news.example.com/updates",
+        )) assertFalse(ArticleUrl.looksLikeArticle(url), url)
+    }
+
+    @Test
+    fun referencePagesAreDropped() {
+        // Look-alikes of what the first real Generate returned (owner, 2026-10-29).
+        for (url in listOf(
+            "https://en.wikipedia.org/wiki/Chess",
+            "https://www.britannica.com/topic/chess",
+            "https://travel.example.gov/content/en/visas/frequently-asked-questions/what-is-a-visa.html",
+            "https://agency.example.gov/faq/visas",
+            "https://www.example.gov/about-the-country",
+            "https://www.example.org/about",
+            "https://www.example.org/help/entering-the-lottery",
+            "https://www.example.org/guides/how-to-apply-for-a-visa",
         )) assertFalse(ArticleUrl.looksLikeArticle(url), url)
     }
 }

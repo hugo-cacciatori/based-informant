@@ -99,6 +99,31 @@ class SearchTest {
     }
 
     @Test
+    fun aStorySayingNothingHappenedIsDropped() {
+        fun story(what: String) = SearchAnswer.Story(keywords = listOf("chess"), whatHappened = what, sources = listOf(source("https://chess.example.com/a", "2026-10-15")))
+        val answer = SearchAnswer(
+            searchedAt = "2026-10-18",
+            stories = listOf(
+                story("Reference pages about chess were updated, but no news event about chess itself was found."),
+                story("Nothing new was reported on chess this week."),
+                story("No recent developments on the chess rules."),
+                story("A missing chess set was not found after the final."),
+            ),
+        )
+        val (checked, issues) = SearchCheck.apply(answer, context)
+        assertEquals(listOf("A missing chess set was not found after the final."), checked.stories.map { it.whatHappened })
+        assertEquals(List(3) { Kind.STORY_NOT_NEWS }, issues.map { it.kind })
+    }
+
+    @Test
+    fun theRequestReadsEachKeywordInTheContextOfTheOthers() {
+        val input = PromptInput(listOf("world cup", "2027"), emptyList(), AttentionMode.BALANCED, Persona.OFF, LocalDate(2026, 10, 29))
+        val request = assertIs<SearchRequest.Result.Built>(SearchRequest.build(input)).request
+        assertTrue(request.messages.single().content.startsWith("Find the most recent news about each of these topics, reading each one in the context of the others:"))
+        assertTrue("\nNEWS ONLY\n" in request.systemPrompt)
+    }
+
+    @Test
     fun theRequestCarriesTheDataAndThePersonaResearchOnlyWhenAsked() {
         val input = PromptInput(listOf("chess", "a <b>"), listOf("science"), AttentionMode.BALANCED, Persona.ROACH_KING, LocalDate(2026, 10, 29))
         fun prompt(research: Boolean, persona: Persona = Persona.ROACH_KING) =

@@ -120,6 +120,7 @@ object SearchCheck {
             val n = story.story
             val matched = story.keywords.mapNotNull { owner[it.trim().lowercase()] }.distinct()
             if (matched.isEmpty()) return@mapNotNull null.also { issues += Issue(Issue.Kind.STORY_NOT_LINKED_TO_KEYWORDS, story = n) }
+            if (NOTHING_HAPPENED.containsMatchIn(story.whatHappened.orEmpty())) return@mapNotNull null.also { issues += Issue(Issue.Kind.STORY_NOT_NEWS, story = n) }
             val sources = story.sources.filter { s ->
                 val kind = sourceProblem(s, context.today) ?: if (seen.add(normalizeUrl(s.url))) null else Issue.Kind.SOURCE_DUPLICATE_URL
                 if (kind != null) issues += Issue(kind, story = n, source = s.n)
@@ -147,6 +148,9 @@ object SearchCheck {
     }
 
     const val MAX_ATTENTION = 40
+
+    /** A story saying no news was found (owner, 2026-10-29): sonar returned one for a keyword it found nothing on. */
+    private val NOTHING_HAPPENED = Regex("\\b(no (recent |new )?news|nothing new|no (recent |new )?developments?)\\b", RegexOption.IGNORE_CASE)
 }
 
 /**

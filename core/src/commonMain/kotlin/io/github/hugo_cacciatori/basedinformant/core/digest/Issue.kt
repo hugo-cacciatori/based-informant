@@ -21,11 +21,14 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
         ANSWER_REPAIRED,
         STORY_NO_SOURCE,
         STORY_NOT_LINKED_TO_KEYWORDS,
+
+        /** The story says no news was found (owner, 2026-10-29). */
+        STORY_NOT_NEWS,
         STORY_NO_LIVE_SOURCE,
         SOURCE_MISSING_FIELD,
         SOURCE_NOT_HTTPS,
 
-        /** The URL looks like a homepage, index, archive, event or calendar page (source-type filter). */
+        /** The URL looks like a homepage, index, archive, event, calendar or reference page (source-type filter). */
         SOURCE_NOT_AN_ARTICLE,
         SOURCE_BAD_DATE,
 

@@ -1,8 +1,8 @@
 package io.github.hugo_cacciatori.basedinformant.core.digest
 
 /**
- * The source-type filter (02-ai-call.md section 8, owner 2026-10-18): a URL shaped like a homepage, an index, an archive,
- * an event or a calendar page is not one article. Free and offline: it looks at the URL only. Models kept citing such
+ * The source-type filter (02-ai-call.md section 8, owner 2026-10-18 and 2026-10-29): a URL shaped like a homepage, an
+ * index, an archive, an event, a calendar or a reference page is not one news article. Free and offline: it looks at the URL only. Models kept citing such
  * pages despite the prompt (an ANS topic index, a NASA month archive, a university event page).
  */
 object ArticleUrl {
@@ -20,13 +20,23 @@ object ArticleUrl {
     private val LISTING_PREFIXES = listOf("tag-", "topic-", "category-")
     private val LISTING_HOSTS = listOf("events.", "event.", "calendar.")
     private val YEAR = Regex("(19|20)\\d\\d")
+
+    /** Reference pages (owner, 2026-10-29): an encyclopedia, a FAQ or help page, an about, what-is or how-to page. */
+    private val REFERENCE_HOSTS = listOf("wikipedia.org", "britannica.com")
+    private val REFERENCE_SEGMENTS = setOf("faq", "faqs", "frequently-asked-questions", "help", "glossary")
+    private val REFERENCE_PREFIXES = listOf("about-", "what-is-", "how-to-")
     private val MONTH_OR_DAY = Regex("\\d{1,2}")
 
     /** False for a URL that looks like a listing page; true otherwise, including when the URL cannot be read. */
     fun looksLikeArticle(url: String): Boolean {
-        if (LISTING_HOSTS.any(host(url)::startsWith)) return false
+        val host = host(url)
+        if (LISTING_HOSTS.any(host::startsWith)) return false
+        if (REFERENCE_HOSTS.any { host == it || host.endsWith(".$it") }) return false
         val segments = path(url).split('/').filter { it.isNotEmpty() }.map { it.lowercase() }
         if (segments.isEmpty()) return false
+        if (segments.any { it in REFERENCE_SEGMENTS }) return false
+        val last = segments.last().substringBeforeLast('.')
+        if (last == "about" || REFERENCE_PREFIXES.any(last::startsWith)) return false
         if (segments.any { it in LISTING_SEGMENTS || LISTING_PREFIXES.any(it::startsWith) }) return false
         if (segments.any { PAGE_N.matches(it) }) return false
         if (segments.zipWithNext().any { (a, b) -> a == "page" && NUMBER.matches(b) }) return false

@@ -46,7 +46,7 @@ object SearchRequest {
         // Keywords are quoted, with quotes and angle brackets removed, so they read as topics and cannot forge a marker.
         val topics = keywords.joinToString("; ") { "\"" + it.replace(Regex("[\"<>\\r\\n]"), " ").trim() + "\"" }
         val ask = when (input.mode) {
-            DigestMode.KEYWORDS -> "Find the most recent news about each of these topics: $topics."
+            DigestMode.KEYWORDS -> "Find the most recent news about each of these topics, reading each one in the context of the others: $topics."
             DigestMode.TOPICS -> "Find the most recent news on each of these topics, which the reader followed in earlier digests: $topics."
         }
         val message = "$ask Then report what you find as your instructions say.\n\n" +
