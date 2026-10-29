@@ -130,7 +130,7 @@ class SearchTest {
         fun request(based: Boolean) = assertIs<SearchRequest.Result.Built>(SearchRequest.build(input.copy(based = based))).request
         val on = request(based = true)
         assertTrue("\nBASED\n" in on.systemPrompt)
-        assertTrue("Use right-wing sources only" in on.messages.single().content)
+        assertTrue("Use only articles published by right-wing outlets" in on.messages.single().content)
         // Off, the request is exactly what it was before Based (owner, 2026-10-29: nothing else changes).
         val off = request(based = false)
         assertTrue("BASED" !in off.systemPrompt)
