@@ -1,5 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The launcher label; the screens' strings live in :ui's Compose resources. -->
+    <!-- The launcher label and the notifications; the screens' strings live in :ui's Compose resources. -->
     <string name="app_name">Based Informant</string>
+
+    <!-- Notification channels (01-product.md section 7). -->
+    <string name="channel_new_digests">New digests</string>
+    <string name="channel_reminders">Reminders</string>
+    <string name="channel_progress">Digest in progress</string>
+    <string name="channel_run_notices">Run notices</string>
+
+    <string name="notice_progress">Generating your digest…</string>
+    <string name="notice_progress_text">This can take a few minutes.</string>
+
+    <!-- Count and date only: never titles, keywords or tags (lock screen). -->
+    <string name="notice_new_digest">A news digest just arrived</string>
+    <string name="notice_new_digest_text">%1$s · %2$s</string>
+    <string name="notice_date_pattern" translatable="false">d MMM</string>
+    <plurals name="notice_topics">
+        <item quantity="one">%d topic</item>
+        <item quantity="other">%d topics</item>
+    </plurals>
+
+    <!-- Run notices: a run ended without a digest while the owner was away (01-product.md section 4.3). -->
+    <string name="notice_run_title">No new digest</string>
+    <string name="notice_tokens">%1$s Tokens spent: %2$d.</string>
+    <string name="notice_empty">Nothing met your criteria.</string>
+    <string name="notice_not_written">The news was found but the digest is not written yet. Open the app to write it again, for free.</string>
+    <string name="notice_unreadable">The answer could not be read. It is kept; an update may be able to read it.</string>
+    <string name="notice_failed_billed">rfab charged for a call that gave no answer.</string>
+    <string name="notice_interrupted">Interrupted. The tokens may have been billed.</string>
+    <string name="notice_key_refused">Your rfab key was refused: check it in Settings.</string>
+    <string name="notice_insufficient_tokens">Not enough rfab tokens.</string>
+    <string name="notice_unavailable">rfab is unavailable, try again later. Nothing was billed.</string>
+    <string name="notice_refused">rfab refused the request. Nothing was billed.</string>
 </resources>

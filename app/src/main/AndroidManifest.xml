@@ -2,8 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The free balance call now; the paid call and the link check from stage 4. -->
+    <!-- The rfab calls and the link check. -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- The runner (04-platforms.md section 3): a dataSync foreground service holding a partial wake lock. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Android 13+: asked in context, never at first launch (01-product.md section 7). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Backups blocked (04-platforms.md section 3): nothing goes to Google Drive or to a new phone.
          allowBackup="false" alone does not stop device-to-device transfer on Android 12+, hence both rule files. -->
@@ -28,5 +36,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Not exported: only the app starts it. -->
+        <service
+            android:name=".RunService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 </manifest>
