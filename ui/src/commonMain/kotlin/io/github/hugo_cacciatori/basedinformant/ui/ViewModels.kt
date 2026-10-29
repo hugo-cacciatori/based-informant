@@ -9,6 +9,7 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsState
 import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
+import io.github.hugo_cacciatori.basedinformant.core.render.RenderedDigest
 import io.github.hugo_cacciatori.basedinformant.core.rfab.Transaction
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateState
@@ -224,4 +225,7 @@ class HistoryViewModel(private val model: HistoryModel) : ViewModel(), HistoryAc
     }
 
     override fun dismissMissing() = model.dismissMissing()
+
+    /** The mail for Share → Email, built now from the stored digest. */
+    suspend fun mail(id: Long): RenderedDigest? = model.mail(id)
 }

@@ -1,6 +1,6 @@
 # Based Informant
 
-A news digest app for Android (Windows later). You keep a list of keywords; one button asks the [Reality Fabricator](https://rfab.ai) API for a short, sourced digest of what happened around them, which you read in the app or get by email.
+A news digest app for Android (Windows later). You keep a list of keywords; one button asks the [Reality Fabricator](https://rfab.ai) API for a short, sourced digest of what happened around them, which you read in the app or share by email.
 
 Unofficial project, not affiliated with Reality Fabricator. Made for its author and shared as is, without support.
 
@@ -18,9 +18,9 @@ Unofficial project, not affiliated with Reality Fabricator. Made for its author 
 
 *To be written.*
 
-## Email setup (optional)
+## Sharing a digest
 
-*To be written.*
+Open a digest in History, or use the popup at the end of a run, and press **Share**, then **Email**: your phone's mail app opens a new message with the digest filled in. Pick who gets it and send it from there. The app itself sends nothing and needs no other account than your rfab key.
 
 ## Using it
 

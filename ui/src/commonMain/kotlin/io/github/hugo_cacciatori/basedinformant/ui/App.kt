@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.hugo_cacciatori.basedinformant.core.key.SecretStore
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
+import io.github.hugo_cacciatori.basedinformant.core.render.RenderedDigest
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
@@ -52,10 +54,13 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsStore
 import io.github.hugo_cacciatori.basedinformant.ui.resources.Res
 import io.github.hugo_cacciatori.basedinformant.ui.resources.app_name
+import io.github.hugo_cacciatori.basedinformant.ui.resources.history_missing
+import io.github.hugo_cacciatori.basedinformant.ui.resources.share_no_mail_app
 import io.github.hugo_cacciatori.basedinformant.ui.resources.settings
 import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_history
 import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_keywords
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
@@ -80,6 +85,8 @@ class AppDependencies(
     /** Claims the runner for a job and starts the platform's background-safe host; false when nothing started. */
     val startRun: (RunJob) -> Boolean,
     val notificationsAllowed: () -> Boolean,
+    /** Share → Email: opens the device's mail app with the mail filled in; false when there is none. */
+    val shareEmail: (RenderedDigest) -> Boolean,
     val today: () -> LocalDate,
     val now: () -> Long,
 )
@@ -134,7 +141,7 @@ fun App(
     }
     AppTheme {
         val requested by openDigest.collectAsStateWithLifecycle()
-        AppShell(keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened)
+        AppShell(keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened, deps.shareEmail)
     }
 }
 
@@ -155,6 +162,7 @@ fun AppShell(
     notificationsAllowed: () -> Boolean,
     openDigest: Long? = null,
     onDigestOpened: () -> Unit = {},
+    shareEmail: (RenderedDigest) -> Boolean = { false },
 ) {
     var screen by rememberSaveable { mutableStateOf(Screen.KEYWORDS) }
     val snackbar = remember { SnackbarHostState() }
@@ -170,6 +178,19 @@ fun AppShell(
     }
 
     // View in a run's outcome, or a new-digest notification: History, with that digest open.
+    val scope = rememberCoroutineScope()
+
+    // Share → Email, from the viewer or a run's outcome (01-product.md section 8).
+    fun shareByEmail(id: Long) {
+        scope.launch {
+            val mail = history.mail(id)
+            when {
+                mail == null -> snackbar.showSnackbar(getString(Res.string.history_missing))
+                !shareEmail(mail) -> snackbar.showSnackbar(getString(Res.string.share_no_mail_app))
+            }
+        }
+    }
+
     fun view(id: Long) {
         screen = Screen.HISTORY
         history.open(id)
@@ -218,12 +239,13 @@ fun AppShell(
                     actions = generate,
                     presetActions = presets,
                     onView = ::view,
+                    onShareEmail = ::shareByEmail,
                 )
                 KeywordsScreen(state, keywords, snackbar, onOpenSettings = { show(Screen.SETTINGS) }, modifier = modifier, run = run)
             }
             Screen.HISTORY -> {
                 val state by history.state.collectAsStateWithLifecycle()
-                HistoryScreen(state, history, snackbar, modifier)
+                HistoryScreen(state, history, snackbar, modifier, onShareEmail = ::shareByEmail)
             }
             Screen.SETTINGS -> {
                 val state by settings.state.collectAsStateWithLifecycle()

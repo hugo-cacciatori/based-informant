@@ -52,6 +52,7 @@ class BasedInformantApp : Application() {
             runController = runController,
             startRun = { job -> RunService.start(this, runController, job) },
             notificationsAllowed = { NotificationManagerCompat.from(this).areNotificationsEnabled() },
+            shareEmail = { mail -> MailShare.open(this, mail) },
             today = ::today,
             now = System::currentTimeMillis,
         )

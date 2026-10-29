@@ -17,6 +17,7 @@ import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
 import io.github.hugo_cacciatori.basedinformant.core.check.Refusal
 import io.github.hugo_cacciatori.basedinformant.core.key.SecretStore
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
+import io.github.hugo_cacciatori.basedinformant.core.render.RenderedDigest
 import io.github.hugo_cacciatori.basedinformant.core.rfab.Balance
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ModelCatalog
@@ -60,6 +61,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 private const val KEY = "rfab_abcdefghijklmnopqrstuvwxyz"
@@ -74,6 +76,10 @@ internal class RunFixture(
     var outcomes: List<RunOutcome> = emptyList(),
 ) {
     val started = mutableListOf<RunJob>()
+
+    /** What Share → Email handed to the mail app; [mailApp] false plays a device without one. */
+    val shared = mutableListOf<RenderedDigest>()
+    var mailApp = true
     var asked = 0
     val release = CompletableDeferred<Unit>()
 
@@ -188,7 +194,60 @@ class RunScreensTest {
     fun resetDispatcher() = Dispatchers.resetMain()
 
     private fun androidx.compose.ui.test.ComposeUiTest.show(f: RunFixture) = setContent {
-        AppTheme { AppShell(f.keywordsVm, f.settingsVm, f.generateVm, f.presetsVm, f.historyVm, notificationsAllowed = { false }) }
+        AppTheme {
+            AppShell(
+                f.keywordsVm, f.settingsVm, f.generateVm, f.presetsVm, f.historyVm, notificationsAllowed = { false },
+                shareEmail = { f.shared += it; f.mailApp },
+            )
+        }
+    }
+
+    @Test
+    fun shareInTheViewerOpensAMenuWhoseEmailHandsTheMailOver() = runComposeUiTest {
+        val f = RunFixture()
+        show(f)
+        onNodeWithText("History").performClick()
+        waitForIdle()
+        onNodeWithText("A plasma record and a mining vote.").performClick()
+        waitForIdle()
+        onNodeWithTag("share").performClick()
+        waitForIdle()
+        assertEquals(emptyList(), f.shared, "Share opens a menu first")
+        onNodeWithTag("share-email").performClick()
+        waitForIdle()
+        val mail = f.shared.single()
+        assertEquals("Plasma record and a seabed vote", mail.subject)
+        assertTrue("Stellarator holds plasma for 40 minutes" in mail.text)
+        assertTrue("https://science.example.com/a" in mail.html)
+    }
+
+    @Test
+    fun shareSitsNextToViewWhenARunEnds() = runComposeUiTest {
+        val f = RunFixture(outcomes = listOf(RunOutcome.Stored(1, 7, 1, 1_440)))
+        show(f)
+        f.controller.claim(RunJob.Recover)
+        runBlocking { f.release.complete(Unit); f.controller.runClaimed() }
+        waitForIdle()
+        onNodeWithTag("share").performClick()
+        waitForIdle()
+        onNodeWithTag("share-email").performClick()
+        waitForIdle()
+        assertEquals("Plasma record and a seabed vote", f.shared.single().subject)
+    }
+
+    @Test
+    fun withoutAMailAppShareSaysSo() = runComposeUiTest {
+        val f = RunFixture().apply { mailApp = false }
+        show(f)
+        onNodeWithText("History").performClick()
+        waitForIdle()
+        onNodeWithText("A plasma record and a mining vote.").performClick()
+        waitForIdle()
+        onNodeWithTag("share").performClick()
+        waitForIdle()
+        onNodeWithTag("share-email").performClick()
+        waitForIdle()
+        onNodeWithText("No mail app on this device.").assertExists()
     }
 
     @Test

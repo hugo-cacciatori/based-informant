@@ -173,6 +173,8 @@ data class RunUi(
     val presetActions: PresetActions = NoPresets,
     /** View on a stored digest: opens it in History. */
     val onView: (Long) -> Unit = {},
+    /** Share → Email on a stored digest (01-product.md section 8). */
+    val onShareEmail: (Long) -> Unit = {},
 )
 
 /** The Keywords | Topics switch; Topics is disabled while no topic tag is stored. */
@@ -245,7 +247,7 @@ fun RunDialogs(run: RunUi) {
     }
     val progress = run.progress
     if (progress is RunProgress.Finished && (progress.outcomes.isNotEmpty() || progress.job !is RunJob.Recover)) {
-        OutcomeDialog(progress.outcomes, run.charges, actions, run.onView)
+        OutcomeDialog(progress.outcomes, run.charges, actions, run.onView, run.onShareEmail)
     }
     if (run.notStarted) {
         AlertDialog(
@@ -324,10 +326,10 @@ private fun ConfirmDialog(step: GenerateStep.Confirm, actions: GenerateActions) 
 
 /**
  * 01-product.md section 4.3. Read again and Write again are offered here only until History exists (owner, 2026-10-29);
- * the unreadable answer has no Send to support until email exists (stage 5).
+ * Send to support was dropped with the app's own email (owner, 2026-10-29). Share sits next to View.
  */
 @Composable
-private fun OutcomeDialog(outcomes: List<RunOutcome>, charges: List<Transaction>?, actions: GenerateActions, onView: (Long) -> Unit) {
+private fun OutcomeDialog(outcomes: List<RunOutcome>, charges: List<Transaction>?, actions: GenerateActions, onView: (Long) -> Unit, onShareEmail: (Long) -> Unit) {
     val stored = outcomes.filterIsInstance<RunOutcome.Stored>().firstOrNull()
     val readAgain = outcomes.filterIsInstance<RunOutcome.Unreadable>().firstOrNull()
     val writeAgain = outcomes.filterIsInstance<RunOutcome.NotWritten>().firstOrNull()
@@ -358,6 +360,7 @@ private fun OutcomeDialog(outcomes: List<RunOutcome>, charges: List<Transaction>
                     TextButton(onClick = { actions.acknowledge(); onView(it.digestId) }, modifier = Modifier.testTag("outcome-view")) {
                         Text(stringResource(Res.string.view))
                     }
+                    ShareMenu(onEmail = { onShareEmail(it.digestId) }, asText = true)
                 }
                 readAgain?.let { TextButton(onClick = { actions.readAgain(it.runId) }) { Text(stringResource(Res.string.read_again)) } }
                 writeAgain?.let { TextButton(onClick = { actions.writeAgain(it.runId) }) { Text(stringResource(Res.string.write_again)) } }

@@ -124,6 +124,11 @@
     <string name="viewer_delete_body">It can’t be brought back. Its topics leave Topics mode unless another digest has them.</string>
     <string name="view">View</string>
 
+    <!-- Share (01-product.md section 8, owner 2026-10-29): a menu of share types, Email only for now -->
+    <string name="share">Share</string>
+    <string name="share_email">Email</string>
+    <string name="share_no_mail_app">No mail app on this device.</string>
+
     <!-- Settings: key -->
     <string name="key_section">rfab API key</string>
     <string name="key_saved">Saved key ending in %1$s</string>

@@ -69,11 +69,17 @@ interface HistoryActions {
 
 /**
  * The History tab (01-product.md section 5): the list, newest first, and the viewer drawn natively from the same
- * view as the email (03-rendering.md section 3). Material colors until the theme engine (stage 8). Send by email comes
- * with stage 5 (owner, 2026-10-29).
+ * view as the email (03-rendering.md section 3). Material colors until the theme engine (stage 8). Share sits in the
+ * viewer's top bar (section 8).
  */
 @Composable
-fun HistoryScreen(state: HistoryState, actions: HistoryActions, snackbar: SnackbarHostState, modifier: Modifier = Modifier) {
+fun HistoryScreen(
+    state: HistoryState,
+    actions: HistoryActions,
+    snackbar: SnackbarHostState,
+    modifier: Modifier = Modifier,
+    onShareEmail: (Long) -> Unit = {},
+) {
     LaunchedEffect(Unit) { actions.load() }
     LaunchedEffect(state.missing) {
         if (!state.missing) return@LaunchedEffect
@@ -84,7 +90,7 @@ fun HistoryScreen(state: HistoryState, actions: HistoryActions, snackbar: Snackb
     // Back from the viewer goes to the list, as the notification's back stack asks (01-product.md section 7).
     PlatformBackHandler(enabled = open != null) { actions.close() }
     if (open != null) {
-        DigestViewer(open, actions, modifier)
+        DigestViewer(open, actions, onShareEmail, modifier)
         return
     }
     if (state.loaded && state.cards.isEmpty()) {
@@ -115,7 +121,7 @@ private fun HistoryCardRow(card: HistoryCard, onOpen: () -> Unit) {
 }
 
 @Composable
-private fun DigestViewer(open: OpenDigest, actions: HistoryActions, modifier: Modifier) {
+private fun DigestViewer(open: OpenDigest, actions: HistoryActions, onShareEmail: (Long) -> Unit, modifier: Modifier) {
     var confirmDelete by remember { mutableStateOf(false) }
     Column(modifier.fillMaxSize()) {
         // Top bar: date and subject.
@@ -127,6 +133,7 @@ private fun DigestViewer(open: OpenDigest, actions: HistoryActions, modifier: Mo
                 Text(formatMillis(open.stored.generatedAt), style = MaterialTheme.typography.labelMedium)
                 Text(open.stored.subject, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("viewer-subject"))
             }
+            ShareMenu(onEmail = { onShareEmail(open.id) })
             IconButton(onClick = { confirmDelete = true }) {
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.viewer_delete))
             }
