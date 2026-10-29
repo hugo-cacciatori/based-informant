@@ -131,6 +131,7 @@ class SearchTest {
         val on = request(based = true)
         assertTrue("\nBASED\n" in on.systemPrompt)
         assertTrue("Use only articles published by right-wing outlets" in on.messages.single().content)
+        assertTrue("Search sites such as foxnews.com, gbnews.com" in on.messages.single().content)
         // Off, the request is exactly what it was before Based (owner, 2026-10-29: nothing else changes).
         val off = request(based = false)
         assertTrue("BASED" !in off.systemPrompt)
