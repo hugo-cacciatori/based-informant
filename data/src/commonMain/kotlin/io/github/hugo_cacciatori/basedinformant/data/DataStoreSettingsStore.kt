@@ -11,6 +11,7 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.AppSettings
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsStore
+import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalTime
@@ -38,6 +39,9 @@ class DataStoreSettingsStore(private val store: DataStore<Preferences>) : Settin
                 days = prefs[REMINDER_DAYS]?.let(::decodeDays) ?: defaults.reminder.days,
                 time = prefs[REMINDER_TIME]?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: defaults.reminder.time,
             ),
+            // A theme a later version removed reads as the default.
+            theme = prefs[THEME]?.takeIf { it in BuiltInThemes.IDS } ?: defaults.theme,
+            animations = prefs[ANIMATIONS] ?: defaults.animations,
         )
     }
 
@@ -54,6 +58,8 @@ class DataStoreSettingsStore(private val store: DataStore<Preferences>) : Settin
             prefs[REMINDER_ON] = settings.reminder.on
             prefs[REMINDER_DAYS] = settings.reminder.days.sorted().joinToString(",") { it.name }
             prefs[REMINDER_TIME] = settings.reminder.time.toString()
+            prefs[THEME] = settings.theme
+            prefs[ANIMATIONS] = settings.animations
         }
     }
 
@@ -74,6 +80,8 @@ class DataStoreSettingsStore(private val store: DataStore<Preferences>) : Settin
         private val ATTENTION = stringPreferencesKey("attention_mode")
         private val PERSONA = stringPreferencesKey("persona")
         private val MODEL = stringPreferencesKey("model")
+        private val THEME = stringPreferencesKey("theme")
+        private val ANIMATIONS = booleanPreferencesKey("animations")
         private val REMINDER_ON = booleanPreferencesKey("reminder_on")
         private val REMINDER_DAYS = stringPreferencesKey("reminder_days")
         private val REMINDER_TIME = stringPreferencesKey("reminder_time")

@@ -38,6 +38,8 @@ class DataStoreSettingsStoreTest {
             attentionMode = AttentionMode.NICHE,
             persona = Persona.DOCTOR_WIFE,
             reminder = Reminder(on = true, days = setOf(DayOfWeek.FRIDAY, DayOfWeek.MONDAY), time = LocalTime(19, 5)),
+            theme = "night",
+            animations = false,
         )
         store.save(settings)
         assertEquals(settings, store.load())
@@ -56,6 +58,7 @@ class DataStoreSettingsStoreTest {
             it[stringPreferencesKey("persona")] = "RENAMED"
             it[stringPreferencesKey("attention_mode")] = "GONE"
             it[stringPreferencesKey("tags")] = "not json"
+            it[stringPreferencesKey("theme")] = "removed-theme"
         }
         assertEquals(AppSettings(), store.load())
     }

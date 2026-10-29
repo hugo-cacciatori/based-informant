@@ -14,6 +14,8 @@ class AppSettingsTest {
         assertEquals(AttentionMode.BALANCED, settings.attentionMode)
         assertEquals(Persona.OFF, settings.persona)
         assertEquals(TemplateConfig.DEFAULT_MODEL, settings.model)
+        assertEquals("plain", settings.theme)
+        assertTrue(settings.animations)
         assertTrue(settings.violations().isEmpty())
     }
 

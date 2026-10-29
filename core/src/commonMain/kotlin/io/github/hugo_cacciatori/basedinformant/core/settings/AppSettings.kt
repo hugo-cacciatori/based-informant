@@ -5,10 +5,11 @@ import io.github.hugo_cacciatori.basedinformant.core.limits.InputLimits
 import io.github.hugo_cacciatori.basedinformant.core.limits.LimitViolation
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
+import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
 
 /**
- * The settings (01-product.md section 3), with their defaults: what feeds the call, and the reminder (section 6). The
- * theme joins in its own stage. The key is not here: it lives in the [SecretStore].
+ * The settings (01-product.md section 3), with their defaults: what feeds the call, the reminder (section 6) and the
+ * look (section 10). The key is not here: it lives in the [SecretStore].
  */
 data class AppSettings(
     val tags: List<String> = emptyList(),
@@ -16,6 +17,9 @@ data class AppSettings(
     val persona: Persona = Persona.OFF,
     val model: String = TemplateConfig.DEFAULT_MODEL,
     val reminder: Reminder = Reminder(),
+    /** One of [BuiltInThemes.IDS]. */
+    val theme: String = BuiltInThemes.DEFAULT,
+    val animations: Boolean = true,
 ) {
     /** Broken limits; settings with any cannot be saved. */
     fun violations(): List<LimitViolation> = InputChecks.tags(tags)
