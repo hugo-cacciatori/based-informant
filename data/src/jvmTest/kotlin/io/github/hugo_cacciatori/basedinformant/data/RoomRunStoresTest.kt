@@ -151,6 +151,34 @@ class RoomRunStoresTest {
         store.save(stored(1, "Club chess", "Seabed rules"))
         store.save(stored(2, "Fusion records", "club CHESS"))
         assertEquals(listOf("Fusion records", "club CHESS", "Seabed rules"), store.topicTags())
+
+        // History: newest first, without the HTML; deleting one takes its tags out of topic mode.
+        val cards = store.cards()
+        assertEquals(listOf(2L, 1L), cards.map { it.at })
+        assertEquals(listOf(2, 2), cards.map { it.topicCount })
+        store.delete(cards.first().id)
+        assertNull(store.get(cards.first().id))
+        assertEquals(listOf("Club chess", "Seabed rules"), store.topicTags())
+    }
+
+    @Test
+    fun rawFilesGoAfterTheRetentionExceptForRunsWaitingToBeReadOrWritten() = runBlocking {
+        suspend fun finished(at: Long, error: RunError?) = runs.start(snapshot(), at)!!.also { id ->
+            runs.update(runs.get(id)!!.copy(state = if (error == null) RunState.DONE else RunState.FAILED, error = error))
+            runs.saveRaw(id, "{}")
+            runs.saveSearch(id, "{}")
+        }
+        val old = finished(1, null)
+        val unreadable = finished(2, RunError.UNREADABLE)
+        val unwritten = finished(3, RunError.WRITE_FAILED)
+        val recent = finished(100, RunError.EMPTY)
+        runs.pruneRaw(before = 50)
+        assertNull(runs.raw(old))
+        assertNull(runs.search(old))
+        assertNotNull(runs.raw(unreadable))
+        assertNotNull(runs.search(unwritten))
+        assertNotNull(runs.raw(recent))
+        Unit
     }
 
     @Test

@@ -12,6 +12,8 @@ import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.rfab.Transaction
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateState
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryModel
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryState
 import io.github.hugo_cacciatori.basedinformant.core.run.RunController
 import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
 import io.github.hugo_cacciatori.basedinformant.core.run.RunOutcome
@@ -201,4 +203,25 @@ class PresetsViewModel(private val model: PresetsModel) : ViewModel(), PresetAct
     }
 
     override fun dismissRefusal() = model.dismissRefusal()
+}
+
+/** Runs the platform-free [HistoryModel]. */
+class HistoryViewModel(private val model: HistoryModel) : ViewModel(), HistoryActions {
+    val state: StateFlow<HistoryState> = model.state
+
+    override fun load() {
+        viewModelScope.launch { model.load() }
+    }
+
+    override fun open(id: Long) {
+        viewModelScope.launch { model.open(id) }
+    }
+
+    override fun close() = model.close()
+
+    override fun delete(id: Long) {
+        viewModelScope.launch { model.delete(id) }
+    }
+
+    override fun dismissMissing() = model.dismissMissing()
 }

@@ -17,6 +17,12 @@ class RawFiles(private val fileSystem: FileSystem, private val dir: Path) {
 
     fun readSearch(runId: Long): String? = read("$runId-search.json")
 
+    /** Both files of a run, when they exist. */
+    fun delete(runId: Long) {
+        fileSystem.delete(dir.resolve("$runId.json"), mustExist = false)
+        fileSystem.delete(dir.resolve("$runId-search.json"), mustExist = false)
+    }
+
     private fun write(name: String, content: String) {
         fileSystem.createDirectories(dir)
         val temporary = dir.resolve("$name.tmp")

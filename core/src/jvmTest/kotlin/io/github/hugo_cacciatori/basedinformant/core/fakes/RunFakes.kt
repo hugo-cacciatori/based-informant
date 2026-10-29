@@ -16,6 +16,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
+import io.github.hugo_cacciatori.basedinformant.core.run.RawRetention
 import io.github.hugo_cacciatori.basedinformant.core.run.RunRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
 import io.github.hugo_cacciatori.basedinformant.core.run.RunState
@@ -57,6 +58,11 @@ class FakeRunStore : RunStore {
     }
 
     override suspend fun search(runId: Long) = searches[runId]
+
+    override suspend fun pruneRaw(before: Long) {
+        runs.values.filter { it.startedAt < before && it.state !in setOf(RunState.CALLING, RunState.RECEIVED) && it.error.let { e -> e == null || e !in RawRetention.KEPT_ERRORS } }
+            .forEach { raws.remove(it.id); searches.remove(it.id) }
+    }
 
     override suspend fun recentCosts(model: String, limit: Int) =
         runs.values.reversed().filter { it.snapshot.prompt.model == model }.mapNotNull { it.tokensBilled }.take(limit)

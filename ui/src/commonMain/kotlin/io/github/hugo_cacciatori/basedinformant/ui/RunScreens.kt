@@ -111,6 +111,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.refused_title
 import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_count
 import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_none
 import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_note
+import io.github.hugo_cacciatori.basedinformant.ui.resources.view
 import io.github.hugo_cacciatori.basedinformant.ui.resources.write_again
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -171,6 +172,8 @@ data class RunUi(
     val presets: PresetsState = PresetsState(),
     val actions: GenerateActions = NoGenerate,
     val presetActions: PresetActions = NoPresets,
+    /** View on a stored digest: opens it in History. */
+    val onView: (Long) -> Unit = {},
 )
 
 /** The Keywords | Topics switch; Topics is disabled while no topic tag is stored. */
@@ -243,7 +246,7 @@ fun RunDialogs(run: RunUi) {
     }
     val progress = run.progress
     if (progress is RunProgress.Finished && (progress.outcomes.isNotEmpty() || progress.job !is RunJob.Recover)) {
-        OutcomeDialog(progress.outcomes, run.charges, actions)
+        OutcomeDialog(progress.outcomes, run.charges, actions, run.onView)
     }
     if (run.notStarted) {
         AlertDialog(
@@ -323,16 +326,16 @@ private fun ConfirmDialog(step: GenerateStep.Confirm, actions: GenerateActions) 
 
 /**
  * 01-product.md section 4.3. Read again and Write again are offered here only until History exists (owner, 2026-10-29);
- * the unreadable answer has no Send to support until email exists (stage 5). View comes with the History viewer.
+ * the unreadable answer has no Send to support until email exists (stage 5).
  */
 @Composable
-private fun OutcomeDialog(outcomes: List<RunOutcome>, charges: List<Transaction>?, actions: GenerateActions) {
-    val stored = outcomes.any { it is RunOutcome.Stored }
+private fun OutcomeDialog(outcomes: List<RunOutcome>, charges: List<Transaction>?, actions: GenerateActions, onView: (Long) -> Unit) {
+    val stored = outcomes.filterIsInstance<RunOutcome.Stored>().firstOrNull()
     val readAgain = outcomes.filterIsInstance<RunOutcome.Unreadable>().firstOrNull()
     val writeAgain = outcomes.filterIsInstance<RunOutcome.NotWritten>().firstOrNull()
     AlertDialog(
         onDismissRequest = actions::acknowledge,
-        title = { Text(stringResource(if (stored) Res.string.outcome_title_done else Res.string.outcome_title_none)) },
+        title = { Text(stringResource(if (stored != null) Res.string.outcome_title_done else Res.string.outcome_title_none)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()).testTag("outcome"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (outcomes.isEmpty()) Text(stringResource(Res.string.outcome_nothing))
@@ -353,6 +356,11 @@ private fun OutcomeDialog(outcomes: List<RunOutcome>, charges: List<Transaction>
         },
         confirmButton = {
             Row {
+                stored?.let {
+                    TextButton(onClick = { actions.acknowledge(); onView(it.digestId) }, modifier = Modifier.testTag("outcome-view")) {
+                        Text(stringResource(Res.string.view))
+                    }
+                }
                 readAgain?.let { TextButton(onClick = { actions.readAgain(it.runId) }) { Text(stringResource(Res.string.read_again)) } }
                 writeAgain?.let { TextButton(onClick = { actions.writeAgain(it.runId) }) { Text(stringResource(Res.string.write_again)) } }
                 TextButton(onClick = actions::acknowledge, modifier = Modifier.testTag("outcome-ok")) { Text(stringResource(Res.string.ok)) }

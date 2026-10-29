@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +38,8 @@ import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
 import io.github.hugo_cacciatori.basedinformant.core.run.ConfirmationRules
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryModel
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
 import io.github.hugo_cacciatori.basedinformant.core.run.RunController
 import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
@@ -52,6 +55,8 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.app_name
 import io.github.hugo_cacciatori.basedinformant.ui.resources.settings
 import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_history
 import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_keywords
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
@@ -67,6 +72,7 @@ class AppDependencies(
     val presetStore: PresetStore,
     val runStore: RunStore,
     val digestStore: DigestStore,
+    val historyStore: HistoryStore,
     val callLog: CallLog,
     /** The free input check with a key: `InputChecker` on a client that never retries. */
     val inputCheck: suspend (key: String, keywords: List<String>, tags: List<String>) -> CheckOutcome,
@@ -88,7 +94,15 @@ object Links {
 }
 
 @Composable
-fun App(deps: AppDependencies, askNotifications: () -> Unit = {}) {
+fun App(
+    deps: AppDependencies,
+    askNotifications: () -> Unit = {},
+    /** A digest to open, from a new-digest notification; [onDigestOpened] clears it. */
+    openDigest: StateFlow<Long?> = MutableStateFlow(null),
+    onDigestOpened: () -> Unit = {},
+) {
+    val personaName: suspend (Persona) -> String? = { persona -> if (persona == Persona.OFF) null else getString(personaRes(persona)) }
+    val history = viewModel { HistoryViewModel(HistoryModel(deps.historyStore, personaName)) }
     val keywords = viewModel { KeywordsViewModel(KeywordsModel(deps.keywordStore, deps.secrets, deps.clientFor)) }
     val settings = viewModel { SettingsViewModel(SettingsModel(deps.settingsStore, deps.secrets, deps.clientFor)) }
     val presets = viewModel { PresetsViewModel(PresetsModel(deps.presetStore, keywords.model)) }
@@ -104,7 +118,7 @@ fun App(deps: AppDependencies, askNotifications: () -> Unit = {}) {
                 digests = deps.digestStore,
                 calls = deps.callLog,
                 start = deps.startRun,
-                personaName = { persona -> if (persona == Persona.OFF) null else getString(personaRes(persona)) },
+                personaName = personaName,
                 now = deps.now,
                 today = deps.today,
             ),
@@ -119,7 +133,8 @@ fun App(deps: AppDependencies, askNotifications: () -> Unit = {}) {
         )
     }
     AppTheme {
-        AppShell(keywords, settings, generate, presets, deps.notificationsAllowed)
+        val requested by openDigest.collectAsStateWithLifecycle()
+        AppShell(keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened)
     }
 }
 
@@ -136,7 +151,10 @@ fun AppShell(
     settings: SettingsViewModel,
     generate: GenerateViewModel,
     presets: PresetsViewModel,
+    history: HistoryViewModel,
     notificationsAllowed: () -> Boolean,
+    openDigest: Long? = null,
+    onDigestOpened: () -> Unit = {},
 ) {
     var screen by rememberSaveable { mutableStateOf(Screen.KEYWORDS) }
     val snackbar = remember { SnackbarHostState() }
@@ -149,6 +167,16 @@ fun AppShell(
             keywords.reload()
             generate.reload()
         }
+    }
+
+    // View in a run's outcome, or a new-digest notification: History, with that digest open.
+    fun view(id: Long) {
+        screen = Screen.HISTORY
+        history.open(id)
+    }
+    LaunchedEffect(openDigest) {
+        openDigest?.let(::view)
+        if (openDigest != null) onDigestOpened()
     }
 
     // Back from History or Settings returns to the main screen, as Material 3 navigation does.
@@ -189,10 +217,14 @@ fun AppShell(
                     presets = presetsState,
                     actions = generate,
                     presetActions = presets,
+                    onView = ::view,
                 )
                 KeywordsScreen(state, keywords, snackbar, onOpenSettings = { show(Screen.SETTINGS) }, modifier = modifier, run = run)
             }
-            Screen.HISTORY -> HistoryScreen(modifier)
+            Screen.HISTORY -> {
+                val state by history.state.collectAsStateWithLifecycle()
+                HistoryScreen(state, history, snackbar, modifier)
+            }
             Screen.SETTINGS -> {
                 val state by settings.state.collectAsStateWithLifecycle()
                 SettingsScreen(state, settings, snackbar, modifier)

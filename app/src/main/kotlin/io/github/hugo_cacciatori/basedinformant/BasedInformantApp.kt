@@ -44,7 +44,8 @@ class BasedInformantApp : Application() {
             clientFor = { key -> KtorRfabClient(rfabHttp, key) },
             presetStore = RoomPresetStore(database, System::currentTimeMillis),
             runStore = runStore,
-            digestStore = RoomDigestStore(database),
+            digestStore = digestStore,
+            historyStore = digestStore,
             callLog = RoomCallLog(database),
             // A model at its usage limit passes to the next at once: the check's client never retries.
             inputCheck = { key, keywords, tags -> InputChecker(KtorRfabClient(rfabHttp, key, maxAttempts = 1)).check(keywords, tags) },
@@ -58,6 +59,8 @@ class BasedInformantApp : Application() {
 
     val runStore by lazy { RoomRunStore(database, rawFiles(this)) }
 
+    private val digestStore by lazy { RoomDigestStore(database) }
+
     private fun today() = java.time.LocalDate.now().toKotlinLocalDate()
 
     /** The one runner of this device (01-product.md section 4.1); [RunService] hosts its jobs. */
@@ -68,7 +71,7 @@ class BasedInformantApp : Application() {
                 // Read at run time; a Generate cannot be confirmed without a key, and recovery of an interrupted run
                 // needs none. The free models must not retry (DigestRun).
                 val client = KtorRfabClient(rfabHttp, secrets.rfabKey().orEmpty(), maxAttempts = 1)
-                DigestRun(runStore, RoomDigestStore(database), RoomCallLog(database), client, linkChecker, System::currentTimeMillis)
+                DigestRun(runStore, digestStore, RoomCallLog(database), client, linkChecker, System::currentTimeMillis)
                     .perform(job)
             },
             notifier = Notifications.Poster(this),

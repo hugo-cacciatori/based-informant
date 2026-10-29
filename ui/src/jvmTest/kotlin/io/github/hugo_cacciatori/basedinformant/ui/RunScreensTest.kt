@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -21,7 +22,14 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ModelCatalog
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
+import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
+import io.github.hugo_cacciatori.basedinformant.core.digest.Source
+import io.github.hugo_cacciatori.basedinformant.core.digest.Topic
 import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
+import io.github.hugo_cacciatori.basedinformant.core.run.DigestStatus
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryCard
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryModel
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
@@ -101,6 +109,7 @@ internal class RunFixture(
         override suspend fun saveSearch(runId: Long, answer: String) = Unit
         override suspend fun search(runId: Long): String? = null
         override suspend fun recentCosts(model: String, limit: Int) = listOf(1_440L)
+        override suspend fun pruneRaw(before: Long) = Unit
     }
     private val digests = object : DigestStore {
         override suspend fun save(digest: StoredDigest) = 1L
@@ -133,6 +142,18 @@ internal class RunFixture(
     val settingsVm = SettingsViewModel(io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel(settings, secrets, client))
     val keywordsVm = KeywordsViewModel(KeywordsModel(keywordStore, secrets, client))
     val presetsVm = PresetsViewModel(PresetsModel(presetStore, keywordsVm.model))
+    /** History rows by id; one stored digest unless a test changes it. */
+    val history = mutableMapOf(7L to storedDigest())
+    val historyVm = HistoryViewModel(
+        HistoryModel(
+            object : HistoryStore {
+                override suspend fun cards() = history.entries.sortedByDescending { it.value.generatedAt }
+                    .map { (id, d) -> HistoryCard(id, d.generatedAt, d.status, d.topicCount, d.summary) }
+                override suspend fun get(id: Long) = history[id]
+                override suspend fun delete(id: Long) { history.remove(id) }
+            },
+        ) { null },
+    )
     val generateVm = GenerateViewModel(
         GenerateModel(
             keywords = { keywordsVm.model.state.value.keywords }, settings = settings, secrets = secrets, clientFor = client,
@@ -143,6 +164,23 @@ internal class RunFixture(
     )
 }
 
+/** A stored digest with one card, synthetic. */
+internal fun storedDigest() = StoredDigest(
+    runId = 1, status = DigestStatus.SAVED, generatedAt = 1_000, subject = "Plasma record and a seabed vote", html = "<p>emailed page</p>",
+    text = "x", summary = "A plasma record and a mining vote.", topicCount = 1, model = "openrouter:perplexity/sonar",
+    attentionMode = "balanced", persona = "off", recipient = null, tokensBilled = 1_440,
+    digest = Digest(
+        2, LocalDate(2026, 10, 29), "Hello.", "Bye.",
+        listOf(
+            Topic(
+                "t1", "Stellarator research", "Stellarator holds plasma for 40 minutes", "A research stellarator held a plasma.",
+                "The lab plans a one-hour campaign.", listOf("fusion energy"), 80, null,
+                listOf(Source("Plasma record", "Science Example", "https://science.example.com/a", "en", LocalDate(2026, 10, 28))),
+            ),
+        ),
+    ),
+)
+
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
 class RunScreensTest {
     @BeforeTest
@@ -152,7 +190,7 @@ class RunScreensTest {
     fun resetDispatcher() = Dispatchers.resetMain()
 
     private fun androidx.compose.ui.test.ComposeUiTest.show(f: RunFixture) = setContent {
-        AppTheme { AppShell(f.keywordsVm, f.settingsVm, f.generateVm, f.presetsVm, notificationsAllowed = { false }) }
+        AppTheme { AppShell(f.keywordsVm, f.settingsVm, f.generateVm, f.presetsVm, f.historyVm, notificationsAllowed = { false }) }
     }
 
     @Test
@@ -178,6 +216,43 @@ class RunScreensTest {
         onNodeWithTag("outcome-ok").performClick()
         waitForIdle()
         onNodeWithTag("generate").assertExists()
+    }
+
+    @Test
+    fun viewOpensTheStoredDigestInHistory() = runComposeUiTest {
+        val f = RunFixture(outcomes = listOf(RunOutcome.Stored(1, 7, 1, 1_440)))
+        show(f)
+        f.controller.claim(RunJob.Recover)
+        runBlocking { f.release.complete(Unit); f.controller.runClaimed() }
+        waitForIdle()
+        onNodeWithTag("outcome-view").performClick()
+        waitForIdle()
+        onNodeWithTag("viewer-subject").assertTextContains("Plasma record and a seabed vote")
+        onNodeWithText("Stellarator holds plasma for 40 minutes").assertExists()
+        onNodeWithText("Science Example, 28 Oct 2026, en").assertExists()
+        onNodeWithText("The lab plans a one-hour campaign.").assertDoesNotExist()
+        onNodeWithText("More").performClick()
+        waitForIdle()
+        onNodeWithText("The lab plans a one-hour campaign.").assertExists()
+    }
+
+    @Test
+    fun historyListsCardsShowsAsEmailedAndDeletesAfterAConfirmation() = runComposeUiTest {
+        val f = RunFixture()
+        show(f)
+        onNodeWithText("History").performClick()
+        waitForIdle()
+        onNodeWithText("A plasma record and a mining vote.").performClick()
+        waitForIdle()
+        onNodeWithTag("show-as-emailed").performClick()
+        waitForIdle()
+        onNodeWithTag("emailed-html").assertTextContains("<p>emailed page</p>")
+        onNodeWithContentDescription("Delete digest").performClick()
+        waitForIdle()
+        onNodeWithTag("delete-confirm").performClick()
+        waitForIdle()
+        assertEquals(emptyMap(), f.history)
+        onNodeWithText("Your digests will appear here.").assertExists()
     }
 
     @Test

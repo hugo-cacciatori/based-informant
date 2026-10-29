@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stage 6: the History tab: digest cards newest first, the digest viewer drawn in the app (More, sources as links), Show as emailed in a locked-down web view, Delete with a confirmation; View after a run and the new-digest notification open the digest; raw answers are deleted after 14 days unless waiting for Read again or Write again.
 - Stage 4 step 7: the release build on a phone; the first real Generate stored a digest (1,440 tokens, about one minute).
 - Stage 4 step 6: Generate works from the main screen: the input check's refusals, the confirmation (balance, average cost, low-balance warning, settings, last digest, recent chat call), progress without a cancel button, and the outcome with Read again or Write again; the notification permission asked after the first confirm. The main screen gets a Keywords | Topics switch, the topic picker and the keyword presets.
 - Stage 4 step 5: the background runner: a foreground service that keeps the phone awake for the whole run (up to 25 minutes), one job at a time (Generate, Read again, Write again, recovery at app start), the four notification channels, the "Generating your digest…" notification, the new-digest notification (count and date only) and run notices, both posted only when the app is not open.

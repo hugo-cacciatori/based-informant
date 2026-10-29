@@ -154,6 +154,12 @@ interface RunStore {
 
     /** Tokens billed by the latest finished calls with [model], newest first, for the average cost. */
     suspend fun recentCosts(model: String, limit: Int): List<Long>
+
+    /**
+     * Deletes the raw answers and checked searches of finished runs started before [before], except those of runs
+     * waiting for Read again or Write again ([RawRetention]).
+     */
+    suspend fun pruneRaw(before: Long)
 }
 
 interface DigestStore {

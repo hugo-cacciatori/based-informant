@@ -26,7 +26,7 @@ object Notifications {
     const val PROGRESS = "progress"
     const val RUN_NOTICES = "run_notices"
 
-    /** The digest a new-digest notification opens. The viewer comes with History (stage 6). */
+    /** The digest a new-digest notification opens in History's viewer. */
     const val EXTRA_DIGEST_ID = "digest_id"
 
     /** Idempotent: run at every app start. */
@@ -55,7 +55,7 @@ object Notifications {
     /** Opens the app; with [digestId], the intent carries the digest to show. */
     private fun openApp(context: Context, requestCode: Int, digestId: Long?): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)
-            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             .apply { digestId?.let { putExtra(EXTRA_DIGEST_ID, it) } }
         return PendingIntent.getActivity(context, requestCode, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }

@@ -8,6 +8,8 @@ import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStatus
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryCard
+import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
 import io.github.hugo_cacciatori.basedinformant.core.run.RunError
 import io.github.hugo_cacciatori.basedinformant.core.run.RunRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
@@ -57,6 +59,11 @@ class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : Run
 
     override suspend fun recentCosts(model: String, limit: Int): List<Long> = db.runs().recentCosts(model, limit)
 
+    override suspend fun pruneRaw(before: Long) {
+        val ids = db.runs().prunable(before)
+        withContext(Dispatchers.IO) { ids.forEach(raw::delete) }
+    }
+
     private fun RunEntity.toRecord() = RunRecord(
         id = id,
         startedAt = startedAt,
@@ -69,7 +76,7 @@ class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : Run
     )
 }
 
-class RoomDigestStore(private val db: AppDatabase) : DigestStore {
+class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore {
     override suspend fun save(digest: StoredDigest): Long = db.digests().insert(
         with(digest) {
             DigestEntity(
@@ -88,7 +95,13 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore {
 
     override suspend fun lastGeneratedAt(): Long? = db.digests().lastGeneratedAt()
 
-    suspend fun get(id: Long): StoredDigest? = db.digests().get(id)?.let {
+    override suspend fun cards(): List<HistoryCard> = db.digests().cards().map {
+        HistoryCard(it.id, it.generatedAt, DigestStatus.valueOf(it.status), it.topicCount, it.summary)
+    }
+
+    override suspend fun delete(id: Long) = db.digests().delete(id)
+
+    override suspend fun get(id: Long): StoredDigest? = db.digests().get(id)?.let {
         StoredDigest(
             runId = it.runId, status = DigestStatus.valueOf(it.status), generatedAt = it.generatedAt, subject = it.subject,
             html = it.html, text = it.text, summary = it.summary, topicCount = it.topicCount,

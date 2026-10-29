@@ -41,6 +41,13 @@ interface RunDao {
 
     @Query("SELECT tokens_billed FROM runs WHERE model = :model AND tokens_billed IS NOT NULL ORDER BY id DESC LIMIT :limit")
     suspend fun recentCosts(model: String, limit: Int): List<Long>
+
+    /** Finished runs started before [before] whose raw files may go ([RawRetention]). */
+    @Query(
+        "SELECT id FROM runs WHERE started_at < :before AND state IN ('DONE', 'FAILED', 'INTERRUPTED') " +
+            "AND (error IS NULL OR error NOT IN ('UNREADABLE', 'WRITE_FAILED'))",
+    )
+    suspend fun prunable(before: Long): List<Long>
 }
 
 @Entity(tableName = "calls", indices = [Index(value = ["run_id"])])
@@ -128,7 +135,22 @@ interface DigestDao {
 
     @Query("SELECT * FROM digests WHERE id = :id")
     suspend fun get(id: Long): DigestEntity?
+
+    /** The History list: never the HTML (01-product.md section 5). */
+    @Query("SELECT id, generated_at, status, topic_count, summary FROM digests ORDER BY generated_at DESC, id DESC")
+    suspend fun cards(): List<DigestCardRow>
+
+    @Query("DELETE FROM digests WHERE id = :id")
+    suspend fun delete(id: Long)
 }
+
+data class DigestCardRow(
+    val id: Long,
+    @ColumnInfo(name = "generated_at") val generatedAt: Long,
+    val status: String,
+    @ColumnInfo(name = "topic_count") val topicCount: Int,
+    val summary: String,
+)
 
 /** Keyword presets (01-product.md section 3, schema v3): the 5 keywords as a JSON list, oldest first. */
 @Entity(tableName = "presets")

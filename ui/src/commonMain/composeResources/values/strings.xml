@@ -116,6 +116,17 @@
 
     <!-- History -->
     <string name="history_empty">Your digests will appear here.</string>
+    <string name="history_send_failed">Send failed</string>
+    <string name="history_topics">%1$d topics</string>
+    <string name="history_one_topic">1 topic</string>
+    <string name="history_missing">That digest is no longer available.</string>
+    <string name="viewer_show_emailed">Show as emailed</string>
+    <string name="viewer_show_app">Show in the app</string>
+    <string name="viewer_less">Less</string>
+    <string name="viewer_delete">Delete digest</string>
+    <string name="viewer_delete_title">Delete this digest?</string>
+    <string name="viewer_delete_body">It can’t be brought back. Its topics leave Topics mode unless another digest has them.</string>
+    <string name="view">View</string>
 
     <!-- Settings: key -->
     <string name="key_section">rfab API key</string>

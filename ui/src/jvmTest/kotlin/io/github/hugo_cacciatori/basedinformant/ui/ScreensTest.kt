@@ -193,7 +193,7 @@ class ScreensTest {
         val keywords = KeywordsViewModel(KeywordsModel(MemoryKeywords(), secrets, clients))
         val settings = SettingsViewModel(SettingsModel(MemorySettings(), secrets, clients))
         val run = RunFixture()
-        setContent { AppTheme { AppShell(keywords, settings, run.generateVm, run.presetsVm, notificationsAllowed = { true }) } }
+        setContent { AppTheme { AppShell(keywords, settings, run.generateVm, run.presetsVm, run.historyVm, notificationsAllowed = { true }) } }
         onNodeWithText("Settings", useUnmergedTree = true).assertExists()
         onNodeWithTag("balance-line").performClick()
         waitForIdle()
