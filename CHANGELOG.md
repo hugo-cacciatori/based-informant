@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stage 10 step 3: topic mode lists the saved topics with checkboxes to delete several at once (with Undo) and chips to pick up to five; trending cards say "Trending".
 - Stage 10 step 2: saved topics. Every digest's topics are kept in their own list until deleted, even when the digest is deleted; database schema v7 moves the existing topics over and keeps every digest.
 - Weak keyword cards are kept before trending ones: the score cutoff is gone.
 

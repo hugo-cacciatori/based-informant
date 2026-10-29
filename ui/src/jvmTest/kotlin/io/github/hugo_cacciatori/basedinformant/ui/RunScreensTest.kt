@@ -34,6 +34,8 @@ import io.github.hugo_cacciatori.basedinformant.core.run.HistoryModel
 import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
+import io.github.hugo_cacciatori.basedinformant.core.run.SavedTopic
+import io.github.hugo_cacciatori.basedinformant.core.run.TopicStore
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
 import io.github.hugo_cacciatori.basedinformant.core.run.RunController
 import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
@@ -120,10 +122,18 @@ internal class RunFixture(
         override suspend fun recentCosts(model: String, limit: Int) = listOf(1_440L)
         override suspend fun pruneRaw(before: Long) = Unit
     }
-    private val digests = object : DigestStore {
+    /** The saved topics; deleting and Undo change them. */
+    var savedTopics = topics
+    private val digests = object : DigestStore, TopicStore {
         override suspend fun save(digest: StoredDigest) = 1L
-        override suspend fun topicTags() = topics
+        override suspend fun topicTags() = savedTopics
         override suspend fun lastGeneratedAt(): Long? = null
+        override suspend fun delete(tags: Collection<String>): List<SavedTopic> {
+            val gone = savedTopics.filter { t -> tags.any { it.equals(t, ignoreCase = true) } }
+            savedTopics = savedTopics - gone.toSet()
+            return gone.map { SavedTopic(it, 1L) }
+        }
+        override suspend fun restore(topics: List<SavedTopic>) { savedTopics = savedTopics + topics.map { it.tag } }
     }
     private val calls = object : CallLog {
         override suspend fun record(call: CallRecord) = Unit
@@ -166,7 +176,7 @@ internal class RunFixture(
     val generateVm = GenerateViewModel(
         GenerateModel(
             keywords = { keywordsVm.model.state.value.keywords }, settings = settings, secrets = secrets, clientFor = client,
-            inputCheck = { _, _, _ -> check }, runs = runs, digests = digests, calls = calls, start = startRun,
+            inputCheck = { _, _, _ -> check }, runs = runs, digests = digests, topicStore = digests, calls = calls, start = startRun,
             personaName = { null }, now = { 1_000L }, today = { LocalDate(2026, 10, 29) },
         ),
         controller, startRun, keywordsVm.model, recentCharges = { emptyList() }, askNotifications = { asked++ },
@@ -372,6 +382,26 @@ class RunScreensTest {
         // No pick is fine: the free slots get trending news (owner, 2026-10-29).
         onNodeWithTag("generate-reason").assertDoesNotExist()
         onNodeWithTag("generate").assertIsEnabled()
+    }
+
+    @Test
+    fun topicsAreTickedAndDeletedTogetherWithUndo() = runComposeUiTest {
+        val f = RunFixture(topics = listOf("Stellarator research", "Club chess", "Seabed rules"))
+        show(f)
+        f.generateVm.reload()
+        waitForIdle()
+        onNodeWithTag("mode-topics").performClick()
+        waitForIdle()
+        // Ticking for deletion is apart from picking for the digest.
+        onNodeWithContentDescription("Select Club chess to delete").performClick()
+        onNodeWithContentDescription("Select Seabed rules to delete").performClick()
+        onNodeWithTag("topics-delete").assertTextContains("Delete (2)").performClick()
+        waitForIdle()
+        assertEquals(listOf("Stellarator research"), f.savedTopics)
+        onNodeWithText("Deleted 2 topics").assertExists()
+        onNodeWithText("Undo").performClick()
+        waitForIdle()
+        assertEquals(setOf("Stellarator research", "Club chess", "Seabed rules"), f.savedTopics.toSet())
     }
 
     @Test

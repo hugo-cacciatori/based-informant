@@ -47,6 +47,7 @@ import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
 import io.github.hugo_cacciatori.basedinformant.core.run.RunController
 import io.github.hugo_cacciatori.basedinformant.core.run.RunJob
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
+import io.github.hugo_cacciatori.basedinformant.core.run.TopicStore
 import io.github.hugo_cacciatori.basedinformant.core.settings.AppSettings
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.settings.PresetStore
@@ -83,6 +84,8 @@ class AppDependencies(
     val runStore: RunStore,
     val digestStore: DigestStore,
     val historyStore: HistoryStore,
+    /** Deleting saved topics, with Undo (01-product.md section 3). */
+    val topicStore: TopicStore,
     val callLog: CallLog,
     /** The free input check with a key: `InputChecker` on a client that never retries. */
     val inputCheck: suspend (key: String, keywords: List<String>, tags: List<String>) -> CheckOutcome,
@@ -135,6 +138,7 @@ fun App(
                 inputCheck = deps.inputCheck,
                 runs = deps.runStore,
                 digests = deps.digestStore,
+                topicStore = deps.topicStore,
                 calls = deps.callLog,
                 start = deps.startRun,
                 personaName = personaName,

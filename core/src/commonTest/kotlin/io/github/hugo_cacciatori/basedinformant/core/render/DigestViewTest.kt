@@ -42,6 +42,9 @@ class DigestViewTest {
         )
         assertEquals(listOf("Title a", "Title b"), view.cards.map { it.title })
         assertEquals("Matched: chess", view.cards[0].matched)
+        // A trending card names no keyword (owner, 2026-10-29).
+        val trending = DigestViews.build(digest(topic("t", "https://example.com/t").copy(keywords = emptyList(), trending = true)), meta)
+        assertEquals("Trending", trending.cards.single().matched)
         assertEquals("1 source", view.cards[0].singleSourceLabel)
         assertNull(view.cards[1].singleSourceLabel)
         assertEquals(SourceView("Example Wire, 17 Oct 2026, en", "https://example.com/b"), view.cards[1].sources[0])

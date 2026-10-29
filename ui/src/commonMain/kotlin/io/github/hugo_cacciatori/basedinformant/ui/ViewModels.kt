@@ -184,6 +184,16 @@ class GenerateViewModel(
 
     override fun toggleTopic(tag: String) = model.toggleTopic(tag)
 
+    override fun deleteTopics(tags: Collection<String>) {
+        viewModelScope.launch { model.deleteTopics(tags) }
+    }
+
+    override fun undoTopics() {
+        viewModelScope.launch { model.undoTopics() }
+    }
+
+    override fun dismissTopicUndo() = model.dismissTopicUndo()
+
     override fun readAgain(runId: Long) = again(RunJob.ReadAgain(runId))
 
     override fun writeAgain(runId: Long) = again(RunJob.WriteAgain(runId))

@@ -33,9 +33,11 @@ sealed interface GenerateStep {
 
 data class GenerateState(
     val mode: DigestMode = DigestMode.KEYWORDS,
-    /** The topic tags of stored digests, newest first: topic mode's choices. */
+    /** The saved topics, newest first: topic mode's choices. */
     val topics: List<String> = emptyList(),
     val chosen: List<String> = emptyList(),
+    /** The topics just deleted, while their Undo is offered (01-product.md section 3). */
+    val topicUndo: List<SavedTopic>? = null,
     val step: GenerateStep = GenerateStep.Idle,
 )
 
@@ -53,6 +55,7 @@ class GenerateModel(
     private val inputCheck: suspend (key: String, keywords: List<String>, tags: List<String>) -> CheckOutcome,
     private val runs: RunStore,
     private val digests: DigestStore,
+    private val topicStore: TopicStore,
     private val calls: CallLog,
     /** Hands the job to the runner; false when another job holds it or the runner could not start. */
     private val start: (RunJob) -> Boolean,
@@ -72,6 +75,23 @@ class GenerateModel(
             s.copy(topics = topics, chosen = chosen)
         }
     }
+
+    /** Deletes saved topics, one or several (owner, 2026-10-29); Undo puts them back. A deleted pick is unpicked. */
+    suspend fun deleteTopics(tags: Collection<String>) {
+        val gone = topicStore.delete(tags)
+        loadTopics()
+        _state.update { it.copy(topicUndo = gone.ifEmpty { null }) }
+    }
+
+    suspend fun undoTopics() {
+        val gone = _state.value.topicUndo ?: return
+        topicStore.restore(gone)
+        _state.update { it.copy(topicUndo = null) }
+        loadTopics()
+    }
+
+    /** The Undo offer ends after a few seconds (the UI's timer). */
+    fun dismissTopicUndo() = _state.update { it.copy(topicUndo = null) }
 
     /** Topic mode works with no saved topic: the digest is then all trending (owner, 2026-10-29). */
     fun setMode(mode: DigestMode) = _state.update { it.copy(mode = mode) }

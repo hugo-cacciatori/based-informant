@@ -38,7 +38,7 @@ data class DigestView(
 data class CardView(
     val title: String,
     val summary: String,
-    /** "Matched: x, y"; the score is never shown. */
+    /** "Matched: x, y", or "Trending"; the score is never shown. */
     val matched: String,
     /** The longer text behind **More**. */
     val detail: String?,
@@ -103,7 +103,8 @@ object DigestViews {
     private fun card(topic: Topic) = CardView(
         title = topic.title,
         summary = topic.summary,
-        matched = "Matched: ${topic.keywords.joinToString(", ")}",
+        // A trending card has no keyword: it fills a free slot (owner, 2026-10-29).
+        matched = if (topic.trending) "Trending" else "Matched: ${topic.keywords.joinToString(", ")}",
         detail = topic.detail,
         singleSourceLabel = SINGLE_SOURCE.takeIf { topic.sources.size == 1 },
         sources = topic.sources.map(::source),

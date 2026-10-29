@@ -84,6 +84,8 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_delete_tic
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_deleted
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_empty
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_select_all
+import io.github.hugo_cacciatori.basedinformant.ui.resources.topic_deleted
+import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_deleted
 import io.github.hugo_cacciatori.basedinformant.ui.resources.open_settings
 import io.github.hugo_cacciatori.basedinformant.ui.resources.save
 import io.github.hugo_cacciatori.basedinformant.ui.resources.undo
@@ -120,6 +122,18 @@ fun KeywordsScreen(
     val tickedIndices = state.keywords.indices.filter { state.keywords[it].lowercase() in ticked }.toSet()
     val mode = run.generate.mode
 
+    // Deleted topics: Undo puts them back for as long as the snackbar shows.
+    val topicUndo = run.generate.topicUndo
+    LaunchedEffect(topicUndo) {
+        if (topicUndo == null) return@LaunchedEffect
+        val result = snackbar.showSnackbar(
+            message = if (topicUndo.size == 1) getString(Res.string.topic_deleted, topicUndo.single().tag)
+            else getString(Res.string.topics_deleted, topicUndo.size),
+            actionLabel = getString(Res.string.undo),
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) run.actions.undoTopics() else run.actions.dismissTopicUndo()
+    }
     // After a delete or a loaded preset, Undo brings the previous list back for as long as the snackbar shows (a few
     // seconds), or until the next edit.
     val restore = state.restore

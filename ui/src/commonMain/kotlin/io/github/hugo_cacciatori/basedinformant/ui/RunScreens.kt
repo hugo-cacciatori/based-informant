@@ -4,7 +4,6 @@ package io.github.hugo_cacciatori.basedinformant.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -122,6 +121,15 @@ import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.TriStateCheckbox
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.runtime.saveable.rememberSaveable
+import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_delete_ticked
+import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_select_all
+import io.github.hugo_cacciatori.basedinformant.ui.resources.topic_tick
 
 /** What Generate and the runner can be asked for; [GenerateViewModel] does it, tests use [NoGenerate]. */
 interface GenerateActions {
@@ -130,6 +138,9 @@ interface GenerateActions {
     fun dismiss()
     fun setMode(mode: DigestMode)
     fun toggleTopic(tag: String)
+    fun deleteTopics(tags: Collection<String>)
+    fun undoTopics()
+    fun dismissTopicUndo()
     fun readAgain(runId: Long)
     fun writeAgain(runId: Long)
     fun acknowledge()
@@ -150,6 +161,9 @@ object NoGenerate : GenerateActions {
     override fun dismiss() = Unit
     override fun setMode(mode: DigestMode) = Unit
     override fun toggleTopic(tag: String) = Unit
+    override fun deleteTopics(tags: Collection<String>) = Unit
+    override fun undoTopics() = Unit
+    override fun dismissTopicUndo() = Unit
     override fun readAgain(runId: Long) = Unit
     override fun writeAgain(runId: Long) = Unit
     override fun acknowledge() = Unit
@@ -200,22 +214,54 @@ fun ModeSwitch(state: GenerateState, actions: GenerateActions, modifier: Modifie
     }
 }
 
-/** Topic mode: the saved topics as chips, 0 to [InputLimits.KEYWORDS_MAX] picked. */
+/**
+ * Topic mode (01-product.md section 3): the saved topics, 0 to [InputLimits.KEYWORDS_MAX] picked by tapping their chip.
+ * The checkbox before each one ticks it for **Delete (N)**, with a select-all checkbox by the count, like keywords.
+ */
 @Composable
 fun TopicPicker(state: GenerateState, actions: GenerateActions, modifier: Modifier = Modifier) {
+    // Ticked for deletion, by lowercase tag, so a reload never shifts them.
+    var ticked by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val tickedTags = state.topics.filter { it.lowercase() in ticked }
     Column(modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(Res.string.topics_note, InputLimits.KEYWORDS_MAX), Modifier.testTag("topics-note"))
         if (state.topics.isEmpty()) {
             Text(stringResource(Res.string.topics_none))
             return@Column
         }
-        Text(stringResource(Res.string.topics_note, InputLimits.KEYWORDS_MAX), Modifier.testTag("topics-note"))
-        Text(
-            stringResource(Res.string.topics_count, state.chosen.size, InputLimits.KEYWORDS_MAX),
-            style = MaterialTheme.typography.labelMedium,
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            state.topics.forEach { tag ->
-                val picked = tag in state.chosen
+        Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            val selectAll = stringResource(Res.string.topics_select_all)
+            TriStateCheckbox(
+                state = when (tickedTags.size) {
+                    0 -> ToggleableState.Off
+                    state.topics.size -> ToggleableState.On
+                    else -> ToggleableState.Indeterminate
+                },
+                onClick = { ticked = if (tickedTags.size == state.topics.size) emptyList() else state.topics.map { it.lowercase() } },
+                modifier = Modifier.semantics { contentDescription = selectAll }.testTag("topics-select-all"),
+            )
+            Text(
+                stringResource(Res.string.topics_count, state.chosen.size, InputLimits.KEYWORDS_MAX),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.weight(1f),
+            )
+            if (tickedTags.isNotEmpty()) {
+                TextButton(
+                    onClick = { actions.deleteTopics(tickedTags); ticked = emptyList() },
+                    modifier = Modifier.testTag("topics-delete"),
+                ) { Text(stringResource(Res.string.keywords_delete_ticked, tickedTags.size)) }
+            }
+        }
+        state.topics.forEach { tag ->
+            val key = tag.lowercase()
+            val picked = tag in state.chosen
+            val tick = stringResource(Res.string.topic_tick, tag)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = key in ticked,
+                    onCheckedChange = { on -> ticked = if (on) ticked + key else ticked - key },
+                    modifier = Modifier.semantics { contentDescription = tick },
+                )
                 FilterChip(
                     selected = picked,
                     onClick = { actions.toggleTopic(tag) },

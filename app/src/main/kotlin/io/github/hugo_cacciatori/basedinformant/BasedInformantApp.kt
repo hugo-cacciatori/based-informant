@@ -46,6 +46,7 @@ class BasedInformantApp : Application() {
             runStore = runStore,
             digestStore = digestStore,
             historyStore = digestStore,
+            topicStore = digestStore,
             callLog = RoomCallLog(database),
             // A model at its usage limit passes to the next at once: the check's client never retries.
             inputCheck = { key, keywords, tags -> InputChecker(KtorRfabClient(rfabHttp, key, maxAttempts = 1)).check(keywords, tags) },

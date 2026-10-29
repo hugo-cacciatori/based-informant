@@ -35,10 +35,17 @@ class GenerateModelTest {
     private var runnerFree = true
 
     /** The fake digest store, with fixed topic tags and one digest stored at 500. */
-    private class TopicDigests(var tags: List<String>) : DigestStore {
+    private class TopicDigests(var tags: List<String>) : DigestStore, TopicStore {
         override suspend fun save(digest: StoredDigest) = 1L
         override suspend fun topicTags() = tags
         override suspend fun lastGeneratedAt() = 500L
+        override suspend fun delete(tags: Collection<String>): List<SavedTopic> {
+            val keys = tags.map { it.lowercase() }.toSet()
+            val gone = this.tags.filter { it.lowercase() in keys }
+            this.tags = this.tags - gone.toSet()
+            return gone.map { SavedTopic(it, 1L) }
+        }
+        override suspend fun restore(topics: List<SavedTopic>) { tags = tags + topics.map { it.tag } }
     }
 
     private val model = GenerateModel(
@@ -49,6 +56,7 @@ class GenerateModelTest {
         inputCheck = { _, _, _ -> check },
         runs = FakeRunStore(),
         digests = digests,
+        topicStore = digests,
         calls = calls,
         start = { job -> runnerFree.also { if (it) started += job } },
         personaName = { if (it == Persona.OFF) null else "Roach King" },
@@ -103,7 +111,7 @@ class GenerateModelTest {
     fun anUnreadableBalanceCannotBeConfirmed() = runBlocking {
         val noBalance = FakeRfab(mapOf("rfab_key" to RfabResult.Error(io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError.NETWORK)))
         val offline = GenerateModel(
-            { five }, settings, FakeSecretStore("rfab_key"), noBalance::clientFor, { _, _, _ -> check }, FakeRunStore(), digests,
+            { five }, settings, FakeSecretStore("rfab_key"), noBalance::clientFor, { _, _, _ -> check }, FakeRunStore(), digests, digests,
             calls, { started += it; true }, { null }, { 1_000L }, { LocalDate(2026, 10, 29) },
         )
         offline.generate()
@@ -152,5 +160,19 @@ class GenerateModelTest {
         digests.tags = listOf("Topic 3")
         model.loadTopics()
         assertEquals(listOf("Topic 3"), model.state.value.chosen, "a tag no longer stored is dropped")
+    }
+
+    @Test
+    fun deletedTopicsAreUnpickedAndUndoBringsThemBack() = runBlocking {
+        digests.tags = listOf("Topic 1", "Topic 2", "Topic 3")
+        model.loadTopics()
+        model.toggleTopic("Topic 2")
+        model.deleteTopics(listOf("topic 2", "Topic 3"))
+        assertEquals(listOf("Topic 1"), model.state.value.topics)
+        assertEquals(emptyList(), model.state.value.chosen)
+        assertEquals(listOf("Topic 2", "Topic 3"), model.state.value.topicUndo?.map { it.tag })
+        model.undoTopics()
+        assertEquals(listOf("Topic 1", "Topic 2", "Topic 3"), model.state.value.topics)
+        assertEquals(null, model.state.value.topicUndo)
     }
 }
