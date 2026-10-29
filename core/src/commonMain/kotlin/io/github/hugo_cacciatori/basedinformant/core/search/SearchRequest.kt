@@ -38,7 +38,9 @@ object SearchRequest {
     fun build(input: PromptInput, research: Boolean = false, files: Map<String, String> = PromptFiles.all): Result {
         val keywords = input.keywords.map(KeywordRules::normalize)
         val tags = input.tagsSent().map { it.trim() }
-        val violations = InputChecks.keywords(keywords) + InputChecks.tags(tags)
+        // Topic mode may pick no topic: the digest is then all trending (owner, 2026-10-29).
+        val count = InputChecks.keywords(keywords).filterNot { input.mode == DigestMode.TOPICS && it is LimitViolation.TooFewKeywords }
+        val violations = count + InputChecks.tags(tags)
         if (violations.isNotEmpty()) return Result.OverLimit(violations)
         val researchPart = if (!research || input.persona == Persona.OFF) "" else {
             val person = files.getValue("personas/${input.persona.voiceFile}.txt").trim()
@@ -49,9 +51,10 @@ object SearchRequest {
         // A plain-language request first: web-search models build their search from it (02-ai-call.md section 5).
         // Keywords are quoted, with quotes and angle brackets removed, so they read as topics and cannot forge a marker.
         val topics = keywords.joinToString("; ") { "\"" + it.replace(Regex("[\"<>\\r\\n]"), " ").trim() + "\"" }
-        val ask = when (input.mode) {
-            DigestMode.KEYWORDS -> "Find the most recent news about each of these topics, reading each one in the context of the others: $topics."
-            DigestMode.TOPICS -> "Find the most recent news on each of these topics, which the reader followed in earlier digests: $topics."
+        val ask = when {
+            input.mode == DigestMode.KEYWORDS -> "Find the most recent news about each of these topics, reading each one in the context of the others: $topics. Then add today's most popular news stories to fill the report."
+            keywords.isEmpty() -> "Find today's most popular news stories."
+            else -> "Find the most recent news on each of these topics, which the reader followed in earlier digests: $topics. Then add today's most popular news stories to fill the report."
         }
         // The search is built from this message, so Based must be in it too.
         val sources = if (input.based) " Use right-wing sources only, as your instructions describe." else ""

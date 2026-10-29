@@ -34,7 +34,9 @@ data class SearchAnswer(
     @Serializable
     data class Story(
         val story: Int? = null,
-        val keywords: List<String>,
+        val keywords: List<String> = emptyList(),
+        /** Today's popular news filling a free slot: it needs no keyword (owner, 2026-10-29). */
+        val trending: Boolean = false,
         @SerialName("what_happened") val whatHappened: String? = null,
         val attention: Int? = null,
         val sources: List<SearchSource>,
@@ -105,7 +107,7 @@ object SearchParser {
  * The free checks on a search answer, before any page is opened (02-ai-call.md section 8): a source is dropped when its
  * URL is not `https`, looks like a listing page, repeats one already kept, or its date is not `YYYY-MM-DD` or is in the
  * future (one day of tolerance; no lower limit since 2026-10-29); a story is dropped when none of its keywords is the
- * owner's or no source is left. The answer comes back numbered.
+ * owner's (a trending story needs none) or no source is left. The answer comes back numbered.
  */
 object SearchCheck {
     /** Sources dated one day after the device's date are kept: the publisher may be in a later time zone. */
@@ -119,7 +121,7 @@ object SearchCheck {
         val stories = numbered.stories.mapNotNull { story ->
             val n = story.story
             val matched = story.keywords.mapNotNull { owner[it.trim().lowercase()] }.distinct()
-            if (matched.isEmpty()) return@mapNotNull null.also { issues += Issue(Issue.Kind.STORY_NOT_LINKED_TO_KEYWORDS, story = n) }
+            if (matched.isEmpty() && !story.trending) return@mapNotNull null.also { issues += Issue(Issue.Kind.STORY_NOT_LINKED_TO_KEYWORDS, story = n) }
             if (NOTHING_HAPPENED.containsMatchIn(story.whatHappened.orEmpty())) return@mapNotNull null.also { issues += Issue(Issue.Kind.STORY_NOT_NEWS, story = n) }
             val sources = story.sources.filter { s ->
                 val kind = sourceProblem(s, context.today) ?: if (seen.add(normalizeUrl(s.url))) null else Issue.Kind.SOURCE_DUPLICATE_URL

@@ -8,7 +8,13 @@ object Selection {
     /** Decided 2026-10-18. */
     const val MAX_TOPICS = 5
 
-    /** Drops topics below [minScore], sorts by score (ties keep the model's order), keeps at most [maxTopics]. */
-    fun select(topics: List<Topic>, minScore: Int = MIN_SCORE, maxTopics: Int = MAX_TOPICS): List<Topic> =
-        topics.filter { it.score >= minScore }.sortedByDescending { it.score }.take(maxTopics)
+    /**
+     * The keyword (or chosen-topic) topics first: below [minScore] dropped, sorted by score (ties keep the model's order),
+     * at most [maxTopics]. Then trending topics, by score, fill the free slots up to [maxTopics] (owner, 2026-10-29); they
+     * have no keyword to score against, so no cutoff.
+     */
+    fun select(topics: List<Topic>, minScore: Int = MIN_SCORE, maxTopics: Int = MAX_TOPICS): List<Topic> {
+        val chosen = topics.filter { !it.trending && it.score >= minScore }.sortedByDescending { it.score }.take(maxTopics)
+        return chosen + topics.filter { it.trending }.sortedByDescending { it.score }.take(maxTopics - chosen.size)
+    }
 }

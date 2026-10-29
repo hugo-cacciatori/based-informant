@@ -37,7 +37,8 @@ class AppSettingsTest {
             listOf(GenerateBlock.RUN_ACTIVE, GenerateBlock.NO_KEY, GenerateBlock.TOO_FEW_KEYWORDS),
             GenerateRules.blocks(hasKey = false, keywordCount = 0, runActive = true),
         )
-        // A digest takes exactly 5 keywords (owner, 2026-10-20).
-        assertEquals(listOf(GenerateBlock.TOO_FEW_KEYWORDS), GenerateRules.blocks(hasKey = true, keywordCount = 4, runActive = false))
+        // 1 to 5 keywords (owner, 2026-10-29).
+        assertEquals(emptyList(), GenerateRules.blocks(hasKey = true, keywordCount = 1, runActive = false))
+        assertEquals(emptyList(), GenerateRules.topicBlocks(hasKey = true, runActive = false))
     }
 }

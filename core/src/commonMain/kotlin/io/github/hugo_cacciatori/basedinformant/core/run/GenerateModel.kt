@@ -41,8 +41,8 @@ data class GenerateState(
 
 /**
  * Generate, platform-free (01-product.md sections 3 and 4): the free input check in keyword mode, the free balance
- * read, the confirmation, and on confirm the snapshot handed to the runner ([start]). Topic mode picks up to
- * [InputLimits.KEYWORDS_MAX] stored topic tags and skips the input check (the keyword rules apply to keyword mode only).
+ * read, the confirmation, and on confirm the snapshot handed to the runner ([start]). Topic mode picks 0 to
+ * [InputLimits.KEYWORDS_MAX] saved topics and skips the input check (the keyword rules apply to keyword mode only).
  */
 class GenerateModel(
     private val keywords: () -> List<String>,
@@ -69,14 +69,12 @@ class GenerateModel(
         val topics = digests.topicTags()
         _state.update { s ->
             val chosen = s.chosen.filter { c -> topics.any { it.equals(c, ignoreCase = true) } }
-            s.copy(topics = topics, chosen = chosen, mode = if (topics.isEmpty()) DigestMode.KEYWORDS else s.mode)
+            s.copy(topics = topics, chosen = chosen)
         }
     }
 
-    /** Topic mode cannot be used while no topic tag is stored. */
-    fun setMode(mode: DigestMode) = _state.update { s ->
-        if (mode == DigestMode.TOPICS && s.topics.isEmpty()) s else s.copy(mode = mode)
-    }
+    /** Topic mode works with no saved topic: the digest is then all trending (owner, 2026-10-29). */
+    fun setMode(mode: DigestMode) = _state.update { it.copy(mode = mode) }
 
     /** Picks or unpicks a topic; a sixth pick is ignored. */
     fun toggleTopic(tag: String) = _state.update { s ->

@@ -38,6 +38,8 @@ data class Topic(
     val score: Int,
     @SerialName("score_parts") val scoreParts: ScoreParts?,
     val sources: List<Source>,
+    /** Today's popular news in a free slot, not from the keywords (owner, 2026-10-29); [keywords] is then empty. */
+    val trending: Boolean = false,
 )
 
 /** The writer's relevance and the search's attention (template v2: no repeat penalty, owner 2026-10-23). */

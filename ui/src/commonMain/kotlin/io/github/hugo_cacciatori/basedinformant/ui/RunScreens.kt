@@ -100,7 +100,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_delete
 import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_delete_title
 import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_refused_already_saved
 import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_refused_full
-import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_refused_not_five
+import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_refused_empty
 import io.github.hugo_cacciatori.basedinformant.ui.resources.presets_empty
 import io.github.hugo_cacciatori.basedinformant.ui.resources.presets_save
 import io.github.hugo_cacciatori.basedinformant.ui.resources.presets_title
@@ -182,7 +182,7 @@ data class RunUi(
     val onShareEmail: (Long) -> Unit = {},
 )
 
-/** The Keywords | Topics switch; Topics is disabled while no topic tag is stored. */
+/** The Keywords | Topics switch; Topics works with no saved topic (an all-trending digest). */
 @Composable
 fun ModeSwitch(state: GenerateState, actions: GenerateActions, modifier: Modifier = Modifier) {
     val modes = DigestMode.entries
@@ -191,7 +191,6 @@ fun ModeSwitch(state: GenerateState, actions: GenerateActions, modifier: Modifie
             SegmentedButton(
                 selected = state.mode == mode,
                 onClick = { actions.setMode(mode) },
-                enabled = mode == DigestMode.KEYWORDS || state.topics.isNotEmpty(),
                 shape = SegmentedButtonDefaults.itemShape(index, modes.size),
                 modifier = Modifier.testTag("mode-${mode.name.lowercase()}"),
             ) {
@@ -201,7 +200,7 @@ fun ModeSwitch(state: GenerateState, actions: GenerateActions, modifier: Modifie
     }
 }
 
-/** Topic mode: the stored topic tags as chips, up to [InputLimits.KEYWORDS_MAX] picked. */
+/** Topic mode: the saved topics as chips, 0 to [InputLimits.KEYWORDS_MAX] picked. */
 @Composable
 fun TopicPicker(state: GenerateState, actions: GenerateActions, modifier: Modifier = Modifier) {
     Column(modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -467,7 +466,7 @@ fun PresetsDialog(state: PresetsState, actions: PresetActions, canSave: Boolean,
 
 @Composable
 private fun presetRefusalText(refusal: PresetRules.Refusal) = when (refusal) {
-    PresetRules.Refusal.NOT_FIVE_KEYWORDS -> stringResource(Res.string.preset_refused_not_five, InputLimits.KEYWORDS_MAX)
+    PresetRules.Refusal.EMPTY -> stringResource(Res.string.preset_refused_empty)
     PresetRules.Refusal.ALREADY_SAVED -> stringResource(Res.string.preset_refused_already_saved)
     PresetRules.Refusal.FULL -> stringResource(Res.string.preset_refused_full, PresetRules.MAX_PRESETS)
 }

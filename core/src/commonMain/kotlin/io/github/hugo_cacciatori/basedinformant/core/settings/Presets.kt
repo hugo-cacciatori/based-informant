@@ -25,8 +25,8 @@ object PresetRules {
     const val MAX_PRESETS = 20
 
     enum class Refusal {
-        /** A preset is the current 5 keywords: the list must hold exactly [InputLimits.KEYWORDS_MAX]. */
-        NOT_FIVE_KEYWORDS,
+        /** A preset is the current keywords: the list must hold at least one (owner, 2026-10-29). */
+        EMPTY,
 
         /** The same keywords are already a preset, in any order and any case. */
         ALREADY_SAVED,
@@ -34,7 +34,7 @@ object PresetRules {
     }
 
     fun refusal(keywords: List<String>, presets: List<Preset>): Refusal? = when {
-        keywords.size != InputLimits.KEYWORDS_MAX -> Refusal.NOT_FIVE_KEYWORDS
+        keywords.isEmpty() -> Refusal.EMPTY
         presets.any { same(it.keywords, keywords) } -> Refusal.ALREADY_SAVED
         presets.size >= MAX_PRESETS -> Refusal.FULL
         else -> null

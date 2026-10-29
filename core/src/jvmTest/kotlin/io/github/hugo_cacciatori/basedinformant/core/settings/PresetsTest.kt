@@ -7,8 +7,8 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 private class FakePresetStore : PresetStore {
     val presets = mutableListOf<Preset>()
@@ -45,11 +45,15 @@ class PresetsTest {
     }
 
     @Test
-    fun onlyFiveKeywordsAndAtMostTwentyPresets() = runBlocking {
-        keywordStore.keywords = five.take(4)
+    fun atLeastOneKeywordAndAtMostTwentyPresets() = runBlocking {
+        keywordStore.keywords = emptyList()
         keywords.load()
         assertFalse(presets.saveCurrent())
-        assertEquals(PresetRules.Refusal.NOT_FIVE_KEYWORDS, presets.state.value.refusal)
+        assertEquals(PresetRules.Refusal.EMPTY, presets.state.value.refusal)
+        // Fewer than 5 is a preset too (owner, 2026-10-29).
+        keywords.replace(five.take(2))
+        assertTrue(presets.saveCurrent())
+        store.presets.clear()
 
         repeat(PresetRules.MAX_PRESETS) { i -> store.add(five.take(4) + "k$i") }
         keywords.replace(five)

@@ -134,11 +134,12 @@ class GenerateModelTest {
     }
 
     @Test
-    fun topicModeNeedsStoredTagsAndTakesAtMostFive() = runBlocking {
+    fun topicModeWorksWithoutSavedTopicsAndTakesAtMostFive() = runBlocking {
+        // No saved topic: topic mode gives an all-trending digest (owner, 2026-10-29).
         digests.tags = emptyList()
         model.loadTopics()
         model.setMode(DigestMode.TOPICS)
-        assertEquals(DigestMode.KEYWORDS, model.state.value.mode)
+        assertEquals(DigestMode.TOPICS, model.state.value.mode)
 
         digests.tags = (1..7).map { "Topic $it" }
         model.loadTopics()

@@ -33,32 +33,31 @@
     <string name="refusal_too_long_keyword">Too long: a keyword can have up to %1$d characters.</string>
     <string name="refusal_too_long_tag">Too long: a tag can have up to %1$d characters.</string>
     <string name="refusal_duplicate">Already in the list (capitals don’t count).</string>
-    <string name="refusal_full_keywords">A digest takes exactly %1$d keywords. Delete one to add another.</string>
+    <string name="refusal_full_keywords">A digest takes up to %1$d keywords. Delete one to add another.</string>
     <string name="refusal_full_tags">The list is full: %1$d tags at most. Delete one to add another.</string>
 
     <string name="generate">Generate digest</string>
     <string name="generate_block_run_active">A digest is being generated.</string>
     <string name="generate_block_no_key">Add your rfab API key in Settings.</string>
-    <string name="generate_block_too_few_keywords">A digest takes exactly %1$d keywords: add %2$d more.</string>
-    <string name="generate_block_no_topic">Pick at least one topic.</string>
+    <string name="generate_block_too_few_keywords">Add at least one keyword.</string>
     <string name="generate_preparing">Preparing…</string>
 
     <!-- Keywords | Topics (01-product.md section 3, owner 2026-10-29) -->
     <string name="mode_keywords">Keywords</string>
     <string name="mode_topics">Topics</string>
-    <string name="topics_note">Keywords are not used in this mode. Pick up to %1$d topics from your earlier digests: each gets one story.</string>
-    <string name="topics_none">Topics come from the digests you generate: none is stored yet.</string>
+    <string name="topics_note">Keywords are not used in this mode. Pick up to %1$d topics, or none: each gets one story, and free slots get trending news.</string>
+    <string name="topics_none">No saved topics yet. Generate now for a digest of trending news: the topics of every digest are saved here.</string>
     <string name="topics_count">%1$d / %2$d topics</string>
 
     <!-- Presets -->
     <string name="presets">Presets</string>
     <string name="presets_title">Keyword presets</string>
-    <string name="presets_save">Save these 5</string>
-    <string name="presets_empty">No presets yet. Save your current 5 keywords to switch back to them later.</string>
+    <string name="presets_save">Save these keywords</string>
+    <string name="presets_empty">No presets yet. Save your current keywords to switch back to them later.</string>
     <string name="preset_delete">Delete preset</string>
     <string name="preset_delete_title">Delete this preset?</string>
     <string name="preset_loaded">Preset loaded</string>
-    <string name="preset_refused_not_five">A preset holds exactly %1$d keywords.</string>
+    <string name="preset_refused_empty">A preset needs at least one keyword.</string>
     <string name="preset_refused_already_saved">These keywords are already a preset.</string>
     <string name="preset_refused_full">You have %1$d presets: delete one first.</string>
     <string name="close">Close</string>

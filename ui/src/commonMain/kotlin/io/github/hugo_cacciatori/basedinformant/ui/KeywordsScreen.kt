@@ -71,7 +71,6 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.generate
 import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_no_key
 import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_too_few_keywords
 import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_run_active
-import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_block_no_topic
 import io.github.hugo_cacciatori.basedinformant.ui.resources.generate_preparing
 import io.github.hugo_cacciatori.basedinformant.ui.resources.preset_loaded
 import io.github.hugo_cacciatori.basedinformant.ui.resources.presets
@@ -199,7 +198,7 @@ fun KeywordsScreen(
             ProgressCard(run.notificationsAllowed)
         } else {
             val blocks = if (mode == DigestMode.TOPICS) {
-                GenerateRules.topicBlocks(state.hasKey, run.generate.chosen.size, state.runActive)
+                GenerateRules.topicBlocks(state.hasKey, state.runActive)
             } else {
                 state.generateBlocks
             }
@@ -218,7 +217,7 @@ fun KeywordsScreen(
         PresetsDialog(
             run.presets,
             run.presetActions,
-            canSave = state.keywords.size == InputLimits.KEYWORDS_MAX,
+            canSave = state.keywords.isNotEmpty(),
             onClose = { presetsOpen = false; run.presetActions.dismissRefusal() },
         )
     }
@@ -368,12 +367,7 @@ private fun GenerateBar(
                     when (block) {
                         GenerateBlock.RUN_ACTIVE -> stringResource(Res.string.generate_block_run_active)
                         GenerateBlock.NO_KEY -> stringResource(Res.string.generate_block_no_key)
-                        GenerateBlock.TOO_FEW_KEYWORDS -> stringResource(
-                            Res.string.generate_block_too_few_keywords,
-                            InputLimits.KEYWORDS_MAX,
-                            InputLimits.KEYWORDS_MAX - state.keywords.size,
-                        )
-                        GenerateBlock.NO_TOPIC_CHOSEN -> stringResource(Res.string.generate_block_no_topic)
+                        GenerateBlock.TOO_FEW_KEYWORDS -> stringResource(Res.string.generate_block_too_few_keywords)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f).testTag("generate-reason"),

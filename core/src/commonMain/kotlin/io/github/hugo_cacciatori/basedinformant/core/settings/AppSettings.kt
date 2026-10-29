@@ -32,20 +32,19 @@ data class AppSettings(
 }
 
 /** Why Generate is disabled (01-product.md section 3), in the order they are shown; the UI shows the first. */
-enum class GenerateBlock { RUN_ACTIVE, NO_KEY, TOO_FEW_KEYWORDS, NO_TOPIC_CHOSEN }
+enum class GenerateBlock { RUN_ACTIVE, NO_KEY, TOO_FEW_KEYWORDS }
 
 object GenerateRules {
     fun blocks(hasKey: Boolean, keywordCount: Int, runActive: Boolean): List<GenerateBlock> = buildList {
         if (runActive) add(GenerateBlock.RUN_ACTIVE)
         if (!hasKey) add(GenerateBlock.NO_KEY)
-        // A digest takes exactly InputLimits.KEYWORDS_MAX keywords; the list cannot hold more.
-        if (keywordCount < InputLimits.KEYWORDS_MAX) add(GenerateBlock.TOO_FEW_KEYWORDS)
+        // 1 to InputLimits.KEYWORDS_MAX keywords (owner, 2026-10-29); the list cannot hold more.
+        if (keywordCount < InputLimits.KEYWORDS_MIN) add(GenerateBlock.TOO_FEW_KEYWORDS)
     }
 
-    /** Topic mode: one to [InputLimits.KEYWORDS_MAX] chosen topic tags (01-product.md section 3). */
-    fun topicBlocks(hasKey: Boolean, chosenCount: Int, runActive: Boolean): List<GenerateBlock> = buildList {
+    /** Topic mode: 0 to [InputLimits.KEYWORDS_MAX] chosen topics; none gives an all-trending digest (owner, 2026-10-29). */
+    fun topicBlocks(hasKey: Boolean, runActive: Boolean): List<GenerateBlock> = buildList {
         if (runActive) add(GenerateBlock.RUN_ACTIVE)
         if (!hasKey) add(GenerateBlock.NO_KEY)
-        if (chosenCount == 0) add(GenerateBlock.NO_TOPIC_CHOSEN)
     }
 }

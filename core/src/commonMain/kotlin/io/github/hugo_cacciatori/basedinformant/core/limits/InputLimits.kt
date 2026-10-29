@@ -8,7 +8,7 @@ package io.github.hugo_cacciatori.basedinformant.core.limits
  */
 object InputLimits {
     const val KEYWORDS_MIN = 1
-    /** A digest takes exactly this many keywords, in one call (owner, 2026-10-20). */
+    /** A digest takes 1 to this many keywords, in one call (owner, 2026-10-29; exactly 5 from 2026-10-20). */
     const val KEYWORDS_MAX = 5
     const val KEYWORD_MAX_CHARS = 50
     const val TAGS_MAX = 15

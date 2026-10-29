@@ -106,14 +106,15 @@ class ScreensTest {
         }
         onNodeWithTag("first-run").assertDoesNotExist()
         onNodeWithTag("balance-line").assertTextContains("Balance: 120,174 tokens")
-        onNodeWithTag("generate-reason").assertTextContains("A digest takes exactly 5 keywords: add 5 more.")
+        onNodeWithTag("generate-reason").assertTextContains("Add at least one keyword.")
 
         onNodeWithTag("keyword-input").performTextInput("  Solar power ")
         onNodeWithText("Add").performClick()
         waitForIdle()
         assertEquals(listOf("Solar power"), store.keywords)
-        onNodeWithTag("generate").assertIsNotEnabled()
-        onNodeWithTag("generate-reason").assertTextContains("add 4 more.", substring = true)
+        // One keyword is enough (owner, 2026-10-29).
+        onNodeWithTag("generate").assertIsEnabled()
+        onNodeWithTag("generate-reason").assertDoesNotExist()
 
         onNodeWithTag("keyword-input").performTextInput("SOLAR POWER")
         onNodeWithText("Add").performClick()

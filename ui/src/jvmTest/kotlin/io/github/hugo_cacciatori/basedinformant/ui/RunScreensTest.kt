@@ -4,6 +4,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -351,13 +352,16 @@ class RunScreensTest {
     }
 
     @Test
-    fun topicModeIsDisabledWithoutStoredTopics() = runComposeUiTest {
+    fun topicModeWithoutSavedTopicsOffersAnAllTrendingDigest() = runComposeUiTest {
         show(RunFixture())
-        onNodeWithTag("mode-topics").assertIsNotEnabled()
+        onNodeWithTag("mode-topics").assertIsEnabled().performClick()
+        waitForIdle()
+        onNodeWithText("No saved topics yet", substring = true).assertExists()
+        onNodeWithTag("generate").assertIsEnabled()
     }
 
     @Test
-    fun topicModeSaysKeywordsAreNotUsedAndNeedsAPick() = runComposeUiTest {
+    fun topicModeSaysKeywordsAreNotUsedAndNeedsNoPick() = runComposeUiTest {
         val f = RunFixture(topics = listOf("Stellarator research"))
         show(f)
         f.generateVm.reload()
@@ -365,10 +369,9 @@ class RunScreensTest {
         onNodeWithTag("mode-topics").performClick()
         waitForIdle()
         onNodeWithTag("topics-note").assertTextContains("Keywords are not used in this mode", substring = true)
-        onNodeWithTag("generate-reason").assertTextContains("Pick at least one topic.")
-        onNodeWithText("Stellarator research").performClick()
-        waitForIdle()
+        // No pick is fine: the free slots get trending news (owner, 2026-10-29).
         onNodeWithTag("generate-reason").assertDoesNotExist()
+        onNodeWithTag("generate").assertIsEnabled()
     }
 
     @Test
