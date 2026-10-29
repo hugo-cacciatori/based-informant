@@ -13,6 +13,9 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.Balance
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import kotlinx.coroutines.runBlocking
+import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -112,5 +115,19 @@ class SettingsModelTest {
         store.settings = AppSettings(model = "gone:model")
         model.open()
         assertEquals(TemplateConfig.DEFAULT_MODEL, model.state.value.settings.model)
+    }
+
+    @Test
+    fun aReminderChangeIsSavedAndReArmsTheAlarm() = runBlocking {
+        val armed = mutableListOf<Reminder>()
+        val withAlarm = SettingsModel(store, secrets, rfab::clientFor, onReminderChanged = { armed += it })
+        withAlarm.open()
+        val on = Reminder(on = true, days = setOf(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), time = LocalTime(7, 15))
+        withAlarm.setReminder(on)
+        assertEquals(on, store.settings.reminder)
+        // No weekday left turns it off and keeps Monday for next time (owner, 2026-10-29).
+        withAlarm.setReminder(on.copy(days = emptySet()))
+        assertEquals(Reminder(on = false, days = setOf(DayOfWeek.MONDAY), time = LocalTime(7, 15)), store.settings.reminder)
+        assertEquals(listOf(on, store.settings.reminder), armed)
     }
 }

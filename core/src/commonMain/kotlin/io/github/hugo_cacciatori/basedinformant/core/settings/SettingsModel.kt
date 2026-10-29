@@ -1,5 +1,6 @@
 package io.github.hugo_cacciatori.basedinformant.core.settings
 
+import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
 import io.github.hugo_cacciatori.basedinformant.core.key.ApiKeyRules
 import io.github.hugo_cacciatori.basedinformant.core.key.BalanceDisplay
 import io.github.hugo_cacciatori.basedinformant.core.key.KeyCheck
@@ -41,6 +42,8 @@ class SettingsModel(
     private val secrets: SecretStore,
     private val clientFor: (String) -> RfabClient,
     private val tagRules: TextListRules = TextListRules.TAGS,
+    /** Re-arms the platform's alarm after a reminder change (04-platforms.md section 3). */
+    private val onReminderChanged: (Reminder) -> Unit = {},
 ) {
     private val mutex = Mutex()
     private val _state = MutableStateFlow(SettingsState())
@@ -101,6 +104,13 @@ class SettingsModel(
     suspend fun setAttentionMode(mode: AttentionMode) = change { it.copy(attentionMode = mode) }
 
     suspend fun setPersona(persona: Persona) = change { it.copy(persona = persona) }
+
+    /** No weekday left turns the reminder off (owner, 2026-10-29). */
+    suspend fun setReminder(reminder: Reminder) {
+        val kept = if (reminder.days.isEmpty()) reminder.copy(on = false, days = Reminder().days) else reminder
+        change { it.copy(reminder = kept) }
+        onReminderChanged(kept)
+    }
 
     /** Only models validated in the lab are offered (02-ai-call.md section 11). */
     suspend fun setModel(model: String): Boolean {

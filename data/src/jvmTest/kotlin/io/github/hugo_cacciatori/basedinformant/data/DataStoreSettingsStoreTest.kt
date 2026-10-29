@@ -8,6 +8,9 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
+import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalTime
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,6 +37,7 @@ class DataStoreSettingsStoreTest {
             tags = listOf("zeta", "alpha"),
             attentionMode = AttentionMode.NICHE,
             persona = Persona.DOCTOR_WIFE,
+            reminder = Reminder(on = true, days = setOf(DayOfWeek.FRIDAY, DayOfWeek.MONDAY), time = LocalTime(19, 5)),
         )
         store.save(settings)
         assertEquals(settings, store.load())
