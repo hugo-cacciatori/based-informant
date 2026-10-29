@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Call redesign step 2 (lab): draft prompts for the fact check (one call per digest, unsupported and second-story sentences deleted) and the repair of an unreadable search answer (kept only when all its URLs are in the original); lab modes `--fact-check` and `--repair`; sentences no longer split after an abbreviation.
 - The lab writer deletes any sentence copying a persona note (owner, 2026-10-23); MiniMax M3 first in the writer order.
 - Call redesign step 1 (lab): draft prompts for the paid search (`search.txt`, persona research) and the free writer (`writer.txt`); lab mode `--write` with article download and a copied-quote check; free tests on five models.
 - Spec: the paid call only searches and free models write the digest; persona research as writer input only; no repeat avoidance; topic tags, topic mode and keyword presets (owner, 2026-10-23).

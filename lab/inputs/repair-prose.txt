@@ -1,0 +1,21 @@
+Here is what I found for this week. All outlets, URLs and events below are synthetic test data.
+
+## 1. Fusion energy: stellarator record
+A research stellarator held a stable plasma for a record 40 minutes.
+- **Test stellarator holds plasma for a record 40 minutes**, Example Science Daily, 2026-10-16 (en): https://science.example.com/2026/10/stellarator-record
+  - A research stellarator held a stable plasma for 40 minutes, four times its previous best, the lab said.
+  - Engineers credit a new tungsten wall coating that sheds less material into the plasma.
+- **Le stellarator d'essai bat son record de durée**, Exemple Sciences, 2026-10-17 (fr): https://sciences.example.org/stellarator-record
+  - The lab plans a one-hour campaign at higher density in spring 2027.
+
+## 2. Deep-sea mining: moratorium vote
+An international seabed body scheduled a vote on a 10-year deep-sea mining moratorium.
+- **Seabed authority schedules a vote on a mining moratorium**, Example Ocean News, published 2026-10-14
+  Link: https://ocean.example.com/seabed-vote
+  - The council agreed on Monday to vote on a 10-year moratorium at its November session.
+  - Twelve member states back the pause.
+
+## 3. Chess: shorter time control
+A national chess federation will trial a shorter time control at youth events (Example Board Games Review, no date given, https://boardgames.example.org/youth-time-control). It will trial 45-minute games with a 10-second increment at three youth events this winter.
+
+I hope this helps! Let me know if you want more stories.

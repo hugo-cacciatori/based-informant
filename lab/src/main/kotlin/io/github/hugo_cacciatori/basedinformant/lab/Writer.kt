@@ -221,7 +221,9 @@ object Writer {
         return cleaned to findings
     }
 
-    private fun sentences(text: String): List<String> = text.split(Regex("(?<=[.!?])\\s+")).map { it.trim() }.filter { it.isNotEmpty() }
+    /** Splits after '.', '!' or '?' only before a capital, digit or quote, so "Quantum Computing Inc. announced" stays whole. */
+    fun sentences(text: String): List<String> =
+        text.split(Regex("(?<=[.!?])\\s+(?=[\\p{Lu}\\p{N}\"“‘(])")).map { it.trim() }.filter { it.isNotEmpty() }
 
     /**
      * Joins the writer's topics with the search answer's sources into a template-v1 digest the existing pipeline,

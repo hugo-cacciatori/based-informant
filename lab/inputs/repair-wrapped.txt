@@ -1,0 +1,136 @@
+Sure! Synthetic test data follows.
+```json
+{
+ "template_version": 2,
+ "searched_at": "2026-10-18",
+ stories: [
+  {
+   "keywords": [
+    "fusion energy"
+   ],
+   "what_happened": "A research stellarator held a stable plasma for a record 40 minutes.",
+   "attention": 28,
+   "sources": [
+    {
+     "title": "Test stellarator holds plasma for a record 40 minutes",
+     "publisher": "Example Science Daily",
+     "url": "https://science.example.com/2026/10/stellarator-record",
+     "language": "en",
+     "published": "2026-10-16",
+     "facts": [
+      "A research stellarator held a stable plasma for 40 minutes, four times its previous best, the lab said.",
+      "Engineers credit a new tungsten wall coating that sheds less material into the plasma.",
+      "Two outside physicists called it a real but incremental step.",
+      "Net energy gain remains years away, according to the article."
+     ]
+    },
+    {
+     "title": "Le stellarator d'essai bat son record de durée",
+     "publisher": "Exemple Sciences",
+     "url": "https://sciences.example.org/stellarator-record",
+     "language": "fr",
+     "published": "2026-10-17",
+     "facts": [
+      "The stellarator kept a stable plasma for 40 minutes.",
+      "The lab plans a one-hour campaign at higher density in spring 2027."
+     ]
+    }
+   ],
+   "persona_notes": [
+    {
+     "said": "Forty minutes of plasma is cool and all, but call me when my electricity bill goes down, chat.",
+     "verbatim": true,
+     "where": "synthetic stream transcript",
+     "url": "https://video.example.com/watch/synthetic-1",
+     "date": "2026-10-17"
+    }
+   ]
+  },
+  {
+   "keywords": [
+    "deep-sea mining"
+   ],
+   "what_happened": "An international seabed body scheduled a vote on a 10-year deep-sea mining moratorium.",
+   "attention": 30,
+   "sources": [
+    {
+     "title": "Seabed authority schedules a vote on a mining moratorium",
+     "publisher": "Example Ocean News",
+     "url": "https://ocean.example.com/seabed-vote",
+     "language": "en",
+     "published": "2026-10-14",
+     "facts": [
+      "The council of an international seabed body agreed on Monday to vote on a 10-year moratorium on commercial deep-sea mining at its November session.",
+      "Twelve member states back the pause.",
+      "Two companies holding exploration contracts said a moratorium would breach existing agreements."
+     ]
+    },
+    {
+     "title": "Council agenda lists the moratorium for 12 November",
+     "publisher": "Example Wire",
+     "url": "https://wire.example.net/council-agenda",
+     "language": "en",
+     "published": "2026-10-15",
+     "facts": [
+      "The published agenda puts the moratorium vote on 12 November.",
+      "A two-thirds majority is needed."
+     ]
+    }
+   ],
+   "persona_notes": [
+    {
+     "said": "Honestly the companies are going to mine the ocean floor no matter what some council votes on.",
+     "verbatim": true,
+     "where": "synthetic post",
+     "url": "https://social.example.com/post/synthetic-2",
+     "date": "2026-10-15"
+    }
+   ]
+  },
+  {
+   "keywords": [
+    "chess"
+   ],
+   "what_happened": "A national chess federation will trial a shorter time control at youth events.",
+   "attention": 18,
+   "sources": [
+    {
+     "title": "Chess federation tests a shorter time control for youth events",
+     "publisher": "Example Board Games Review",
+     "url": "https://boardgames.example.org/youth-ti,
+     "language": "en",
+     "published": "2026-10-13",
+     "facts": [
+      "A national chess federation will trial 45-minute games with a 10-second increment at three youth events this winter.",
+      "The federation cited shorter attention spans and travel costs.",
+      "Coaches quoted were split."
+     ]
+    }
+   ],
+   "persona_notes": []
+  },
+  {
+   "keywords": [
+    "chess"
+   ],
+   "what_happened": "A regional open chess tournament drew a record 900 players.",
+   "attention": 12,
+   "sources": [
+    {
+     "title": "Regional chess open draws a record field of 900",
+     "publisher": "Example Chess",
+     "url": "https://chess.example.com/open-record",
+     "language": "en",
+     "published": "2026-10-12",
+     "facts": [
+      "A regional open tournament drew 900 players, its largest field since it began in 1998.",
+      "Organizers added a second playing hall."
+     ]
+    }
+   ],
+   "persona_notes": []
+  }
+ ]
+}
+```
+Note: one link was cut.

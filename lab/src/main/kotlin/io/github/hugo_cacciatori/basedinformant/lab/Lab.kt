@@ -16,6 +16,7 @@ import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 import io.github.hugo_cacciatori.basedinformant.core.render.DigestRenderer
 import io.github.hugo_cacciatori.basedinformant.core.render.MimeBuilder
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderMeta
+import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
@@ -57,6 +58,12 @@ sealed interface LabCommand {
         val fetchArticles: Boolean = false,
         val articles: String? = null,
     ) : LabCommand
+
+    /** The free fact check (02-ai-call.md section 12, items 7 and 8) on the writer answer saved in a --write run folder. */
+    data class FactCheck(val model: String, val run: String, val input: String?, val persona: String?, val answer: String? = null) : LabCommand
+
+    /** The free repair (02-ai-call.md section 12, item 10) of an unreadable search answer saved in [broken]. */
+    data class Repair(val model: String, val broken: String) : LabCommand
 
     /** The free input check (02-ai-call.md section 12) on a fixed list, once per free model in [models]. */
     data class CheckInput(val models: List<String>, val list: String?) : LabCommand
@@ -120,6 +127,17 @@ sealed interface LabCommand {
                     "--fetch-articles" in flags,
                     flags["--articles"],
                 )
+                "--fact-check" in flags -> FactCheck(
+                    flags.getValue("--fact-check")!!,
+                    flags["--run"] ?: throw LabUsageError("--fact-check needs --run <a --write run folder>"),
+                    flags["--input"],
+                    flags["--persona"],
+                    flags["--answer"],
+                )
+                "--repair" in flags -> Repair(
+                    flags.getValue("--repair")!!,
+                    flags["--broken"] ?: throw LabUsageError("--repair needs --broken <file>"),
+                )
                 "--check-input" in flags -> CheckInput(
                     flags["--model"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }
                         ?: throw LabUsageError("--check-input needs --model <id>[,<id>...] (free models only)"),
@@ -130,10 +148,10 @@ sealed interface LabCommand {
             }
         }
 
-        private val MODES = listOf("--fixture", "--live", "--free", "--write", "--probe", "--check-input", "--models", "--balance")
+        private val MODES = listOf("--fixture", "--live", "--free", "--write", "--fact-check", "--repair", "--probe", "--check-input", "--models", "--balance")
         private val VALUED = setOf(
             "--fixture", "--free", "--write", "--search", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword",
-            "--group-size", "--list",
+            "--group-size", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken",
         )
         private val SWITCHES = setOf(
             "--live", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--check-links", "--fetch-articles", "--models", "--balance", "--help",
@@ -160,6 +178,12 @@ sealed interface LabCommand {
             |                                           answer turned into one); --fetch-articles downloads each source
             |                                           page's text (no tokens) and saves it as articles.json, reusable
             |                                           with --articles; refuses unless the model is at 0x
+            |  --fact-check <model> --run DIR [--input FILE] [--persona P] [--answer FILE]
+            |                                           free: the fact check on the writer answer and article texts
+            |                                           of a --write run folder; refuses unless the model is at 0x;
+            |                                           --answer re-reads a saved fact-check raw.json, sending nothing
+            |  --repair <model> --broken FILE           free: rebuild an unreadable search answer; accepted only when
+            |                                           every URL is in the original; refuses unless the model is at 0x
             |  --probe --model ID [--keyword K] [--input FILE] --dry-run | --confirm-paid
             |                                           does the model search the web? asks for one article from the
             |                                           window on one keyword (default: the input's first) and checks
@@ -200,6 +224,8 @@ class Lab(
         is LabCommand.Free -> free(command)
         is LabCommand.Live -> live(command)
         is LabCommand.Write -> write(command)
+        is LabCommand.FactCheck -> factCheck(command)
+        is LabCommand.Repair -> repair(command)
         is LabCommand.Probe -> probe(command)
         is LabCommand.CheckInput -> checkInput(command)
         LabCommand.Models -> models()
@@ -316,6 +342,7 @@ class Lab(
         val content = contents.singleOrNull() ?: return refuse(report, "no answer from the writer")
         val raw = Writer.parse(content) ?: return refuse(report, "unreadable writer answer: the raw file is kept")
         val (written, deleted) = Writer.removeCopies(raw, answer)
+        dir.resolve(WRITER_ANSWER).writeText(pretty.encodeToString(WriterAnswer.serializer(), written))
         val (digest, findings) = Writer.toDigest(written, answer, today)
         report.line("subject: ${written.subject}").line("card summary: ${written.cardSummary}")
         written.topics.forEach { report.line("topic: story ${it.story}, tag \"${Writer.cutTag(it.topicTag)}\", sources ${it.sources}") }
@@ -324,6 +351,93 @@ class Lab(
         val v1 = Json.encodeToString(Digest.serializer(), digest)
         dir.resolve("writer-digest.json").writeText(v1)
         return process(listOf(v1), input.copy(today = answer.searchedAt), persona, command.model, dir, report)
+    }
+
+    /**
+     * The fact check (02-ai-call.md section 12, items 7 and 8): one free call reads every card of a --write run next to its
+     * article texts; the cards are cut as the check says and run through the usual pipeline. An unreadable check leaves
+     * the cards as written, as in the app.
+     */
+    private suspend fun factCheck(command: LabCommand.FactCheck): Int {
+        val run = root.resolve(command.run).takeIf { it.isDirectory } ?: File(command.run)
+        if (!run.isDirectory) throw LabUsageError("no run folder ${command.run}")
+        val answer = run.resolve("search-answer.json").takeIf { it.isFile }?.let { SearchAnswer.read(it.readText()) }
+            ?: throw LabUsageError("no search-answer.json in ${command.run}")
+        val written = run.resolve(WRITER_ANSWER).takeIf { it.isFile }?.let { lenient.decodeFromString(WriterAnswer.serializer(), it.readText()) }
+            ?: run.resolve("raw.json").takeIf { it.isFile }
+                ?.let { lenient.decodeFromString(ChatResponse.serializer(), it.readText()).content }
+                ?.let(Writer::parse)?.let { Writer.removeCopies(it, answer).first }
+            ?: throw LabUsageError("no readable writer answer in ${command.run}")
+        val input = input(command.input)
+        val persona = LabInput.parsePersona(command.persona ?: input.persona)
+
+        val pages = answer.stories.sumOf { s -> s.sources.count { it.pageText != null } }
+        val saved = command.answer?.let { p -> root.resolve(p).takeIf { it.isFile } ?: File(p) }
+        val dir = outDir("fact-check")
+        val report = Report(dir).line("mode: fact-check ${command.model}, run ${run.name}${saved?.let { ", saved answer ${it.path}" } ?: ""}")
+        report.line("cards: ${written.topics.size}; article texts: $pages of ${answer.urls().size} pages")
+        val content = if (saved != null) {
+            if (!saved.isFile) throw LabUsageError("no saved answer ${command.answer}")
+            lenient.decodeFromString(ChatResponse.serializer(), saved.readText()).content ?: return refuse(report, "the saved answer has no content")
+        } else {
+            val key = loadKey() ?: return noKey()
+            out.println(KeyLoader.describe(key))
+            val client = clientFor(key)
+            notFree(client, command.model)?.let { return refuse(report, it) }
+            val request = FactCheck.request(command.model, written, answer)
+            send(client, listOf(Call(input.keywords, request)), dir, report, paid = false, command.model, "free fact check test")
+                .singleOrNull() ?: return refuse(report, "no answer from the fact check: the cards stay as written")
+        }
+        val check = FactCheck.parse(content) ?: return refuse(report, "unreadable fact check: the cards stay as written; the raw file is kept")
+        val (checked, findings) = FactCheck.apply(written, answer, check)
+        findings.forEach { report.line("finding: ${it.kind} ${it.detail}") }
+        if (findings.isEmpty()) report.line("findings: none")
+        report.line("cards kept: ${checked.topics.size} of ${written.topics.size}")
+        dir.resolve(WRITER_ANSWER).writeText(pretty.encodeToString(WriterAnswer.serializer(), checked))
+        val (digest, _) = Writer.toDigest(checked, answer, LocalDate.parse(answer.searchedAt))
+        val v1 = Json.encodeToString(Digest.serializer(), digest)
+        return process(listOf(v1), input.copy(today = answer.searchedAt), persona, command.model, dir, report)
+    }
+
+    /**
+     * The repair (02-ai-call.md section 12, item 10): one free model rebuilds an unreadable search answer; the app keeps
+     * it only when every URL in it is in the original (owner, 2026-10-29), otherwise Send to support is offered.
+     */
+    private suspend fun repair(command: LabCommand.Repair): Int {
+        val file = root.resolve(command.broken).takeIf { it.isFile } ?: File(command.broken)
+        if (!file.isFile) throw LabUsageError("no broken answer ${command.broken}")
+        val broken = file.readText()
+
+        val key = loadKey() ?: return noKey()
+        out.println(KeyLoader.describe(key))
+        val client = clientFor(key)
+        val dir = outDir("repair")
+        val report = Report(dir).line("mode: repair ${command.model}, answer ${file.name}")
+        notFree(client, command.model)?.let { return refuse(report, it) }
+        val request = Repair.request(command.model, broken)
+        val content = send(client, listOf(Call(emptyList(), request)), dir, report, paid = false, command.model, "free repair test")
+            .singleOrNull() ?: return refuse(report, "no answer from the repair: Send to support would be offered")
+        when (val result = Repair.accept(broken, content)) {
+            is Repair.Result.Rejected -> report.line("REJECTED: ${result.reason}; Send to support would be offered")
+            is Repair.Result.Accepted -> {
+                val a = result.answer
+                dir.resolve("search-answer.json").writeText(pretty.encodeToString(SearchAnswer.serializer(), a))
+                report.line("ACCEPTED: ${a.stories.size} stories, ${a.urls().size} URLs, all in the original")
+                a.stories.forEachIndexed { i, s ->
+                    report.line("story ${i + 1}: ${s.whatHappened ?: "-"} | ${s.sources.size} sources, ${s.sources.sumOf { it.facts.size }} facts, ${s.personaNotes.size} notes")
+                }
+            }
+        }
+        report.write(out)
+        return 0
+    }
+
+    /** Null when [model] shows exactly 0x in the models list; otherwise why nothing is sent. */
+    private suspend fun notFree(client: RfabClient, model: String): String? {
+        val models = client.models()
+        if (models !is RfabResult.Ok) return "could not read the models list (${(models as RfabResult.Error).kind}); nothing sent"
+        val multiplier = models.value.multiplierOf(model)
+        return if (multiplier == 0.0) null else "could not confirm that $model is free (0x): rate ${multiplier ?: "not found"}; nothing sent"
     }
 
     /**
@@ -783,6 +897,9 @@ class Lab(
         const val FIXTURE_DIR = "core/src/jvmTest/resources/fixtures"
         const val PROBE_MAX_TOKENS = 300
         const val CHECK_LIST = "lab/inputs/input-check.json"
+
+        /** The writer answer a --write run saves, after copied quotes are removed; read back by --fact-check. */
+        const val WRITER_ANSWER = "writer-answer.json"
 
         /** About what the app sends: 5 keywords and a few tags. */
         const val CHECK_GROUP = 10
