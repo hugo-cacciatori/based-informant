@@ -86,7 +86,7 @@ class ThemePackException(message: String, cause: Throwable? = null) : Exception(
 /** The built-in themes, in the order Settings lists them (owner, 2026-10-29), read from `core/themes/<id>/`. */
 object BuiltInThemes {
     const val DEFAULT = "plain"
-    val IDS = listOf(DEFAULT)
+    val IDS = listOf(DEFAULT, "night", "drift")
 
     /** The pack of [id]; an unknown id gives the default. */
     fun pack(id: String): ThemePack =

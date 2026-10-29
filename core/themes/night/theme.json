@@ -1,0 +1,26 @@
+{
+  "id": "night",
+  "name": "Night",
+  "font": "sans",
+  "light": {
+    "primary": "#2F3F8F",
+    "onPrimary": "#FFFFFF",
+    "background": "#DCE3F5",
+    "onBackground": "#1A2140",
+    "surface": "#CCF5F7FC",
+    "onSurface": "#1A2140",
+    "outline": "#5E6788",
+    "sky": ["#DCE3F5", "#B8C4E8"]
+  },
+  "dark": {
+    "primary": "#9DB4FF",
+    "onPrimary": "#0B1640",
+    "background": "#070B1A",
+    "onBackground": "#E8ECF8",
+    "surface": "#B3111833",
+    "onSurface": "#E8ECF8",
+    "outline": "#7C86A8",
+    "sky": ["#070B1A", "#141B3A"]
+  },
+  "background": { "engine": "starfield", "speed": 0.4, "density": 160 }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "drift",
+  "name": "Drift",
+  "font": "sans",
+  "light": {
+    "primary": "#8A3B5C",
+    "onPrimary": "#FFFFFF",
+    "background": "#FBF6F0",
+    "onBackground": "#1E1E24",
+    "surface": "#BFFFFFFF",
+    "onSurface": "#1E1E24",
+    "outline": "#7A6F78",
+    "sky": ["#FBF6F0", "#F2C6B4", "#B9D7E8", "#D8C8EE"]
+  },
+  "dark": {
+    "primary": "#F0A8C4",
+    "onPrimary": "#3A1022",
+    "background": "#121018",
+    "onBackground": "#EEE8F0",
+    "surface": "#B3161420",
+    "onSurface": "#EEE8F0",
+    "outline": "#8C8294",
+    "sky": ["#121018", "#4A2A5A", "#1E4A5A", "#5A3A2A"]
+  },
+  "background": { "engine": "gradient", "speed": 0.25 }
+}
