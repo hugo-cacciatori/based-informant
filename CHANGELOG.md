@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Based names example right-wing sites in the search, so its digests draw on them.
+
 - Based checks its sources: with Based on, a free AI check drops every source whose outlet is not right-wing, so a Based digest may hold fewer cards.
 - Stage 10 step 3: topic mode lists the saved topics with checkboxes to delete several at once (with Undo) and chips to pick up to five; trending cards say "Trending".
 - Stage 10 step 2: saved topics. Every digest's topics are kept in their own list until deleted, even when the digest is deleted; database schema v7 moves the existing topics over and keeps every digest.
