@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The reminder respects the days and time set: no day is preselected, and it fires at the exact time on Android 13 and later without a permission prompt.
 - Stage 7: the reminder. A free notification at the weekdays and time chosen in Settings, re-armed after it fires, at start, after a reboot or update, after time and time zone changes and permission changes; a reminder missed while the phone was off shows if under 12 hours late; Settings says when reminders may come late and links to the alarm permission. Also: search news only, keywords read in context, reference pages and empty stories dropped.
 - Stage 5: email becomes Share. A Share menu in the digest viewer and the end-of-run popup; Email opens the phone's mail app with the digest filled in (styled where the mail app accepts it, plain text otherwise). Removed: the stored mail, the send status, the recipient limit, Show as emailed and the lab's .eml file; database schema v4 keeps every stored digest.
 - Stage 6: the History tab: digest cards newest first, the digest viewer drawn in the app (More, sources as links), Show as emailed in a locked-down web view, Delete with a confirmation; View after a run and the new-digest notification open the digest; raw answers are deleted after 14 days unless waiting for Read again or Write again.
