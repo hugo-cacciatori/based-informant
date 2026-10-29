@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.hugo_cacciatori.basedinformant.core.key.SecretStore
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
+import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderedDigest
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
@@ -63,6 +64,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -87,6 +89,10 @@ class AppDependencies(
     val notificationsAllowed: () -> Boolean,
     /** Share → Email: opens the device's mail app with the mail filled in; false when there is none. */
     val shareEmail: (RenderedDigest) -> Boolean,
+    /** Re-arms the reminder's alarm (04-platforms.md section 3). */
+    val onReminderChanged: (Reminder) -> Unit,
+    val exactAlarmsAllowed: () -> Boolean,
+    val openExactAlarmSettings: () -> Unit,
     val today: () -> LocalDate,
     val now: () -> Long,
 )
@@ -103,7 +109,7 @@ object Links {
 @Composable
 fun App(
     deps: AppDependencies,
-    askNotifications: () -> Unit = {},
+    askNotifications: (onResult: (Boolean) -> Unit) -> Unit = { it(true) },
     /** A digest to open, from a new-digest notification; [onDigestOpened] clears it. */
     openDigest: StateFlow<Long?> = MutableStateFlow(null),
     onDigestOpened: () -> Unit = {},
@@ -111,7 +117,10 @@ fun App(
     val personaName: suspend (Persona) -> String? = { persona -> if (persona == Persona.OFF) null else getString(personaRes(persona)) }
     val history = viewModel { HistoryViewModel(HistoryModel(deps.historyStore, personaName)) }
     val keywords = viewModel { KeywordsViewModel(KeywordsModel(deps.keywordStore, deps.secrets, deps.clientFor)) }
-    val settings = viewModel { SettingsViewModel(SettingsModel(deps.settingsStore, deps.secrets, deps.clientFor)) }
+    val settings = viewModel {
+        SettingsViewModel(SettingsModel(deps.settingsStore, deps.secrets, deps.clientFor, onReminderChanged = deps.onReminderChanged))
+    }
+    val reminder = ReminderPlatform(askNotifications, deps.exactAlarmsAllowed, deps.openExactAlarmSettings, deps.now, { TimeZone.currentSystemDefault() })
     val presets = viewModel { PresetsViewModel(PresetsModel(deps.presetStore, keywords.model)) }
     val generate = viewModel {
         GenerateViewModel(
@@ -136,12 +145,12 @@ fun App(
                 val balance = deps.secrets.rfabKey()?.let { (deps.clientFor(it).balance() as? RfabResult.Ok)?.value }
                 balance?.let { ConfirmationRules.recentCharges(it, deps.now()) }.orEmpty()
             },
-            askNotifications = askNotifications,
+            askNotifications = { askNotifications {} },
         )
     }
     AppTheme {
         val requested by openDigest.collectAsStateWithLifecycle()
-        AppShell(keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened, deps.shareEmail)
+        AppShell(keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened, deps.shareEmail, reminder)
     }
 }
 
@@ -163,6 +172,7 @@ fun AppShell(
     openDigest: Long? = null,
     onDigestOpened: () -> Unit = {},
     shareEmail: (RenderedDigest) -> Boolean = { false },
+    reminder: ReminderPlatform = ReminderPlatform(),
 ) {
     var screen by rememberSaveable { mutableStateOf(Screen.KEYWORDS) }
     val snackbar = remember { SnackbarHostState() }
@@ -249,7 +259,7 @@ fun AppShell(
             }
             Screen.SETTINGS -> {
                 val state by settings.state.collectAsStateWithLifecycle()
-                SettingsScreen(state, settings, snackbar, modifier)
+                SettingsScreen(state, settings, snackbar, modifier, reminder)
             }
         }
     }

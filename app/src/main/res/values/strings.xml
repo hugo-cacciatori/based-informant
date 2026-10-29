@@ -9,6 +9,10 @@
     <string name="channel_progress">Digest in progress</string>
     <string name="channel_run_notices">Run notices</string>
 
+    <!-- The reminder (01-product.md section 6): it spends nothing. -->
+    <string name="notice_reminder">Time for your news digest</string>
+    <string name="notice_reminder_text">Open the app to generate it.</string>
+
     <string name="notice_progress">Generating your digest…</string>
     <string name="notice_progress_text">This can take a few minutes.</string>
 

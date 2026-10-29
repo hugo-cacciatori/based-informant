@@ -39,7 +39,7 @@ class BasedInformantApp : Application() {
     val dependencies: AppDependencies by lazy {
         AppDependencies(
             keywordStore = RoomKeywordStore(database, System::currentTimeMillis),
-            settingsStore = DataStoreSettingsStore(settingsDataStore(settingsPath(this))),
+            settingsStore = settingsStore,
             secrets = secrets,
             clientFor = { key -> KtorRfabClient(rfabHttp, key) },
             presetStore = RoomPresetStore(database, System::currentTimeMillis),
@@ -53,12 +53,18 @@ class BasedInformantApp : Application() {
             startRun = { job -> RunService.start(this, runController, job) },
             notificationsAllowed = { NotificationManagerCompat.from(this).areNotificationsEnabled() },
             shareEmail = { mail -> MailShare.open(this, mail) },
+            onReminderChanged = { reminder -> ReminderAlarm.arm(this, reminder) },
+            exactAlarmsAllowed = { ReminderAlarm.exactAllowed(this) },
+            openExactAlarmSettings = { ReminderAlarm.openExactAlarmSettings(this) },
             today = ::today,
             now = System::currentTimeMillis,
         )
     }
 
     val runStore by lazy { RoomRunStore(database, rawFiles(this)) }
+
+    /** One instance per file: DataStore refuses two. The reminder's receiver reads it too. */
+    val settingsStore by lazy { DataStoreSettingsStore(settingsDataStore(settingsPath(this))) }
 
     private val digestStore by lazy { RoomDigestStore(database) }
 

@@ -52,6 +52,23 @@ object Notifications {
         .setContentIntent(openApp(context, requestCode = 0, digestId = null))
         .build()
 
+    /** The reminder (01-product.md section 6): free, it only says it is time; tapping it opens the Keywords screen. */
+    @SuppressLint("MissingPermission")
+    fun reminder(context: Context) {
+        val manager = NotificationManagerCompat.from(context)
+        if (!manager.areNotificationsEnabled()) return
+        manager.notify(
+            NoticeIds.REMINDER,
+            NotificationCompat.Builder(context, REMINDERS)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(context.getString(R.string.notice_reminder))
+                .setContentText(context.getString(R.string.notice_reminder_text))
+                .setContentIntent(openApp(context, NoticeIds.REMINDER, digestId = null))
+                .setAutoCancel(true)
+                .build(),
+        )
+    }
+
     /** Opens the app; with [digestId], the intent carries the digest to show. */
     private fun openApp(context: Context, requestCode: Int, digestId: Long?): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)

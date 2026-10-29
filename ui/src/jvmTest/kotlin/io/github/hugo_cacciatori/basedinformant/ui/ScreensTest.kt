@@ -17,6 +17,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.hugo_cacciatori.basedinformant.core.key.SecretStore
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
+import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
 import io.github.hugo_cacciatori.basedinformant.core.rfab.Balance
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ModelCatalog
@@ -33,6 +34,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.DayOfWeek
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -216,6 +218,61 @@ class ScreensTest {
         onNodeWithText("Dog Zapper").performScrollTo().performClick()
         waitForIdle()
         assertEquals(Persona.DOG_ZAPPER, store.settings.persona)
+    }
+
+    /** Thursday 29 Oct 2026, 10:00 UTC. */
+    private val thursday = 1_793_268_000_000L
+
+    private fun androidx.compose.ui.test.ComposeUiTest.reminderSettings(
+        store: MemorySettings,
+        armed: MutableList<Reminder>,
+        notifications: Boolean = true,
+        exact: Boolean = true,
+    ) {
+        val vm = SettingsViewModel(SettingsModel(store, MemorySecrets(), balanceOnly(0), onReminderChanged = { armed += it }))
+        val platform = ReminderPlatform(askNotifications = { it(notifications) }, exactAlarmsAllowed = { exact }, nowMillis = { thursday })
+        setContent {
+            AppTheme {
+                val state by vm.state.collectAsStateWithLifecycle()
+                SettingsScreen(state, vm, SnackbarHostState(), reminder = platform)
+            }
+        }
+    }
+
+    @Test
+    fun turningTheReminderOnShowsMondayAt8AndTheNextTime() = runComposeUiTest {
+        val store = MemorySettings()
+        val armed = mutableListOf<Reminder>()
+        reminderSettings(store, armed)
+        onNodeWithTag("reminder-day-monday").assertDoesNotExist()
+        onNodeWithTag("reminder-switch").performScrollTo().performClick()
+        waitForIdle()
+        assertEquals(Reminder(on = true), store.settings.reminder)
+        assertEquals(listOf(Reminder(on = true)), armed, "the alarm is re-armed")
+        onNodeWithTag("reminder-next").performScrollTo().assertTextContains("Next reminder: Mon 2 Nov, 08:00")
+        onNodeWithTag("reminder-day-thursday").performScrollTo().performClick()
+        waitForIdle()
+        assertEquals(setOf(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), store.settings.reminder.days)
+        onNodeWithTag("reminder-next").performScrollTo().assertTextContains("Next reminder: Mon 2 Nov, 08:00")
+        onNodeWithText("Reminders may come late", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun withoutNotificationsTheReminderStaysOff() = runComposeUiTest {
+        val store = MemorySettings()
+        val armed = mutableListOf<Reminder>()
+        reminderSettings(store, armed, notifications = false)
+        onNodeWithTag("reminder-switch").performScrollTo().performClick()
+        waitForIdle()
+        assertEquals(Reminder(), store.settings.reminder)
+        assertEquals(emptyList(), armed)
+    }
+
+    @Test
+    fun withoutTheAlarmPermissionSettingsSaysRemindersMayBeLate() = runComposeUiTest {
+        reminderSettings(MemorySettings(AppSettings(reminder = Reminder(on = true))), mutableListOf(), exact = false)
+        onNodeWithText("Reminders may come late while the phone sleeps.").performScrollTo().assertExists()
+        onNodeWithText("Allow exact reminders").assertExists()
     }
 }
 

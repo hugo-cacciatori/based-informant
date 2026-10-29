@@ -56,6 +56,7 @@ import io.github.hugo_cacciatori.basedinformant.core.key.NotKnownReason
 import io.github.hugo_cacciatori.basedinformant.core.limits.FieldCounter
 import io.github.hugo_cacciatori.basedinformant.core.limits.InputLimits
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
+import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsState
@@ -129,14 +130,21 @@ interface SettingsActions {
     fun setAttentionMode(mode: AttentionMode)
     fun setPersona(persona: Persona)
     fun setModel(id: String)
+    fun setReminder(reminder: Reminder)
 }
 
 /**
  * Settings (01-product.md section 3), stage 2 part: the key (paste + Test key only), the balance, what feeds the call,
- * and the privacy note. Email, theme and reminder join in their own stages. Every change is saved at once.
+ * the reminder and the privacy note. The theme joins in its own stage. Every change is saved at once.
  */
 @Composable
-fun SettingsScreen(state: SettingsState, actions: SettingsActions, snackbar: SnackbarHostState, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    state: SettingsState,
+    actions: SettingsActions,
+    snackbar: SnackbarHostState,
+    modifier: Modifier = Modifier,
+    reminder: ReminderPlatform = ReminderPlatform(),
+) {
     LaunchedEffect(Unit) { actions.open() }
 
     val tagUndo = state.tagUndo
@@ -188,6 +196,10 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions, snackbar: Sna
             onSelect = actions::setModel,
         )
         HorizontalDivider()
+        if (state.loaded) {
+            ReminderSection(state.settings.reminder, actions::setReminder, reminder, snackbar)
+            HorizontalDivider()
+        }
         SectionTitle(Res.string.privacy_section)
         Text(stringResource(Res.string.privacy_note), Modifier.testTag("privacy-note"))
     }

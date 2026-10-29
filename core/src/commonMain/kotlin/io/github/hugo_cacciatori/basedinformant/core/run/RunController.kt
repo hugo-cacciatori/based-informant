@@ -42,6 +42,9 @@ object NoticeIds {
     /** The run notice: one at a time, a newer one replaces it. */
     const val RUN = 2
 
+    /** The reminder (01-product.md section 6): one at a time. */
+    const val REMINDER = 3
+
     const val FIRST_DIGEST = 1_000
 }
 

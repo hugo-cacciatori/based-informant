@@ -186,6 +186,16 @@
     <string name="model_section">Model (advanced)</string>
     <string name="model_hint">Only models checked in testing are offered.</string>
 
+    <!-- Reminder (01-product.md section 6) -->
+    <string name="reminder_section">Reminder</string>
+    <string name="reminder_hint">A notification when it is time for your digest. It spends nothing: you still press Generate.</string>
+    <string name="reminder_switch">Remind me</string>
+    <string name="reminder_time">At %1$s</string>
+    <string name="reminder_next">Next reminder: %1$s</string>
+    <string name="reminder_exact_off">Reminders may come late while the phone sleeps.</string>
+    <string name="reminder_exact_allow">Allow exact reminders</string>
+    <string name="reminder_notifications_off">Notifications are off: allow them to get reminders.</string>
+
     <!-- Privacy (05-security.md section 6) -->
     <string name="privacy_section">Privacy</string>
     <string name="privacy_note">To write a digest, the app sends your keywords, your interest tags, a short memory of past digests and your persona choice to rfab.ai and the AI providers it uses. Don’t put sensitive personal details in them. To check links, the app opens each source page. Nothing else leaves this device: no analytics, no crash reports, no server of ours.</string>

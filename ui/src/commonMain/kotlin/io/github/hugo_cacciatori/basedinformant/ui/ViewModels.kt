@@ -9,6 +9,7 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsState
 import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
+import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderedDigest
 import io.github.hugo_cacciatori.basedinformant.core.rfab.Transaction
 import io.github.hugo_cacciatori.basedinformant.core.run.GenerateModel
@@ -110,6 +111,10 @@ class SettingsViewModel(private val model: SettingsModel) : ViewModel(), Setting
 
     override fun setModel(id: String) {
         viewModelScope.launch { model.setModel(id) }
+    }
+
+    override fun setReminder(reminder: Reminder) {
+        viewModelScope.launch { model.setReminder(reminder) }
     }
 }
 
