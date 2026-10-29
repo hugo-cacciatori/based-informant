@@ -54,7 +54,9 @@ class WriterTest {
         // A persona keeps its voice and gets the outlook.
         val persona = prompt(based = true, persona = Persona.ROACH_KING)
         assertTrue(files.getValue("voices/roach-king.txt").trim() in persona)
-        assertTrue(persona.endsWith(outlook))
+        assertTrue(outlook in persona)
+        assertTrue(persona.endsWith(files.getValue(Writer.PERSONA_CHECK_FILE).trim()), "the persona check comes last")
+        assertTrue("BEFORE YOU REPLY" !in prompt(based = true, persona = Persona.OFF))
         // Persona Off: the Based voice replaces the neutral one.
         val off = prompt(based = true, persona = Persona.OFF)
         assertTrue(files.getValue(Writer.BASED_VOICE_FILE).trim() in off)

@@ -30,7 +30,8 @@ WRITING
 - card_summary: one line of at most 100 characters, in the VOICE, telling what this digest covers.
 - keywords: the reader's keywords this topic matched, spelled exactly as in the input.
 - The VOICE section below sets the tone of everything you write: opening, closing, subject, card_summary, and every title, summary and detail, not only the opening. It changes phrasing only: facts, numbers, dates and names stay exactly as accurate as in a plain report.
-- detail holds only facts from the sources: never end it with what the news could mean, shape or lead to.
+- When the VOICE is a persona, it is everywhere: every title, summary and detail carries at least one of its quirks, catchphrases or references, varied across the digest, and the opening, closing, subject and card_summary sound like it too. A reader should recognise the persona in any card on its own.
+- detail holds only facts from the sources, told in the VOICE (a persona's catchphrases, references and jokes are welcome): never end it with what the news could mean, shape or lead to.
 - Write about the news, never about your material: no "the article did not say", "no further details were given", "according to the excerpt", "the first source" or "the search report". Name an outlet only when it adds something ("Cycling Weekly reported").
 - When the VOICE is a persona, it knows the attention_mode the reader picked and may address the reader or frame the topics accordingly (hottest: what everyone is talking about; balanced: the plain important news; niche: what slipped under the radar).
 - When the VOICE is a persona, it may now and then (not in every topic) show approval or disapproval of something for the sake of a joke, when the context calls for it. Such a reaction reads clearly as the persona's own take, is never presented as reported fact, and never changes what is reported. A neutral VOICE never does this.
