@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Based feeds: with Based on, the phone also reads GB News, Fox News politics and Donald Trump's Truth Social posts for free, so Based digests can fill five cards from right-wing sources; the writer now fills free slots with trending stories more reliably.
 - Based names example right-wing sites in the search, so its digests draw on them.
 
 - Based checks its sources: with Based on, a free AI check drops every source whose outlet is not right-wing, so a Based digest may hold fewer cards.

@@ -17,6 +17,8 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import io.github.hugo_cacciatori.basedinformant.core.search.Repair
+import io.github.hugo_cacciatori.basedinformant.core.search.BasedFeeds
+import io.github.hugo_cacciatori.basedinformant.core.search.FeedFetcher
 import io.github.hugo_cacciatori.basedinformant.core.search.OutletCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchCheck
@@ -79,6 +81,9 @@ sealed interface LabCommand {
 
     /** The free repair (02-ai-call.md section 12, item 10) of an unreadable search answer saved in [broken]. */
     data class Repair(val model: String, val broken: String) : LabCommand
+
+    /** Based's free feeds (02-ai-call.md section 4): what they give today, as stories for the keywords of [input]. */
+    data class Feeds(val input: String?) : LabCommand
 
     /** The free outlet check of Based (02-ai-call.md section 4) on a saved search answer. */
     data class OutletCheck(val model: String, val searchAnswer: String) : LabCommand
@@ -149,6 +154,7 @@ sealed interface LabCommand {
                     flags.getValue("--repair")!!,
                     flags["--broken"] ?: throw LabUsageError("--repair needs --broken <file>"),
                 )
+                "--feeds" in flags -> Feeds(flags["--input"])
                 "--outlet-check" in flags -> OutletCheck(
                     flags.getValue("--outlet-check")!!,
                     flags["--search-answer"] ?: throw LabUsageError("--outlet-check needs --search-answer <file>"),
@@ -163,12 +169,12 @@ sealed interface LabCommand {
             }
         }
 
-        private val MODES = listOf("--write", "--search-call", "--fact-check", "--repair", "--outlet-check", "--probe", "--check-input", "--models", "--balance")
+        private val MODES = listOf("--write", "--search-call", "--fact-check", "--repair", "--outlet-check", "--feeds", "--probe", "--check-input", "--models", "--balance")
         private val VALUED = setOf(
             "--write", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken", "--outlet-check",
         )
         private val SWITCHES = setOf(
-            "--search-call", "--persona-research", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--fetch-articles", "--models", "--balance", "--help",
+            "--search-call", "--feeds", "--persona-research", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--fetch-articles", "--models", "--balance", "--help",
         )
 
         val USAGE = """
@@ -191,6 +197,9 @@ sealed interface LabCommand {
             |                                           --answer re-reads a saved fact-check raw.json, sending nothing
             |  --repair <model> --broken FILE           free: rebuild an unreadable search answer; accepted only when
             |                                           every URL is in the original; refuses unless the model is at 0x
+            |  --feeds [--input FILE]                   free, no key: reads Based's feeds (GB News, Fox News politics,
+            |                                           Trump's Truth Social posts) and shows their stories for the
+            |                                           input's keywords
             |  --outlet-check <model> --search-answer FILE
             |                                           free: Based's outlet check on a saved search answer: which
             |                                           outlets the model calls right-wing, which sources would go;
@@ -225,6 +234,7 @@ class Lab(
     private val now: () -> LocalDateTime = LocalDateTime::now,
     private val clockMillis: () -> Long = System::currentTimeMillis,
     private val fetchPage: (String) -> String? = ArticleText::fetch,
+    private val feedFetcher: () -> FeedFetcher = { FeedFetcher { null } },
 ) {
     /** Returns the process exit code: 0 done, 1 the run failed or was refused, 2 usage error. */
     suspend fun run(command: LabCommand): Int = when (command) {
@@ -234,6 +244,7 @@ class Lab(
         is LabCommand.FactCheck -> factCheck(command)
         is LabCommand.Repair -> repair(command)
         is LabCommand.OutletCheck -> outletCheck(command)
+        is LabCommand.Feeds -> feeds(command)
         is LabCommand.Probe -> probe(command)
         is LabCommand.CheckInput -> checkInput(command)
         LabCommand.Models -> models()
@@ -350,7 +361,11 @@ class Lab(
             report.line("story ${s.story}: [${s.keywords.joinToString("; ")}] ${s.whatHappened ?: "-"} (attention ${s.attention ?: "-"})")
             s.sources.forEach { src -> report.line("  source ${src.n}: ${src.publisher} | ${src.published} | ${src.facts.size} facts | ${src.url}") }
         }
-        val (checked, issues) = SearchCheck.apply(answer, ValidationContext(prompt.keywords, prompt.today))
+        // Based: the free feeds join the paid answer, as the app does (owner, 2026-10-30).
+        val (fed, feedIssues) = if (prompt.based) BasedFeeds.stories(feedFetcher(), prompt.keywords, prompt.today) else emptyList<SearchAnswer.Story>() to emptyList()
+        if (prompt.based) report.line("feeds: ${fed.size} stories (${fed.count { !it.trending }} on the keywords)")
+        feedIssues.forEach { report.line(finding(Finding(it))) }
+        val (checked, issues) = SearchCheck.apply(answer.copy(stories = answer.stories + fed), ValidationContext(prompt.keywords, prompt.today))
         // Based: the free outlet check, as the app runs it (owner, 2026-10-30).
         val (sourced, outletIssues) = if (!prompt.based || checked.stories.isEmpty()) checked to emptyList<Issue>() else {
             val verdict = FreeModels.first(client, models.value, FreeModels.CHECKER, { OutletCheck.request(it, checked) }, OutletCheck::parse)
@@ -446,6 +461,25 @@ class Lab(
                 report.line("story ${i + 1}: ${s.whatHappened ?: "-"} | ${s.sources.size} sources, ${s.sources.sumOf { it.facts.size }} facts, ${s.personaNotes.size} notes")
             }
         }
+        report.write(out)
+        return 0
+    }
+
+    /** Based's feeds today: no key, no tokens; each feed's stories for the input's keywords. */
+    private suspend fun feeds(command: LabCommand.Feeds): Int {
+        val input = command.input?.let { input(it) }
+        val keywords = input?.keywords.orEmpty()
+        val today = input?.todayDate() ?: LocalDate.parse(now().toLocalDate().toString())
+        val dir = outDir("feeds")
+        val report = Report(dir).line("mode: feeds, keywords ${keywords.ifEmpty { listOf("none") }.joinToString("; ")}, today $today")
+        val (stories, issues) = BasedFeeds.stories(feedFetcher(), keywords, today)
+        issues.forEach { report.line(finding(Finding(it))) }
+        stories.forEach { s ->
+            val src = s.sources.single()
+            report.line("${if (s.trending) "trending" else "[" + s.keywords.joinToString("; ") + "]"} | ${src.publisher} | ${src.published} | ${s.whatHappened} | ${src.url}")
+        }
+        dir.resolve("feeds.json").writeText(pretty.encodeToString(SearchAnswer.serializer(), SearchAnswer(searchedAt = today.toString(), stories = stories)))
+        report.line("stories: ${stories.size} (${stories.count { !it.trending }} on the keywords)")
         report.write(out)
         return 0
     }

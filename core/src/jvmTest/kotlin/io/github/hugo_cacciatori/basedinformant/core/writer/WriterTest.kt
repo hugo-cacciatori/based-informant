@@ -55,7 +55,10 @@ class WriterTest {
         val persona = prompt(based = true, persona = Persona.ROACH_KING)
         assertTrue(files.getValue("voices/roach-king.txt").trim() in persona)
         assertTrue(outlook in persona)
-        assertTrue(persona.endsWith(files.getValue(Writer.PERSONA_CHECK_FILE).trim()), "the persona check comes last")
+        assertTrue(
+            persona.endsWith(files.getValue(Writer.PERSONA_CHECK_FILE).trim() + "\n\n" + files.getValue(Writer.FILL_CHECK_FILE).trim()),
+            "the persona check, then the fill check, come last",
+        )
         assertTrue("BEFORE YOU REPLY" !in prompt(based = true, persona = Persona.OFF))
         // Persona Off: the Based voice replaces the neutral one.
         val off = prompt(based = true, persona = Persona.OFF)

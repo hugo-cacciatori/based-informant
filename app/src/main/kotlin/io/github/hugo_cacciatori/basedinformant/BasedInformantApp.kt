@@ -7,6 +7,8 @@ import androidx.core.app.NotificationManagerCompat
 import io.github.hugo_cacciatori.basedinformant.core.check.InputChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.HttpLinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.linkCheckHttpClient
+import io.github.hugo_cacciatori.basedinformant.core.search.HttpFeedFetcher
+import io.github.hugo_cacciatori.basedinformant.core.search.feedHttpClient
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestRun
 import io.github.hugo_cacciatori.basedinformant.core.run.RunController
 import io.github.hugo_cacciatori.basedinformant.core.run.perform
@@ -74,12 +76,13 @@ class BasedInformantApp : Application() {
     /** The one runner of this device (01-product.md section 4.1); [RunService] hosts its jobs. */
     val runController: RunController by lazy {
         val linkChecker = HttpLinkChecker(linkCheckHttpClient(OkHttp.create()))
+        val feeds = HttpFeedFetcher(feedHttpClient(OkHttp.create()))
         RunController(
             perform = { job ->
                 // Read at run time; a Generate cannot be confirmed without a key, and recovery of an interrupted run
                 // needs none. The free models must not retry (DigestRun).
                 val client = KtorRfabClient(rfabHttp, secrets.rfabKey().orEmpty(), maxAttempts = 1)
-                DigestRun(runStore, digestStore, RoomCallLog(database), client, linkChecker, System::currentTimeMillis)
+                DigestRun(runStore, digestStore, RoomCallLog(database), client, linkChecker, feeds, System::currentTimeMillis)
                     .perform(job)
             },
             notifier = Notifications.Poster(this),

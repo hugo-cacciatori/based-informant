@@ -1,0 +1,2 @@
+FILL TO FIVE
+Count your topics before you reply. The digest needs five. When you wrote fewer than five and the report holds trending stories you did not use, write a topic for each of them, the most newsworthy first, until you have five or none is left. A trending topic has "keywords": [] and its own topic_tag, and follows every rule above.

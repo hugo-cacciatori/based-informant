@@ -4,6 +4,8 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.HttpLinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.linkCheckHttpClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.KtorRfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.rfabHttpClient
+import io.github.hugo_cacciatori.basedinformant.core.search.HttpFeedFetcher
+import io.github.hugo_cacciatori.basedinformant.core.search.feedHttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -14,15 +16,18 @@ fun main(args: Array<String>) {
         val command = LabCommand.parse(args.toList())
         val http = lazy { rfabHttpClient(OkHttp.create()) }
         val linkHttp = lazy { linkCheckHttpClient(OkHttp.create()) }
+        val feedHttp = lazy { feedHttpClient(OkHttp.create()) }
         val lab = Lab(
             root = File("").absoluteFile,
             out = System.out,
             clientFor = { key -> KtorRfabClient(http.value, key) },
             linkChecker = { HttpLinkChecker(linkHttp.value) },
+            feedFetcher = { HttpFeedFetcher(feedHttp.value) },
         )
         runBlocking { lab.run(command) }.also {
             if (http.isInitialized()) http.value.close()
             if (linkHttp.isInitialized()) linkHttp.value.close()
+            if (feedHttp.isInitialized()) feedHttp.value.close()
         }
     } catch (e: LabUsageError) {
         System.err.println("lab: ${e.message}")
