@@ -186,8 +186,8 @@ data class LinkReport(
     val datesFound: Int = 0,
     /** Dates the model gave that differed from the page and were corrected. */
     val datesCorrected: Int = 0,
-    /** Sources dropped because the page's own date is outside the window. */
-    val datesOutsideWindow: Int = 0,
+    /** Sources dropped because the page's own date is in the future. */
+    val datesInFuture: Int = 0,
 ) {
     val total get() = alive + unknown + dead
 

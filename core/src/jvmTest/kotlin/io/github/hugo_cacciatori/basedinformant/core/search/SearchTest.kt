@@ -4,7 +4,6 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.Issue.Kind
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkResult
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkStatus
-import io.github.hugo_cacciatori.basedinformant.core.digest.RecencyWindow
 import io.github.hugo_cacciatori.basedinformant.core.digest.ValidationContext
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
@@ -24,7 +23,7 @@ class SearchTest {
 
     private val synthetic = fixture("search-synthetic.json")
     private val today = LocalDate(2026, 10, 18)
-    private val context = ValidationContext(listOf("fusion energy", "deep-sea mining", "chess"), RecencyWindow.of(today, null))
+    private val context = ValidationContext(listOf("fusion energy", "deep-sea mining", "chess"), today)
 
     @Test
     fun theTwoRealAnswersAreReadableAsTheyCame() {
@@ -37,9 +36,8 @@ class SearchTest {
 
     @Test
     fun storiesWithoutSourcesAndForeignKeywordsAreDroppedAndTheRestNumbered() {
-        val window = RecencyWindow(LocalDate(2026, 10, 22), LocalDate(2026, 10, 29))
         val keywords = listOf("fusion energy", "deep-sea mining", "chess", "Mars exploration", "quantum computing")
-        val (checked, issues) = SearchCheck.apply(SearchParser.parse(fixture("search-sonar-2026-10-29-science.txt"))!!, ValidationContext(keywords, window))
+        val (checked, issues) = SearchCheck.apply(SearchParser.parse(fixture("search-sonar-2026-10-29-science.txt"))!!, ValidationContext(keywords, LocalDate(2026, 10, 29)))
         // Chess and Mars came back as placeholder stories with no source (2026-10-29).
         assertEquals(listOf(listOf("fusion energy"), listOf("deep-sea mining"), listOf("quantum computing")), checked.stories.map { it.keywords })
         assertEquals(2, issues.count { it.kind == Kind.STORY_NO_SOURCE })
@@ -56,7 +54,7 @@ class SearchTest {
                     sources = listOf(
                         source("http://chess.example.com/a", "2026-10-15"),
                         source("https://chess.example.com/tag/chess", "2026-10-15"),
-                        source("https://chess.example.com/old", "2026-09-01"),
+                        source("https://chess.example.com/future", "2026-11-25"),
                         source("https://chess.example.com/undated", ""),
                         source("https://chess.example.com/kept", "2026-10-15"),
                         source("https://CHESS.example.com/kept/", "2026-10-15"),
@@ -67,9 +65,12 @@ class SearchTest {
         )
         val (checked, issues) = SearchCheck.apply(answer, context)
         assertEquals(listOf("https://chess.example.com/kept"), checked.stories.single().sources.map { it.url })
+        // No lower date limit since 2026-10-29: a year-old source is kept (the search ranks it as a fallback).
+        val old = answer.copy(stories = listOf(answer.stories.first().copy(sources = listOf(source("https://chess.example.com/last-year", "2025-10-01")))))
+        assertEquals(1, SearchCheck.apply(old, context).first.stories.single().sources.size)
         assertEquals(listOf("chess"), checked.stories.single().keywords, "the owner's spelling")
         assertEquals(
-            listOf(Kind.SOURCE_NOT_HTTPS, Kind.SOURCE_NOT_AN_ARTICLE, Kind.SOURCE_OUTSIDE_WINDOW, Kind.SOURCE_BAD_DATE, Kind.SOURCE_DUPLICATE_URL, Kind.STORY_NOT_LINKED_TO_KEYWORDS),
+            listOf(Kind.SOURCE_NOT_HTTPS, Kind.SOURCE_NOT_AN_ARTICLE, Kind.SOURCE_DATE_IN_FUTURE, Kind.SOURCE_BAD_DATE, Kind.SOURCE_DUPLICATE_URL, Kind.STORY_NOT_LINKED_TO_KEYWORDS),
             issues.map { it.kind },
         )
     }
@@ -81,25 +82,25 @@ class SearchTest {
             when {
                 "science.example.com" in url -> LinkResult(LinkStatus.ALIVE, pageDate = LocalDate(2026, 10, 15), pageText = "Forty minutes.")
                 "sciences.example.org" in url -> LinkResult(LinkStatus.DEAD, "HTTP 404")
-                "seabed-vote" in url -> LinkResult(LinkStatus.ALIVE, pageDate = LocalDate(2026, 4, 8))
+                "seabed-vote" in url -> LinkResult(LinkStatus.ALIVE, pageDate = LocalDate(2026, 11, 30))
                 else -> LinkResult(LinkStatus.UNKNOWN)
             }
         }
-        val result = SearchLinks.apply(checked, links, context.window)
+        val result = SearchLinks.apply(checked, links, context.today)
         val stellarator = result.answer.stories.first().sources.single()
         assertEquals("2026-10-15" to "Forty minutes.", stellarator.published to stellarator.pageText)
         assertEquals(
-            setOf(Kind.SOURCE_DATE_CORRECTED, Kind.SOURCE_DEAD_LINK, Kind.SOURCE_PAGE_DATE_OUTSIDE_WINDOW),
+            setOf(Kind.SOURCE_DATE_CORRECTED, Kind.SOURCE_DEAD_LINK, Kind.SOURCE_PAGE_DATE_IN_FUTURE),
             result.issues.map { it.kind }.toSet(),
         )
         assertEquals(1, result.report.dead)
-        assertEquals(1, result.report.datesOutsideWindow)
+        assertEquals(1, result.report.datesInFuture)
         assertTrue(SearchAnswer.decode(result.answer.encode()) == result.answer, "the stored copy reads back the same")
     }
 
     @Test
     fun theRequestCarriesTheDataAndThePersonaResearchOnlyWhenAsked() {
-        val input = PromptInput(listOf("chess", "a <b>"), listOf("science"), AttentionMode.BALANCED, Persona.ROACH_KING, LocalDate(2026, 10, 29), null)
+        val input = PromptInput(listOf("chess", "a <b>"), listOf("science"), AttentionMode.BALANCED, Persona.ROACH_KING, LocalDate(2026, 10, 29))
         fun prompt(research: Boolean, persona: Persona = Persona.ROACH_KING) =
             assertIs<SearchRequest.Result.Built>(SearchRequest.build(input.copy(persona = persona), research)).request
         val on = prompt(research = true)

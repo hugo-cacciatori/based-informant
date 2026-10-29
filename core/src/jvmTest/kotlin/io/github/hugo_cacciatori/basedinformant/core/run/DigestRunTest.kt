@@ -12,6 +12,7 @@ import io.github.hugo_cacciatori.basedinformant.core.fakes.allAlive
 import io.github.hugo_cacciatori.basedinformant.core.fakes.okResponse
 import io.github.hugo_cacciatori.basedinformant.core.fakes.responseBody
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
+import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
@@ -41,7 +42,6 @@ class DigestRunTest {
             attentionMode = AttentionMode.BALANCED,
             persona = Persona.OFF,
             today = LocalDate(2026, 10, 18),
-            lastDigestDate = null,
             knownTopicTags = listOf("Deep-sea mining rules"),
         ),
         personaDisplayName = null,
@@ -190,16 +190,12 @@ class DigestRunTest {
     }
 
     @Test
-    fun aSearchWithNoStoryLeftIsEmptyAndOffersTheWiderWindowOnce() = runBlocking {
+    fun aSearchWithNoStoryLeftIsEmpty() = runBlocking {
         val none = """{"template_version": 2, "searched_at": "2026-10-18", "stories": [
             {"keywords": ["chess"], "what_happened": "No qualifying story was found.", "attention": 0, "sources": []}]}"""
         val outcome = assertIs<RunOutcome.Empty>(run(paid = okResponse(none, 1_440)).second.execute(snapshot))
-        assertTrue(outcome.canWiden)
         assertEquals(RunError.EMPTY, runs.runs.getValue(outcome.runId).error)
         assertEquals(1, calls.calls.single().issues[Issue.Kind.STORY_NO_SOURCE])
-
-        val wide = snapshot.copy(prompt = snapshot.prompt.copy(wideWindow = true))
-        assertEquals(false, assertIs<RunOutcome.Empty>(run(paid = okResponse(none, 1_440)).second.execute(wide)).canWiden)
     }
 
     @Test
@@ -217,10 +213,46 @@ class DigestRunTest {
     }
 
     @Test
-    fun theWideWindowSearchesThirtyDays() {
-        val window = snapshot.prompt.copy(wideWindow = true).window()
-        assertEquals(LocalDate(2026, 9, 18), window.start)
-        assertEquals(LocalDate(2026, 10, 18), window.end)
+    fun topicModeCoversEveryChosenTopicAndListsTheMissingOnes() = runBlocking {
+        var searchMessage = ""
+        var writerMessage = ""
+        val topics = snapshot.copy(
+            prompt = snapshot.prompt.copy(mode = DigestMode.TOPICS, keywords = listOf("fusion energy", "deep-sea mining", "Mars exploration")),
+        )
+        val client = ScriptedRfab(okResponse(search, 1_440)) { model, request ->
+            if ("SEARCH_REPORT" in request.messages.single().content) writerMessage = request.messages.single().content
+            writes(model, request)
+        }
+        val digestRun = DigestRun(runs, digests, calls, object : io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient by client {
+            override suspend fun chat(request: ChatRequest): RfabResult<ChatResponse> {
+                if (request.model == "openrouter:perplexity/sonar") searchMessage = request.messages.single().content
+                return client.chat(request)
+            }
+        }, withPages) { clock += 500; clock }
+        assertIs<RunOutcome.Stored>(digestRun.execute(topics))
+        assertTrue("\"mode\":\"topics\"" in searchMessage && "\"interest_tags\":[]" in searchMessage, searchMessage)
+        assertTrue("which the reader followed in earlier digests" in searchMessage)
+        assertTrue("\"mode\":\"topics\"" in writerMessage)
+        val digest = digests.saved.single().digest
+        assertEquals(listOf("Mars exploration"), digest.missingTopics)
+        assertTrue(digests.saved.single().text.contains("No article found this time for: Mars exploration."))
+        assertEquals("topics", calls.calls.single().mode)
+    }
+
+    @Test
+    fun topicModeKeepsAChosenTopicWhateverItsScore() = runBlocking {
+        val low = written.replace("\"relevance\": 45", "\"relevance\": 0")
+        val topics = snapshot.copy(prompt = snapshot.prompt.copy(mode = DigestMode.TOPICS, keywords = listOf("fusion energy", "deep-sea mining")))
+        val (_, digestRun) = run(free = { model, request -> if ("SEARCH_REPORT" in request.messages.single().content && model == "openrouter:minimax/minimax-m3") low else writes(model, request) })
+        assertIs<RunOutcome.Stored>(digestRun.execute(topics))
+        assertEquals(2, digests.saved.single().digest.topics.size, "score 30 is under MIN_SCORE but the topic was chosen")
+        assertEquals(emptyList(), digests.saved.single().digest.missingTopics)
+    }
+
+    @Test
+    fun theStoredTagsAreTheChoicesOfTopicMode() = runBlocking {
+        run().second.execute(snapshot)
+        assertEquals(listOf("Stellarator research", "Deep-sea mining rules"), digests.topicTags())
     }
 
     @Test

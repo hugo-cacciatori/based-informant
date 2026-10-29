@@ -1,6 +1,5 @@
 package io.github.hugo_cacciatori.basedinformant.core.prompt
 
-import io.github.hugo_cacciatori.basedinformant.core.digest.RecencyWindow
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import kotlinx.datetime.LocalDate
@@ -26,22 +25,24 @@ object TemplateConfig {
     fun voiceFile(persona: Persona) = "voices/${persona.voiceFile}.txt"
 }
 
+/** Keyword mode, or topic mode: the digest covers up to 5 topic tags of earlier digests (01-product.md section 3). */
+enum class DigestMode { KEYWORDS, TOPICS }
+
 /** Everything one run is built from: the run's settings snapshot. */
 data class PromptInput(
+    /** The owner's keywords, or in topic mode the chosen topic tags. */
     val keywords: List<String>,
     val interestTags: List<String>,
     val attentionMode: AttentionMode,
     val persona: Persona,
     val today: LocalDate,
-    val lastDigestDate: LocalDate?,
-    /** The second call after an empty digest searches [RecencyWindow.WIDE_DAYS] days. */
-    val wideWindow: Boolean = false,
     val model: String = TemplateConfig.DEFAULT_MODEL,
     /** The topic tags of stored digests, newest first, for the writer to reuse (02-ai-call.md section 9). */
     val knownTopicTags: List<String> = emptyList(),
+    val mode: DigestMode = DigestMode.KEYWORDS,
 ) {
-    /** The period searched; the checks use the same one. */
-    fun window(): RecencyWindow = if (wideWindow) RecencyWindow.wide(today) else RecencyWindow.of(today, lastDigestDate)
+    /** Topic mode does not use the interest tags (owner, 2026-10-23). */
+    fun tagsSent(): List<String> = if (mode == DigestMode.TOPICS) emptyList() else interestTags
 }
 
 /** The body of `POST /api/chat/completions` (02-ai-call.md section 1). Headers, and so the key, are never part of it. */

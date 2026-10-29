@@ -19,6 +19,8 @@ data class Digest(
     val subject: String? = null,
     /** The History card's one line in the digest's voice (01-product.md section 5), or null to list the titles. */
     @SerialName("card_summary") val cardSummary: String? = null,
+    /** Topic mode: the chosen topics left without a card, listed in the digest (owner, 2026-10-29). */
+    @SerialName("missing_topics") val missingTopics: List<String> = emptyList(),
 )
 
 @Serializable

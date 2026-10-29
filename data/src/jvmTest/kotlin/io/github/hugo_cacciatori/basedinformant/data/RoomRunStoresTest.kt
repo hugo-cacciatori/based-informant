@@ -10,6 +10,7 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 import io.github.hugo_cacciatori.basedinformant.core.digest.Source
 import io.github.hugo_cacciatori.basedinformant.core.digest.ScoreParts
 import io.github.hugo_cacciatori.basedinformant.core.digest.Topic
+import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
@@ -50,10 +51,9 @@ class RoomRunStoresTest {
             attentionMode = AttentionMode.NICHE,
             persona = Persona.ROACH_KING,
             today = LocalDate(2026, 10, 20),
-            lastDigestDate = LocalDate(2026, 10, 18),
-            wideWindow = true,
             model = model,
             knownTopicTags = listOf("Club chess"),
+            mode = DigestMode.TOPICS,
         ),
         personaDisplayName = "The Roach King",
         emailOn = true,
@@ -138,12 +138,38 @@ class RoomRunStoresTest {
     }
 
     @Test
+    fun topicTagsComeNewestFirstEachOnce() = runBlocking {
+        val store = RoomDigestStore(db)
+        fun stored(at: Long, vararg tags: String) = StoredDigest(
+            runId = at, status = DigestStatus.SAVED, generatedAt = at, subject = "S", html = "<p>x</p>", text = "x", summary = "s",
+            topicCount = tags.size, model = "m", attentionMode = "BALANCED", persona = "OFF", recipient = null, tokensBilled = null,
+            digest = Digest(
+                2, LocalDate(2026, 10, 20), null, null,
+                tags.mapIndexed { i, tag -> Topic("t$i", tag, "Title", "Summary.", null, listOf("chess"), 80, null, emptyList()) },
+            ),
+        )
+        store.save(stored(1, "Club chess", "Seabed rules"))
+        store.save(stored(2, "Fusion records", "club CHESS"))
+        assertEquals(listOf("Fusion records", "club CHESS", "Seabed rules"), store.topicTags())
+    }
+
+    @Test
+    fun presetsAreStoredInOrderAndDeleted() = runBlocking {
+        val presets = RoomPresetStore(db) { 5 }
+        val first = presets.add(listOf("a", "b", "c", "d", "e"))
+        presets.add(listOf("f", "g", "h", "i", "j"))
+        assertEquals(listOf(listOf("a", "b", "c", "d", "e"), listOf("f", "g", "h", "i", "j")), presets.all().map { it.keywords })
+        presets.delete(first)
+        assertEquals(1, presets.all().size)
+    }
+
+    @Test
     fun callsAndChecksAreLogged() = runBlocking {
         val log = RoomCallLog(db)
         log.record(
             CallRecord(
                 runId = 1, at = 2, model = "m", templateVersion = 2, keywords = listOf("chess"), tags = listOf("science"),
-                attentionMode = "BALANCED", persona = "OFF", wideWindow = false, promptChars = 900, latencyMillis = 7_000,
+                attentionMode = "BALANCED", persona = "OFF", mode = "topics", promptChars = 900, latencyMillis = 7_000,
                 tokensBilled = 1_440, error = null, validTopics = 3, selectedTopics = 2,
                 issues = mapOf(Issue.Kind.FACT_SECOND_STORY to 1),
             ),

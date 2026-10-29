@@ -6,7 +6,6 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.LinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkReport
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkResult
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkStatus
-import io.github.hugo_cacciatori.basedinformant.core.digest.RecencyWindow
 import io.github.hugo_cacciatori.basedinformant.core.digest.ValidationContext
 import io.github.hugo_cacciatori.basedinformant.core.digest.isHttpsUrl
 import io.github.hugo_cacciatori.basedinformant.core.digest.normalizeUrl
@@ -104,9 +103,9 @@ object SearchParser {
 
 /**
  * The free checks on a search answer, before any page is opened (02-ai-call.md section 8): a source is dropped when its
- * URL is not `https`, looks like a listing page, repeats one already kept, or its date is not `YYYY-MM-DD` inside the
- * window (one day of tolerance after it); a story is dropped when none of its keywords is the owner's or no source is
- * left. The answer comes back numbered.
+ * URL is not `https`, looks like a listing page, repeats one already kept, or its date is not `YYYY-MM-DD` or is in the
+ * future (one day of tolerance; no lower limit since 2026-10-29); a story is dropped when none of its keywords is the
+ * owner's or no source is left. The answer comes back numbered.
  */
 object SearchCheck {
     /** Sources dated one day after the device's date are kept: the publisher may be in a later time zone. */
@@ -122,7 +121,7 @@ object SearchCheck {
             val matched = story.keywords.mapNotNull { owner[it.trim().lowercase()] }.distinct()
             if (matched.isEmpty()) return@mapNotNull null.also { issues += Issue(Issue.Kind.STORY_NOT_LINKED_TO_KEYWORDS, story = n) }
             val sources = story.sources.filter { s ->
-                val kind = sourceProblem(s, context.window) ?: if (seen.add(normalizeUrl(s.url))) null else Issue.Kind.SOURCE_DUPLICATE_URL
+                val kind = sourceProblem(s, context.today) ?: if (seen.add(normalizeUrl(s.url))) null else Issue.Kind.SOURCE_DUPLICATE_URL
                 if (kind != null) issues += Issue(kind, story = n, source = s.n)
                 kind == null
             }
@@ -132,12 +131,12 @@ object SearchCheck {
         return numbered.copy(stories = stories) to issues
     }
 
-    private fun sourceProblem(s: SearchAnswer.SearchSource, window: RecencyWindow): Issue.Kind? {
+    private fun sourceProblem(s: SearchAnswer.SearchSource, today: LocalDate): Issue.Kind? {
         if (s.title.isBlank() || s.publisher.isBlank() || s.url.isBlank()) return Issue.Kind.SOURCE_MISSING_FIELD
         if (!isHttpsUrl(s.url)) return Issue.Kind.SOURCE_NOT_HTTPS
         if (!ArticleUrl.looksLikeArticle(s.url)) return Issue.Kind.SOURCE_NOT_AN_ARTICLE
         val date = date(s.published) ?: return Issue.Kind.SOURCE_BAD_DATE
-        if (date < window.start || date > window.end.plus(FUTURE_TOLERANCE)) return Issue.Kind.SOURCE_OUTSIDE_WINDOW
+        if (date > today.plus(FUTURE_TOLERANCE)) return Issue.Kind.SOURCE_DATE_IN_FUTURE
         return null
     }
 
@@ -152,7 +151,7 @@ object SearchCheck {
 
 /**
  * The link and page-date checks on a search answer (02-ai-call.md section 8), in parallel and free: a dead source or one
- * whose page date is outside the window is dropped, a differing date inside it replaces the model's, and the page's
+ * whose page date is in the future is dropped, a differing page date replaces the model's, and the page's
  * readable text is kept for the writer and the fact check. A story left with no source is dropped.
  */
 object SearchLinks {
@@ -161,7 +160,7 @@ object SearchLinks {
 
     data class Result(val answer: SearchAnswer, val issues: List<Issue>, val report: LinkReport)
 
-    suspend fun apply(answer: SearchAnswer, checker: LinkChecker, window: RecencyWindow): Result {
+    suspend fun apply(answer: SearchAnswer, checker: LinkChecker, today: LocalDate): Result {
         val urls = answer.urls()
         val semaphore = Semaphore(PARALLEL_CHECKS)
         val results: Map<String, LinkResult> = coroutineScope {
@@ -169,7 +168,7 @@ object SearchLinks {
         }.toMap()
         val issues = mutableListOf<Issue>()
         var corrected = 0
-        var outside = 0
+        var future = 0
         val stories = answer.stories.mapNotNull { story ->
             val live = story.sources.mapNotNull { s ->
                 val result = results.getValue(s.url)
@@ -177,8 +176,8 @@ object SearchLinks {
                 fun issue(kind: Issue.Kind) = Issue(kind, story = story.story, source = s.n)
                 when {
                     result.status == LinkStatus.DEAD -> null.also { issues += issue(Issue.Kind.SOURCE_DEAD_LINK) }
-                    pageDate != null && (pageDate < window.start || pageDate > window.end.plus(FUTURE_TOLERANCE)) ->
-                        null.also { outside++; issues += issue(Issue.Kind.SOURCE_PAGE_DATE_OUTSIDE_WINDOW) }
+                    pageDate != null && pageDate > today.plus(FUTURE_TOLERANCE) ->
+                        null.also { future++; issues += issue(Issue.Kind.SOURCE_PAGE_DATE_IN_FUTURE) }
                     pageDate != null && pageDate.toString() != s.published.trim() -> {
                         corrected++
                         issues += issue(Issue.Kind.SOURCE_DATE_CORRECTED)
@@ -197,7 +196,7 @@ object SearchLinks {
             deadLinks = results.filterValues { it.status == LinkStatus.DEAD }.map { (url, r) -> "$url (${r.reason})" },
             datesFound = results.values.count { it.pageDate != null },
             datesCorrected = corrected,
-            datesOutsideWindow = outside,
+            datesInFuture = future,
         )
         return Result(answer.copy(stories = stories), issues, report)
     }

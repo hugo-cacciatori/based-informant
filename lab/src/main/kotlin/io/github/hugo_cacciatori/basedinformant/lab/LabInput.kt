@@ -1,5 +1,6 @@
 package io.github.hugo_cacciatori.basedinformant.lab
 
+import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
@@ -21,7 +22,8 @@ data class LabInput(
     val persona: String = "off",
     /** Defaults to the computer's date. */
     val today: String? = null,
-    @SerialName("last_digest") val lastDigest: String? = null,
+    /** "keywords" (default) or "topics": the keywords are then topic tags of earlier digests. */
+    val mode: String = "keywords",
     /** Topic tags of earlier digests, for the writer (02-ai-call.md section 9). */
     @SerialName("known_topic_tags") val knownTopicTags: List<String> = emptyList(),
 ) {
@@ -33,9 +35,9 @@ data class LabInput(
         attentionMode = parseAttention(attentionMode),
         persona = personaOverride ?: parsePersona(persona),
         today = todayDate(),
-        lastDigestDate = lastDigest?.let(LocalDate::parse),
         model = model,
         knownTopicTags = knownTopicTags,
+        mode = DigestMode.entries.firstOrNull { it.name.equals(mode, ignoreCase = true) } ?: throw LabUsageError("unknown mode \"$mode\" (keywords, topics)"),
     )
 
     companion object {

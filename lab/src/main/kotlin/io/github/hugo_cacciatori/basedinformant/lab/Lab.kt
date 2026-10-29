@@ -5,7 +5,6 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkChecker
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkResult
 import io.github.hugo_cacciatori.basedinformant.core.digest.LinkStatus
-import io.github.hugo_cacciatori.basedinformant.core.digest.RecencyWindow
 import io.github.hugo_cacciatori.basedinformant.core.digest.Selection
 import io.github.hugo_cacciatori.basedinformant.core.digest.ValidationContext
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatMessage
@@ -31,6 +30,7 @@ import io.github.hugo_cacciatori.basedinformant.core.writer.Writer
 import io.github.hugo_cacciatori.basedinformant.core.writer.WriterAnswer
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
@@ -308,12 +308,11 @@ class Lab(
         val persona = LabInput.parsePersona(command.persona ?: input.persona)
         val model = command.model ?: TemplateConfig.DEFAULT_MODEL
         val prompt = input.toPromptInput(model, persona)
-        val window = prompt.window()
         val request = when (val built = SearchRequest.build(prompt, command.research)) {
             is SearchRequest.Result.Built -> built.request
             is SearchRequest.Result.OverLimit -> throw LabUsageError("over the input limits, nothing built: ${built.violations}")
         }
-        val head = "persona ${persona.name.lowercase()}, research ${if (command.research) "on" else "off"}, window ${window.start} to ${window.end}"
+        val head = "${prompt.mode.name.lowercase()} mode, persona ${persona.name.lowercase()}, research ${if (command.research) "on" else "off"}, today ${prompt.today}"
         if (!command.paid) {
             val dir = outDir("search-dry-run")
             dir.resolve("request.json").writeText(pretty.encodeToString(ChatRequest.serializer(), request))
@@ -340,12 +339,12 @@ class Lab(
             report.line("story ${s.story}: [${s.keywords.joinToString("; ")}] ${s.whatHappened ?: "-"} (attention ${s.attention ?: "-"})")
             s.sources.forEach { src -> report.line("  source ${src.n}: ${src.publisher} | ${src.published} | ${src.facts.size} facts | ${src.url}") }
         }
-        val (checked, issues) = SearchCheck.apply(answer, ValidationContext(prompt.keywords, window))
-        val linked = SearchLinks.apply(checked, linkChecker(), window)
+        val (checked, issues) = SearchCheck.apply(answer, ValidationContext(prompt.keywords, prompt.today))
+        val linked = SearchLinks.apply(checked, linkChecker(), prompt.today)
         dir.resolve("search-checked.json").writeText(pretty.encodeToString(SearchAnswer.serializer(), linked.answer))
         (issues + linked.issues).forEach { report.line(finding(Finding(it))) }
         val l = linked.report
-        report.line("links: ${l.alive} alive, ${l.unknown} unknown (kept), ${l.dead} dead; page dates: ${l.datesFound} found, ${l.datesCorrected} corrected, ${l.datesOutsideWindow} outside the window")
+        report.line("links: ${l.alive} alive, ${l.unknown} unknown (kept), ${l.dead} dead; page dates: ${l.datesFound} found, ${l.datesCorrected} corrected, ${l.datesInFuture} in the future")
             .line("after the checks: ${linked.answer.stories.size} stories, ${linked.answer.urls().size} sources, ${linked.answer.stories.sumOf { s -> s.sources.count { it.pageText != null } }} with page text")
         val found = linked.answer.stories.flatMap { it.keywords }.toSet()
         report.line("keywords with no story: ${prompt.keywords.filter { it !in found }.ifEmpty { listOf("none") }.joinToString("; ")}")
@@ -510,7 +509,7 @@ class Lab(
     private suspend fun probe(command: LabCommand.Probe): Int {
         val input = input(command.input)
         val keyword = command.keyword ?: input.keywords.firstOrNull() ?: throw LabUsageError("no keyword: pass --keyword")
-        val window = RecencyWindow.of(input.todayDate(), null)
+        val window = ProbeWindow(input.todayDate().minus(DatePeriod(days = ProbeWindow.DAYS)), input.todayDate())
         val request = ChatRequest(
             model = command.model,
             messages = listOf(ChatMessage("user", probeMessage(keyword, window))),
@@ -588,7 +587,7 @@ class Lab(
         return 0
     }
 
-    private fun probeMessage(keyword: String, window: RecencyWindow): String =
+    private fun probeMessage(keyword: String, window: ProbeWindow): String =
         "Search the web for one news article published from ${window.start} to ${window.end} (both inclusive) about " +
             "\"$keyword\". Reply with one JSON object and nothing else: " +
             "{\"title\": \"...\", \"publisher\": \"...\", \"url\": \"the article's direct https URL\", \"published\": \"YYYY-MM-DD\"}. " +
@@ -802,5 +801,12 @@ class Lab(
         private const val PROBE_SYSTEM = "You find news articles on the web and answer with JSON only."
         private val pretty = Json { prettyPrint = true }
         private val pagesSerializer = MapSerializer(String.serializer(), String.serializer())
+    }
+}
+
+/** The search probe's period (Model plan step 3): the last week, lab only; the app has no date window since 2026-10-29. */
+data class ProbeWindow(val start: LocalDate, val end: LocalDate) {
+    companion object {
+        const val DAYS = 7
     }
 }

@@ -54,16 +54,15 @@ data class CallEntity(
     val tags: String,
     @ColumnInfo(name = "attention_mode") val attentionMode: String,
     val persona: String,
-    @ColumnInfo(name = "wide_window") val wideWindow: Boolean,
     @ColumnInfo(name = "prompt_chars") val promptChars: Int,
     @ColumnInfo(name = "latency_ms") val latencyMillis: Long,
     @ColumnInfo(name = "tokens_billed") val tokensBilled: Long?,
     val error: String?,
     @ColumnInfo(name = "valid_topics") val validTopics: Int,
     @ColumnInfo(name = "selected_topics") val selectedTopics: Int,
-    /** Unused since template v2 (no repeat avoidance, owner 2026-10-23): always 0, dropped with schema v3 (redesign step 6). */
-    val repeats: Int,
     val issues: String,
+    /** "keywords" or "topics" (schema v3; rows from v2 read "keywords"). */
+    @ColumnInfo(defaultValue = "'keywords'") val mode: String,
 )
 
 @Dao
@@ -112,6 +111,8 @@ data class DigestEntity(
     val persona: String,
     val recipient: String?,
     @ColumnInfo(name = "tokens_billed") val tokensBilled: Long?,
+    /** The digest's topic tags as a JSON list, for topic mode (schema v3; rows from v2 read "[]"). */
+    @ColumnInfo(name = "topic_tags", defaultValue = "'[]'") val topicTags: String,
 )
 
 @Dao
@@ -119,30 +120,29 @@ interface DigestDao {
     @Insert
     suspend fun insert(digest: DigestEntity): Long
 
+    @Query("SELECT topic_tags FROM digests ORDER BY generated_at DESC, id DESC")
+    suspend fun topicTags(): List<String>
+
     @Query("SELECT * FROM digests WHERE id = :id")
     suspend fun get(id: Long): DigestEntity?
 }
 
-/** Unused since template v2 (the curated memory is gone, owner 2026-10-23): dropped with schema v3 (redesign step 6). */
-@Entity(tableName = "curated_topics")
-data class CuratedTopicEntity(
-    @PrimaryKey val id: String,
-    val title: String,
-    val gist: String,
-    @ColumnInfo(name = "first_featured") val firstFeatured: String,
-    @ColumnInfo(name = "last_featured") val lastFeatured: String,
-    @ColumnInfo(name = "times_featured") val timesFeatured: Int,
-    @ColumnInfo(name = "last_score") val lastScore: Int,
+/** Keyword presets (01-product.md section 3, schema v3): the 5 keywords as a JSON list, oldest first. */
+@Entity(tableName = "presets")
+data class PresetEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val keywords: String,
+    @ColumnInfo(name = "created_at") val createdAtMillis: Long,
 )
 
 @Dao
-interface CuratedTopicDao {
-    @Query("SELECT * FROM curated_topics ORDER BY last_featured DESC, id")
-    suspend fun all(): List<CuratedTopicEntity>
-
-    @Query("DELETE FROM curated_topics")
-    suspend fun deleteAll()
+interface PresetDao {
+    @Query("SELECT * FROM presets ORDER BY id")
+    suspend fun all(): List<PresetEntity>
 
     @Insert
-    suspend fun insertAll(topics: List<CuratedTopicEntity>)
+    suspend fun insert(preset: PresetEntity): Long
+
+    @Query("DELETE FROM presets WHERE id = :id")
+    suspend fun delete(id: Long)
 }

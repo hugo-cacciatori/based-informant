@@ -21,6 +21,8 @@ data class KeywordsState(
     val refusal: TextListRules.Refusal? = null,
     /** The last deleted keyword, while its Undo is offered. */
     val undo: TextListRules.Removed? = null,
+    /** The list a loaded preset replaced, while its Undo is offered (01-product.md section 3). */
+    val replaced: List<String>? = null,
     val hasKey: Boolean = false,
     val runActive: Boolean = false,
     /** The balance line above Generate; null while it is read. */
@@ -63,10 +65,22 @@ class KeywordsModel(
     suspend fun delete(index: Int) = mutex.withLock {
         val deleted = rules.delete(_state.value.keywords, index)
         store.save(deleted.list)
-        _state.update { it.copy(keywords = deleted.list, refusal = null, undo = deleted.removed) }
+        _state.update { it.copy(keywords = deleted.list, refusal = null, undo = deleted.removed, replaced = null) }
+    }
+
+    /** A preset replaces the whole list (owner, 2026-10-23); Undo brings the previous one back. */
+    suspend fun replace(keywords: List<String>) = mutex.withLock {
+        val previous = _state.value.keywords
+        store.save(keywords)
+        _state.update { it.copy(keywords = keywords, refusal = null, undo = null, replaced = previous) }
     }
 
     suspend fun undo() = mutex.withLock {
+        _state.value.replaced?.let { previous ->
+            store.save(previous)
+            _state.update { it.copy(keywords = previous, replaced = null) }
+            return@withLock
+        }
         val removed = _state.value.undo ?: return@withLock
         val list = rules.undo(_state.value.keywords, removed)
         if (list != _state.value.keywords) store.save(list)
@@ -74,7 +88,7 @@ class KeywordsModel(
     }
 
     /** The Undo offer ends after a few seconds (the UI's timer) or on the next edit. */
-    fun dismissUndo() = _state.update { it.copy(undo = null) }
+    fun dismissUndo() = _state.update { it.copy(undo = null, replaced = null) }
 
     fun dismissRefusal() = _state.update { it.copy(refusal = null) }
 
@@ -85,7 +99,7 @@ class KeywordsModel(
         when (val result = edit(_state.value.keywords)) {
             is EditResult.Done -> {
                 store.save(result.list)
-                _state.update { it.copy(keywords = result.list, refusal = null, undo = null) }
+                _state.update { it.copy(keywords = result.list, refusal = null, undo = null, replaced = null) }
                 true
             }
             is EditResult.Refused -> {

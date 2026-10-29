@@ -1,9 +1,20 @@
 {
-  "keywords": ["fusion energy", "deep-sea mining", "chess", "Mars exploration", "quantum computing"],
-  "interest_tags": ["science", "policy"],
+  "keywords": [
+    "fusion energy",
+    "deep-sea mining",
+    "chess",
+    "Mars exploration",
+    "quantum computing"
+  ],
+  "interest_tags": [
+    "science",
+    "policy"
+  ],
   "attention_mode": "balanced",
   "persona": "off",
   "today": "2026-10-18",
-  "last_digest": null,
-  "known_topic_tags": ["Deep-sea mining rules", "Stellarator research"]
+  "known_topic_tags": [
+    "Deep-sea mining rules",
+    "Stellarator research"
+  ]
 }

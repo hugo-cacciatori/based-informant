@@ -23,6 +23,5 @@
     "sport"
   ],
   "attention_mode": "balanced",
-  "persona": "off",
-  "last_digest": null
+  "persona": "off"
 }

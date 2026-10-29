@@ -29,6 +29,8 @@ data class DigestView(
     val emptyMessage: String?,
     val cards: List<CardView>,
     val closing: String?,
+    /** Topic mode: "No article found this time for: ...", or null (owner, 2026-10-29). */
+    val missingLine: String?,
     /** The model and template line, then the AI note. */
     val footerLines: List<String>,
 )
@@ -57,6 +59,8 @@ object DigestViews {
     const val EMPTY = "Nothing met your criteria this time."
     const val AI_NOTE = "Summaries are written by AI and can be wrong: check the sources."
 
+    const val MISSING = "No article found this time for: "
+
     /** Shown on a topic backed by one article only (owner, 2026-10-18: kept, and said so). */
     const val SINGLE_SOURCE = "1 source"
 
@@ -74,6 +78,7 @@ object DigestViews {
             emptyMessage = EMPTY.takeIf { digest.topics.isEmpty() },
             cards = digest.topics.map(::card),
             closing = digest.closing,
+            missingLine = digest.missingTopics.takeIf { it.isNotEmpty() }?.let { "$MISSING${it.joinToString(", ")}." },
             footerLines = listOfNotNull(
                 shortened?.let(::shortenedNote),
                 "Model: ${meta.model} · template v${digest.templateVersion}",

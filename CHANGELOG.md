@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Redesign step 6: keyword presets (save the current 5, no duplicates, at most 20, load with Undo) and topic mode (up to 5 topic tags from History, missing topics listed in the digest) in the core; no date window any more: the search favours recent sources in weekly tiers, and the 30-day second call is gone; the attention mode also frames the persona; Room schema v3 (presets, topic tags; the old memory table removed) with its migration test.
 - The free-written search request is not adopted (owner): its lab prompt, guard and modes are removed; the app keeps its own request.
 - Redesign step 5: two paid searches (2,880 tokens) compared the app's own search request with a free-written one: 3 valid stories each, but the written request's stories each mixed several events.
 - Redesign step 5 (lab): a free model can write the plain-language search request (draft prompt, guard, `--search-request`; `--search-call --request` sends a saved one); compared by eye on four free models.

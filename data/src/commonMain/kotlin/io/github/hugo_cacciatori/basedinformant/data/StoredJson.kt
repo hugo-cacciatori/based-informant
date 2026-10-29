@@ -4,6 +4,7 @@ import io.github.hugo_cacciatori.basedinformant.core.check.CheckAttempt
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckEntry
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
 import io.github.hugo_cacciatori.basedinformant.core.check.Refusal
+import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
@@ -28,8 +29,7 @@ internal object StoredJson {
         val attentionMode: String,
         val persona: String,
         val today: LocalDate,
-        val lastDigestDate: LocalDate?,
-        val wideWindow: Boolean,
+        val mode: String = "KEYWORDS",
         val model: String,
         val personaDisplayName: String?,
         val emailOn: Boolean,
@@ -46,8 +46,8 @@ internal object StoredJson {
         json.encodeToString(
             Snapshot.serializer(),
             Snapshot(
-                keywords, interestTags, knownTopicTags, attentionMode.name, persona.name, today, lastDigestDate,
-                wideWindow, model, snapshot.personaDisplayName, snapshot.emailOn, snapshot.recipient,
+                keywords, interestTags, knownTopicTags, attentionMode.name, persona.name, today,
+                mode.name, model, snapshot.personaDisplayName, snapshot.emailOn, snapshot.recipient,
             ),
         )
     }
@@ -61,8 +61,7 @@ internal object StoredJson {
                 attentionMode = AttentionMode.valueOf(s.attentionMode),
                 persona = Persona.valueOf(s.persona),
                 today = s.today,
-                lastDigestDate = s.lastDigestDate,
-                wideWindow = s.wideWindow,
+                mode = DigestMode.valueOf(s.mode),
                 model = s.model,
                 knownTopicTags = s.knownTopicTags,
             ),
@@ -73,6 +72,8 @@ internal object StoredJson {
     }
 
     fun strings(list: List<String>): String = json.encodeToString(list)
+
+    fun stringList(text: String): List<String> = json.decodeFromString(text)
 
     fun counts(map: Map<String, Int>): String = json.encodeToString(map)
 

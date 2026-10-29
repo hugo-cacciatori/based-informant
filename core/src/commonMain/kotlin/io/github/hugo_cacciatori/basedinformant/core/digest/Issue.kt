@@ -1,10 +1,13 @@
 package io.github.hugo_cacciatori.basedinformant.core.digest
 
+import kotlinx.datetime.LocalDate
+
 /** What the run knows that the answers are checked against. */
 data class ValidationContext(
-    /** The owner's keywords from the run's snapshot. */
+    /** The owner's keywords from the run's snapshot, or the chosen topic tags in topic mode. */
     val keywords: List<String>,
-    val window: RecencyWindow,
+    /** The device's date: there is no lower date limit (owner, 2026-10-29), only dates in the future are refused. */
+    val today: LocalDate,
 )
 
 /**
@@ -25,10 +28,12 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
         /** The URL looks like a homepage, index, archive, event or calendar page (source-type filter). */
         SOURCE_NOT_AN_ARTICLE,
         SOURCE_BAD_DATE,
-        SOURCE_OUTSIDE_WINDOW,
+
+        /** Dated after tomorrow: impossible for published news (one day of tolerance for time zones). */
+        SOURCE_DATE_IN_FUTURE,
         SOURCE_DUPLICATE_URL,
         SOURCE_DEAD_LINK,
-        SOURCE_PAGE_DATE_OUTSIDE_WINDOW,
+        SOURCE_PAGE_DATE_IN_FUTURE,
         SOURCE_DATE_CORRECTED,
 
         /** The writer named a story or source the search answer does not have, or another story's source. */

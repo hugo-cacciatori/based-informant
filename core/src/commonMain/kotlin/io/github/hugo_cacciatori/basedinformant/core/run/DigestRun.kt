@@ -8,6 +8,8 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.Selection
 import io.github.hugo_cacciatori.basedinformant.core.digest.ValidationContext
 import io.github.hugo_cacciatori.basedinformant.core.limits.KeywordRules
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
+import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
+import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 import io.github.hugo_cacciatori.basedinformant.core.render.DigestRenderer
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderMeta
@@ -106,9 +108,9 @@ class DigestRun(
         val parsed = SearchParser.parse(content)
             ?: catalog?.let { repair(it, content) }?.also { issues += Issue(Issue.Kind.ANSWER_REPAIRED) }
             ?: return unreadable(record) to Report(issues)
-        val context = ValidationContext(snapshot.prompt.keywords.map(KeywordRules::normalize), snapshot.prompt.window())
+        val context = ValidationContext(snapshot.prompt.keywords.map(KeywordRules::normalize), snapshot.prompt.today)
         val (checked, checkIssues) = SearchCheck.apply(parsed, context)
-        val linked = SearchLinks.apply(checked, linkChecker, context.window)
+        val linked = SearchLinks.apply(checked, linkChecker, context.today)
         issues += checkIssues + linked.issues
         val answer = linked.answer
         if (answer.stories.isEmpty()) return empty(record) to Report(issues)
@@ -127,7 +129,7 @@ class DigestRun(
         val check = FreeModels.first(client, catalog, FreeModels.CHECKER, { FactCheck.request(it, clean, answer) }, FactCheck::parse).value
         val (checked, facts) = check?.let { FactCheck.apply(clean, answer, it) } ?: (clean to emptyList())
         val (digest, joined) = Writer.toDigest(checked, answer, input)
-        val selected = digest.copy(topics = Selection.select(digest.topics))
+        val selected = select(digest, input)
         val report = Report(
             before.issues + (copies + facts + joined).map { it.issue } + listOfNotNull(Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null }),
             digest.topics.size,
@@ -137,6 +139,17 @@ class DigestRun(
         val digestId = store(record, selected)
         finish(record, RunState.DONE, error = null, digestId = digestId)
         return RunOutcome.Stored(record.id, digestId, selected.topics.size, record.tokensBilled) to report
+    }
+
+    /**
+     * Keyword mode: [Selection] as usual. Topic mode: every chosen topic counts, so no score cutoff, and the chosen topics
+     * left without a card are listed in the digest (owner, 2026-10-29).
+     */
+    private fun select(digest: Digest, input: PromptInput): Digest {
+        if (input.mode == DigestMode.KEYWORDS) return digest.copy(topics = Selection.select(digest.topics))
+        val topics = Selection.select(digest.topics, minScore = 0)
+        val missing = input.keywords.filter { tag -> topics.none { t -> t.keywords.any { it.equals(tag.trim(), ignoreCase = true) } } }
+        return digest.copy(topics = topics, missingTopics = missing.takeIf { topics.isNotEmpty() }.orEmpty())
     }
 
     private suspend fun repair(catalog: ModelCatalog, broken: String): SearchAnswer? =
@@ -167,7 +180,7 @@ class DigestRun(
 
     private suspend fun empty(record: RunRecord): RunOutcome {
         finish(record, RunState.FAILED, RunError.EMPTY)
-        return RunOutcome.Empty(record.id, record.tokensBilled, canWiden = !record.snapshot.prompt.wideWindow)
+        return RunOutcome.Empty(record.id, record.tokensBilled)
     }
 
     private suspend fun notWritten(record: RunRecord): RunOutcome {
@@ -224,7 +237,7 @@ class DigestRun(
             tags = prompt.interestTags,
             attentionMode = prompt.attentionMode.name.lowercase(),
             persona = prompt.persona.name.lowercase(),
-            wideWindow = prompt.wideWindow,
+            mode = prompt.mode.name.lowercase(),
             promptChars = request.systemPrompt.length + request.messages.sumOf { it.content.length },
             latencyMillis = latency,
             tokensBilled = outcome.tokensBilled(),

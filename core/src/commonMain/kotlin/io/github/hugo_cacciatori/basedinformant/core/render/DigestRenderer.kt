@@ -63,6 +63,7 @@ object DigestRenderer {
 
         view.emptyMessage?.let { append(paragraph(it, "margin:0 0 16px;")) }
         view.cards.forEach { append(card(it)) }
+        view.missingLine?.let { append(paragraph(it, "margin:0 0 16px;color:#5a5a55;")) }
 
         append("<div style=\"margin-top:24px;padding-top:12px;border-top:1px solid #d0d0ca;font-size:13px;color:#5a5a55;\">\n")
         view.closing?.let { append(paragraph(it, "margin:0 0 8px;font-size:16px;color:#1d1d1b;")) }
@@ -126,6 +127,7 @@ object DigestRenderer {
             }
             append('\n')
         }
+        view.missingLine?.let { append(it).append("\n\n") }
         view.closing?.let { append(it).append("\n\n") }
         view.footerLines.forEach { append(it).append('\n') }
     }

@@ -18,7 +18,7 @@ class WriterTest {
     private val synthetic = SearchParser.parse(searchText)!!.numbered()
     private val withPages = synthetic.withPages(mapOf("https://science.example.com/2026/10/stellarator-record" to "The stellarator held plasma for 40 minutes."))
     private val input = PromptInput(
-        listOf("fusion energy", "deep-sea mining", "chess"), emptyList(), AttentionMode.BALANCED, Persona.OFF, LocalDate(2026, 10, 18), null,
+        listOf("fusion energy", "deep-sea mining", "chess"), emptyList(), AttentionMode.BALANCED, Persona.OFF, LocalDate(2026, 10, 18),
         knownTopicTags = listOf("Chess rules"),
     )
 

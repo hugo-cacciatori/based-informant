@@ -3,6 +3,8 @@ package io.github.hugo_cacciatori.basedinformant.data
 import androidx.room3.AutoMigration
 import androidx.room3.ColumnInfo
 import androidx.room3.ConstructedBy
+import androidx.room3.DeleteColumn
+import androidx.room3.DeleteTable
 import androidx.room3.Dao
 import androidx.room3.Database
 import androidx.room3.Entity
@@ -12,6 +14,7 @@ import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.migration.AutoMigrationSpec
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -23,11 +26,12 @@ import kotlinx.coroutines.IO
 @Database(
     entities = [
         KeywordEntity::class, RunEntity::class, CallEntity::class, CheckEntity::class, DigestEntity::class,
-        CuratedTopicEntity::class,
+        PresetEntity::class,
     ],
-    version = 2,
-    // v2 only adds tables (2026-10-20): Room writes that migration; MigrationTest checks it on a filled v1.
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    version = 3,
+    // v2 only adds tables (2026-10-20); v3 (2026-10-29, template v2) drops the curated memory and two unused call
+    // columns, and adds presets, the digests' topic tags and the call mode. Room writes both; SchemaTest checks them.
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = Migration2To3::class)],
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -41,12 +45,18 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun digests(): DigestDao
 
-    abstract fun curatedTopics(): CuratedTopicDao
+    abstract fun presets(): PresetDao
 
     companion object {
         const val FILE_NAME = "based-informant.db"
     }
 }
+
+/** What Room cannot infer for v3: what goes. Data in the dropped table and columns has no use since template v2. */
+@DeleteTable(tableName = "curated_topics")
+@DeleteColumn(tableName = "calls", columnName = "wide_window")
+@DeleteColumn(tableName = "calls", columnName = "repeats")
+class Migration2To3 : AutoMigrationSpec
 
 // The Room compiler generates the `actual` implementations.
 @Suppress("KotlinNoActualForExpect")

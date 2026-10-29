@@ -32,7 +32,7 @@ class SchemaTest {
 
     @Test
     fun everyVersionIsExported() {
-        for (version in 1..2) {
+        for (version in 1..3) {
             assertTrue(Files.exists(schemas.resolve(AppDatabase::class.qualifiedName!!).resolve("$version.json")), "missing $version.json")
         }
     }
@@ -47,11 +47,52 @@ class SchemaTest {
                 assertTrue(statement.step())
                 assertEquals("alpha", statement.getText(0))
             }
-            for (table in listOf("runs", "calls", "checks", "digests", "curated_topics")) {
+            for (table in listOf("runs", "calls", "checks", "digests")) {
                 connection.prepare("SELECT COUNT(*) FROM $table").use { statement ->
                     assertTrue(statement.step())
                     assertEquals(0L, statement.getLong(0))
                 }
+            }
+        }
+        Unit
+    }
+
+    @Test
+    fun version2To3KeepsRunsCallsAndDigestsAndDropsTheMemory() = runBlocking {
+        helper.createDatabase(2).use { connection ->
+            connection.execSQL("INSERT INTO keywords (text, position, created_at) VALUES ('alpha', 0, 1)")
+            connection.execSQL(
+                "INSERT INTO calls (run_id, at, model, template_version, keywords, tags, attention_mode, persona, wide_window, " +
+                    "prompt_chars, latency_ms, tokens_billed, error, valid_topics, selected_topics, repeats, issues) " +
+                    "VALUES (1, 2, 'm', 1, '[]', '[]', 'BALANCED', 'OFF', 0, 900, 7000, 1440, NULL, 3, 2, 1, '{}')",
+            )
+            connection.execSQL(
+                "INSERT INTO digests (run_id, status, generated_at, subject, html, text, summary, topic_count, digest, model, " +
+                    "attention_mode, persona, recipient, tokens_billed) VALUES (1, 'SAVED', 5, 'S', '<p>x</p>', 'x', 's', 1, '{}', 'm', 'BALANCED', 'OFF', NULL, 1440)",
+            )
+            connection.execSQL(
+                "INSERT INTO curated_topics (id, title, gist, first_featured, last_featured, times_featured, last_score) " +
+                    "VALUES ('t', 'T', 'G', '2026-10-01', '2026-10-18', 2, 70)",
+            )
+        }
+        helper.runMigrationsAndValidate(3).use { connection ->
+            connection.prepare("SELECT mode, tokens_billed FROM calls").use { statement ->
+                assertTrue(statement.step())
+                assertEquals("keywords", statement.getText(0))
+                assertEquals(1440L, statement.getLong(1))
+            }
+            connection.prepare("SELECT topic_tags, subject FROM digests").use { statement ->
+                assertTrue(statement.step())
+                assertEquals("[]", statement.getText(0))
+                assertEquals("S", statement.getText(1))
+            }
+            connection.prepare("SELECT COUNT(*) FROM presets").use { statement ->
+                assertTrue(statement.step())
+                assertEquals(0L, statement.getLong(0))
+            }
+            connection.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name = 'curated_topics'").use { statement ->
+                assertTrue(statement.step())
+                assertEquals(0L, statement.getLong(0))
             }
         }
         Unit

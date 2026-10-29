@@ -1,7 +1,15 @@
 {
-  "keywords": ["video game industry", "MMORPGs", "game prices", "live streaming", "AI in games"],
-  "interest_tags": ["gaming", "business"],
+  "keywords": [
+    "video game industry",
+    "MMORPGs",
+    "game prices",
+    "live streaming",
+    "AI in games"
+  ],
+  "interest_tags": [
+    "gaming",
+    "business"
+  ],
   "attention_mode": "balanced",
-  "persona": "roach-king",
-  "last_digest": null
+  "persona": "roach-king"
 }

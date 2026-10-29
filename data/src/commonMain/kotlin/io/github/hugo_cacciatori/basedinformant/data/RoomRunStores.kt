@@ -14,6 +14,8 @@ import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
 import io.github.hugo_cacciatori.basedinformant.core.run.RunState
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
 import io.github.hugo_cacciatori.basedinformant.core.run.StoredDigest
+import io.github.hugo_cacciatori.basedinformant.core.settings.Preset
+import io.github.hugo_cacciatori.basedinformant.core.settings.PresetStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
@@ -74,9 +76,15 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore {
                 runId = runId, status = status.name, generatedAt = generatedAt, subject = subject, html = html, text = text,
                 summary = summary, topicCount = topicCount, digest = StoredJson.json.encodeToString(Digest.serializer(), this.digest),
                 model = model, attentionMode = attentionMode, persona = persona, recipient = recipient, tokensBilled = tokensBilled,
+                topicTags = StoredJson.strings(this.digest.topics.mapNotNull { it.topicTag }.distinct()),
             )
         },
     )
+
+    override suspend fun topicTags(): List<String> {
+        val seen = mutableSetOf<String>()
+        return db.digests().topicTags().flatMap(StoredJson::stringList).filter { seen.add(it.lowercase()) }
+    }
 
     suspend fun get(id: Long): StoredDigest? = db.digests().get(id)?.let {
         StoredDigest(
@@ -96,9 +104,9 @@ class RoomCallLog(private val db: AppDatabase) : CallLog {
                 CallEntity(
                     runId = runId, at = at, model = model, templateVersion = templateVersion,
                     keywords = StoredJson.strings(keywords), tags = StoredJson.strings(tags), attentionMode = attentionMode,
-                    persona = persona, wideWindow = wideWindow, promptChars = promptChars, latencyMillis = latencyMillis,
+                    persona = persona, promptChars = promptChars, latencyMillis = latencyMillis,
                     tokensBilled = tokensBilled, error = error?.name, validTopics = validTopics, selectedTopics = selectedTopics,
-                    repeats = 0, issues = StoredJson.counts(issues.mapKeys { it.key.name }),
+                    issues = StoredJson.counts(issues.mapKeys { it.key.name }), mode = mode,
                 )
             },
         )
@@ -121,4 +129,13 @@ class RoomCallLog(private val db: AppDatabase) : CallLog {
             ),
         )
     }
+}
+
+/** Keyword presets (01-product.md section 3), oldest first. */
+class RoomPresetStore(private val db: AppDatabase, private val now: () -> Long) : PresetStore {
+    override suspend fun all(): List<Preset> = db.presets().all().map { Preset(it.id, StoredJson.stringList(it.keywords)) }
+
+    override suspend fun add(keywords: List<String>): Long = db.presets().insert(PresetEntity(keywords = StoredJson.strings(keywords), createdAtMillis = now()))
+
+    override suspend fun delete(id: Long) = db.presets().delete(id)
 }

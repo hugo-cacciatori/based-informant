@@ -88,7 +88,8 @@ data class CallRecord(
     val tags: List<String>,
     val attentionMode: String,
     val persona: String,
-    val wideWindow: Boolean,
+    /** "keywords" or "topics". */
+    val mode: String,
     /** Characters of the system prompt and the user message together. */
     val promptChars: Int,
     val latencyMillis: Long,
@@ -110,8 +111,8 @@ sealed interface RunOutcome {
 
     data class Stored(val runId: Long, val digestId: Long, val topicCount: Int, val tokensBilled: Long?) : RunOutcome
 
-    /** Nothing survived the checks; [canWiden] offers the second call with a wider window. */
-    data class Empty(val runId: Long, val tokensBilled: Long?, val canWiden: Boolean) : RunOutcome
+    /** Nothing survived the checks. No second call is offered (the date window and its wider retry were dropped, owner 2026-10-29). */
+    data class Empty(val runId: Long, val tokensBilled: Long?) : RunOutcome
 
     /** No free model wrote the digest; the search is kept and **Write again** runs the free cycle on it, for free. */
     data class NotWritten(val runId: Long, val tokensBilled: Long?) : RunOutcome
@@ -157,6 +158,9 @@ interface RunStore {
 
 interface DigestStore {
     suspend fun save(digest: StoredDigest): Long
+
+    /** The topic tags of stored digests, newest first, each once (ignoring case): the choices of topic mode. */
+    suspend fun topicTags(): List<String>
 }
 
 interface CallLog {
