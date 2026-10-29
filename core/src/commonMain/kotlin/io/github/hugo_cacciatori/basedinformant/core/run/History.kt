@@ -1,8 +1,10 @@
 package io.github.hugo_cacciatori.basedinformant.core.run
 
+import io.github.hugo_cacciatori.basedinformant.core.render.DigestRenderer
 import io.github.hugo_cacciatori.basedinformant.core.render.DigestView
 import io.github.hugo_cacciatori.basedinformant.core.render.DigestViews
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderMeta
+import io.github.hugo_cacciatori.basedinformant.core.render.RenderedDigest
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,15 +14,11 @@ import kotlinx.coroutines.flow.update
 /** One History card (01-product.md section 5): read without the HTML. */
 data class HistoryCard(
     val id: Long,
-    /** The generation time; the send time once email exists (stage 5). */
+    /** The generation time. */
     val at: Long,
-    val status: DigestStatus,
     val topicCount: Int,
     val summary: String,
-) {
-    /** The "Send failed" badge: only when the latest email attempt failed. */
-    val sendFailed: Boolean get() = status == DigestStatus.SEND_FAILED
-}
+)
 
 interface HistoryStore {
     /** Newest first. */
@@ -32,7 +30,7 @@ interface HistoryStore {
     suspend fun delete(id: Long)
 }
 
-/** An opened digest: the stored row and the view both the email and the viewer are drawn from (03-rendering.md section 3). */
+/** An opened digest: the stored row and the view both the shared mail and the viewer are drawn from (03-rendering.md section 3). */
 data class OpenDigest(val id: Long, val stored: StoredDigest, val view: DigestView)
 
 data class HistoryState(
@@ -61,9 +59,22 @@ class HistoryModel(private val store: HistoryStore, private val personaName: sus
             _state.update { it.copy(open = null, missing = true) }
             return
         }
-        val persona = Persona.entries.firstOrNull { it.name.equals(stored.persona, ignoreCase = true) } ?: Persona.OFF
-        val view = DigestViews.build(stored.digest, RenderMeta(personaName(persona), stored.model))
+        val view = DigestViews.build(stored.digest, meta(stored))
         _state.update { it.copy(open = OpenDigest(id, stored, view), missing = false) }
+    }
+
+    /**
+     * Share → Email (01-product.md section 8): the mail built now from the stored digest, the styled HTML and the plain
+     * text; null when the digest is gone.
+     */
+    suspend fun mail(id: Long): RenderedDigest? {
+        val stored = store.get(id) ?: return null
+        return DigestRenderer.render(stored.digest, meta(stored)).copy(subject = stored.subject)
+    }
+
+    private suspend fun meta(stored: StoredDigest): RenderMeta {
+        val persona = Persona.entries.firstOrNull { it.name.equals(stored.persona, ignoreCase = true) } ?: Persona.OFF
+        return RenderMeta(personaName(persona), stored.model)
     }
 
     /** Back from the viewer: the list. */

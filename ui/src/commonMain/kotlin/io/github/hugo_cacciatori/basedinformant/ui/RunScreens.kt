@@ -60,7 +60,6 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_balance
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_balance_unknown
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_chat_hours
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_chat_recent
-import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_destination
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_go
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_last
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_last_none
@@ -302,7 +301,6 @@ private fun ConfirmDialog(step: GenerateStep.Confirm, actions: GenerateActions) 
                 }
                 Text(stringResource(Res.string.confirm_settings, attentionLabel(prompt.attentionMode), personaLabel(prompt.persona)))
                 if (prompt.mode == DigestMode.TOPICS) Text(stringResource(Res.string.confirm_topics, prompt.keywords.joinToString(", ")))
-                Text(stringResource(Res.string.confirm_destination))
                 Text(
                     step.lastDigestAt?.let { stringResource(Res.string.confirm_last, formatMillis(it)) }
                         ?: stringResource(Res.string.confirm_last_none),

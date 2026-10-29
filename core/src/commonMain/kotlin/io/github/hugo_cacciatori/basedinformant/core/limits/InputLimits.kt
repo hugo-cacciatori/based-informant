@@ -13,7 +13,6 @@ object InputLimits {
     const val KEYWORD_MAX_CHARS = 50
     const val TAGS_MAX = 15
     const val TAG_MAX_CHARS = 30
-    const val RECIPIENT_MAX_CHARS = 254
 }
 
 /** One broken limit. Carries positions and sizes only, never the text itself. */
@@ -26,7 +25,6 @@ sealed interface LimitViolation {
     data class TooManyTags(val count: Int) : LimitViolation
     data class TagTooLong(val index: Int, val length: Int) : LimitViolation
     data class BlankTag(val index: Int) : LimitViolation
-    data class RecipientTooLong(val length: Int) : LimitViolation
 }
 
 /** Number of Unicode code points: what the owner sees as characters. */
@@ -78,10 +76,5 @@ object InputChecks {
                 length > InputLimits.TAG_MAX_CHARS -> add(LimitViolation.TagTooLong(index, length))
             }
         }
-    }
-
-    fun recipient(address: String): List<LimitViolation> {
-        val length = address.trim().charCount()
-        return if (length > InputLimits.RECIPIENT_MAX_CHARS) listOf(LimitViolation.RecipientTooLong(length)) else emptyList()
     }
 }

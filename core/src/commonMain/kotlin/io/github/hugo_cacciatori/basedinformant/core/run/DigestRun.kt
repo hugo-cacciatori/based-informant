@@ -11,7 +11,7 @@ import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
 import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
-import io.github.hugo_cacciatori.basedinformant.core.render.DigestRenderer
+import io.github.hugo_cacciatori.basedinformant.core.render.DigestViews
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderMeta
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ModelCatalog
@@ -157,22 +157,18 @@ class DigestRun(
 
     private suspend fun store(record: RunRecord, digest: Digest): Long {
         val snapshot = record.snapshot
-        val rendered = DigestRenderer.render(digest, RenderMeta(snapshot.personaDisplayName, snapshot.prompt.model))
+        val view = DigestViews.build(digest, RenderMeta(snapshot.personaDisplayName, snapshot.prompt.model))
         return digests.save(
             StoredDigest(
                 runId = record.id,
-                status = if (snapshot.emailOn) DigestStatus.GENERATED else DigestStatus.SAVED,
                 generatedAt = now(),
-                subject = rendered.subject,
-                html = rendered.html,
-                text = rendered.text,
+                subject = view.subject,
                 summary = DigestSummary.of(digest),
                 topicCount = digest.topics.size,
                 digest = digest,
                 model = snapshot.prompt.model,
                 attentionMode = snapshot.prompt.attentionMode.name.lowercase(),
                 persona = snapshot.prompt.persona.name.lowercase(),
-                recipient = snapshot.recipient.takeIf { snapshot.emailOn },
                 tokensBilled = record.tokensBilled,
             ),
         )

@@ -14,7 +14,6 @@ import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
-import io.github.hugo_cacciatori.basedinformant.core.run.DigestStatus
 import io.github.hugo_cacciatori.basedinformant.core.run.RunError
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
 import io.github.hugo_cacciatori.basedinformant.core.run.RunState
@@ -56,8 +55,6 @@ class RoomRunStoresTest {
             mode = DigestMode.TOPICS,
         ),
         personaDisplayName = "The Roach King",
-        emailOn = true,
-        recipient = "you@example.com",
     )
 
     @Test
@@ -128,9 +125,9 @@ class RoomRunStoresTest {
             ),
         )
         val stored = StoredDigest(
-            runId = 1, status = DigestStatus.SAVED, generatedAt = 5, subject = "Subject", html = "<p>x</p>", text = "x",
+            runId = 1, generatedAt = 5, subject = "Subject",
             summary = "A title", topicCount = 1, digest = digest, model = "m", attentionMode = "BALANCED", persona = "OFF",
-            recipient = null, tokensBilled = 1_440,
+            tokensBilled = 1_440,
         )
         val store = RoomDigestStore(db)
         val id = store.save(stored)
@@ -141,8 +138,8 @@ class RoomRunStoresTest {
     fun topicTagsComeNewestFirstEachOnce() = runBlocking {
         val store = RoomDigestStore(db)
         fun stored(at: Long, vararg tags: String) = StoredDigest(
-            runId = at, status = DigestStatus.SAVED, generatedAt = at, subject = "S", html = "<p>x</p>", text = "x", summary = "s",
-            topicCount = tags.size, model = "m", attentionMode = "BALANCED", persona = "OFF", recipient = null, tokensBilled = null,
+            runId = at, generatedAt = at, subject = "S", summary = "s",
+            topicCount = tags.size, model = "m", attentionMode = "BALANCED", persona = "OFF", tokensBilled = null,
             digest = Digest(
                 2, LocalDate(2026, 10, 20), null, null,
                 tags.mapIndexed { i, tag -> Topic("t$i", tag, "Title", "Summary.", null, listOf("chess"), 80, null, emptyList()) },

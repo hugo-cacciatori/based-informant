@@ -26,7 +26,6 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
 import io.github.hugo_cacciatori.basedinformant.core.digest.Source
 import io.github.hugo_cacciatori.basedinformant.core.digest.Topic
 import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
-import io.github.hugo_cacciatori.basedinformant.core.run.DigestStatus
 import io.github.hugo_cacciatori.basedinformant.core.run.HistoryCard
 import io.github.hugo_cacciatori.basedinformant.core.run.HistoryModel
 import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
@@ -148,7 +147,7 @@ internal class RunFixture(
         HistoryModel(
             object : HistoryStore {
                 override suspend fun cards() = history.entries.sortedByDescending { it.value.generatedAt }
-                    .map { (id, d) -> HistoryCard(id, d.generatedAt, d.status, d.topicCount, d.summary) }
+                    .map { (id, d) -> HistoryCard(id, d.generatedAt, d.topicCount, d.summary) }
                 override suspend fun get(id: Long) = history[id]
                 override suspend fun delete(id: Long) { history.remove(id) }
             },
@@ -166,9 +165,8 @@ internal class RunFixture(
 
 /** A stored digest with one card, synthetic. */
 internal fun storedDigest() = StoredDigest(
-    runId = 1, status = DigestStatus.SAVED, generatedAt = 1_000, subject = "Plasma record and a seabed vote", html = "<p>emailed page</p>",
-    text = "x", summary = "A plasma record and a mining vote.", topicCount = 1, model = "openrouter:perplexity/sonar",
-    attentionMode = "balanced", persona = "off", recipient = null, tokensBilled = 1_440,
+    runId = 1, generatedAt = 1_000, subject = "Plasma record and a seabed vote", summary = "A plasma record and a mining vote.", topicCount = 1, model = "openrouter:perplexity/sonar",
+    attentionMode = "balanced", persona = "off", tokensBilled = 1_440,
     digest = Digest(
         2, LocalDate(2026, 10, 29), "Hello.", "Bye.",
         listOf(
@@ -201,7 +199,6 @@ class RunScreensTest {
         waitForIdle()
         onNodeWithText("rfab tokens will be spent", substring = true).assertExists()
         onNodeWithText("Average cost of the last calls: 1,440 tokens", substring = true).assertExists()
-        onNodeWithText("The digest is saved in the app only.", substring = true).assertExists()
         onNodeWithTag("confirm-go").performClick()
         waitForIdle()
         assertIs<RunJob.Generate>(f.started.single())
@@ -237,16 +234,13 @@ class RunScreensTest {
     }
 
     @Test
-    fun historyListsCardsShowsAsEmailedAndDeletesAfterAConfirmation() = runComposeUiTest {
+    fun historyListsCardsAndDeletesAfterAConfirmation() = runComposeUiTest {
         val f = RunFixture()
         show(f)
         onNodeWithText("History").performClick()
         waitForIdle()
         onNodeWithText("A plasma record and a mining vote.").performClick()
         waitForIdle()
-        onNodeWithTag("show-as-emailed").performClick()
-        waitForIdle()
-        onNodeWithTag("emailed-html").assertTextContains("<p>emailed page</p>")
         onNodeWithContentDescription("Delete digest").performClick()
         waitForIdle()
         onNodeWithTag("delete-confirm").performClick()

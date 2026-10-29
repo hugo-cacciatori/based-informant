@@ -32,13 +32,10 @@ class InputLimitsTest {
     }
 
     @Test
-    fun tagsMemoryAndRecipientLimits() {
+    fun tagLimits() {
         assertTrue(InputChecks.tags(List(15) { "t$it" }).isEmpty())
         assertEquals(listOf(LimitViolation.TooManyTags(16)), InputChecks.tags(List(16) { "t$it" }))
         assertEquals(listOf(LimitViolation.TagTooLong(0, 31)), InputChecks.tags(listOf("t".repeat(31))))
         assertEquals(listOf(LimitViolation.BlankTag(0)), InputChecks.tags(listOf(" ")))
-
-        assertTrue(InputChecks.recipient("a".repeat(242) + "@example.com").isEmpty())
-        assertEquals(listOf(LimitViolation.RecipientTooLong(255)), InputChecks.recipient("a".repeat(243) + "@example.com"))
     }
 }

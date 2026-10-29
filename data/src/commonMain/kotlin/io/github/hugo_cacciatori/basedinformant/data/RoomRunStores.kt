@@ -6,7 +6,6 @@ import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
 import io.github.hugo_cacciatori.basedinformant.core.run.CallLog
 import io.github.hugo_cacciatori.basedinformant.core.run.CallRecord
-import io.github.hugo_cacciatori.basedinformant.core.run.DigestStatus
 import io.github.hugo_cacciatori.basedinformant.core.run.DigestStore
 import io.github.hugo_cacciatori.basedinformant.core.run.HistoryCard
 import io.github.hugo_cacciatori.basedinformant.core.run.HistoryStore
@@ -80,9 +79,9 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore {
     override suspend fun save(digest: StoredDigest): Long = db.digests().insert(
         with(digest) {
             DigestEntity(
-                runId = runId, status = status.name, generatedAt = generatedAt, subject = subject, html = html, text = text,
+                runId = runId, generatedAt = generatedAt, subject = subject,
                 summary = summary, topicCount = topicCount, digest = StoredJson.json.encodeToString(Digest.serializer(), this.digest),
-                model = model, attentionMode = attentionMode, persona = persona, recipient = recipient, tokensBilled = tokensBilled,
+                model = model, attentionMode = attentionMode, persona = persona, tokensBilled = tokensBilled,
                 topicTags = StoredJson.strings(this.digest.topics.mapNotNull { it.topicTag }.distinct()),
             )
         },
@@ -96,17 +95,17 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore {
     override suspend fun lastGeneratedAt(): Long? = db.digests().lastGeneratedAt()
 
     override suspend fun cards(): List<HistoryCard> = db.digests().cards().map {
-        HistoryCard(it.id, it.generatedAt, DigestStatus.valueOf(it.status), it.topicCount, it.summary)
+        HistoryCard(it.id, it.generatedAt, it.topicCount, it.summary)
     }
 
     override suspend fun delete(id: Long) = db.digests().delete(id)
 
     override suspend fun get(id: Long): StoredDigest? = db.digests().get(id)?.let {
         StoredDigest(
-            runId = it.runId, status = DigestStatus.valueOf(it.status), generatedAt = it.generatedAt, subject = it.subject,
-            html = it.html, text = it.text, summary = it.summary, topicCount = it.topicCount,
+            runId = it.runId, generatedAt = it.generatedAt, subject = it.subject,
+            summary = it.summary, topicCount = it.topicCount,
             digest = StoredJson.json.decodeFromString(Digest.serializer(), it.digest), model = it.model,
-            attentionMode = it.attentionMode, persona = it.persona, recipient = it.recipient, tokensBilled = it.tokensBilled,
+            attentionMode = it.attentionMode, persona = it.persona, tokensBilled = it.tokensBilled,
         )
     }
 }

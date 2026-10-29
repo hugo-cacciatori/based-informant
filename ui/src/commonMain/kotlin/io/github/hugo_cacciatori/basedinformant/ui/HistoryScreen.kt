@@ -23,7 +23,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,14 +50,11 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.delete
 import io.github.hugo_cacciatori.basedinformant.ui.resources.history_empty
 import io.github.hugo_cacciatori.basedinformant.ui.resources.history_missing
 import io.github.hugo_cacciatori.basedinformant.ui.resources.history_one_topic
-import io.github.hugo_cacciatori.basedinformant.ui.resources.history_send_failed
 import io.github.hugo_cacciatori.basedinformant.ui.resources.history_topics
 import io.github.hugo_cacciatori.basedinformant.ui.resources.viewer_delete
 import io.github.hugo_cacciatori.basedinformant.ui.resources.viewer_delete_body
 import io.github.hugo_cacciatori.basedinformant.ui.resources.viewer_delete_title
 import io.github.hugo_cacciatori.basedinformant.ui.resources.viewer_less
-import io.github.hugo_cacciatori.basedinformant.ui.resources.viewer_show_app
-import io.github.hugo_cacciatori.basedinformant.ui.resources.viewer_show_emailed
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
@@ -113,8 +109,6 @@ private fun HistoryCardRow(card: HistoryCard, onOpen: () -> Unit) {
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
-            // A text badge, never color alone.
-            if (card.sendFailed) Text(stringResource(Res.string.history_send_failed), color = MaterialTheme.colorScheme.error)
             Text(card.summary, style = MaterialTheme.typography.bodyMedium)
         }
     }
@@ -122,7 +116,6 @@ private fun HistoryCardRow(card: HistoryCard, onOpen: () -> Unit) {
 
 @Composable
 private fun DigestViewer(open: OpenDigest, actions: HistoryActions, modifier: Modifier) {
-    var asEmailed by rememberSaveable(open.id) { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     Column(modifier.fillMaxSize()) {
         // Top bar: date and subject.
@@ -138,14 +131,7 @@ private fun DigestViewer(open: OpenDigest, actions: HistoryActions, modifier: Mo
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.viewer_delete))
             }
         }
-        OutlinedButton(onClick = { asEmailed = !asEmailed }, modifier = Modifier.padding(horizontal = 16.dp).testTag("show-as-emailed")) {
-            Text(stringResource(if (asEmailed) Res.string.viewer_show_app else Res.string.viewer_show_emailed))
-        }
-        if (asEmailed) {
-            EmailedHtml(open.stored.html, Modifier.weight(1f).fillMaxWidth())
-        } else {
-            NativeDigest(open, Modifier.weight(1f).fillMaxWidth())
-        }
+        NativeDigest(open, Modifier.weight(1f).fillMaxWidth())
     }
     if (confirmDelete) {
         AlertDialog(
@@ -162,7 +148,7 @@ private fun DigestViewer(open: OpenDigest, actions: HistoryActions, modifier: Mo
     }
 }
 
-/** The digest in the app's look: the same texts, sources, order and labels as the email. */
+/** The digest in the app's look: the same texts, sources, order and labels as the shared mail. */
 @Composable
 private fun NativeDigest(open: OpenDigest, modifier: Modifier) {
     val view = open.view
@@ -208,6 +194,3 @@ private fun DigestCard(card: CardView) {
     }
 }
 
-/** Show as emailed: the exact stored HTML. Android: a hardened WebView (03-rendering.md section 3). */
-@Composable
-expect fun EmailedHtml(html: String, modifier: Modifier = Modifier)

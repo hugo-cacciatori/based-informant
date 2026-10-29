@@ -31,7 +31,7 @@ class RunControllerTest {
                 keywords = listOf("a", "b", "c", "d", "e"), interestTags = emptyList(),
                 attentionMode = AttentionMode.BALANCED, persona = Persona.OFF, today = today,
             ),
-            personaDisplayName = null, emailOn = false, recipient = null,
+            personaDisplayName = null,
         ),
     )
 

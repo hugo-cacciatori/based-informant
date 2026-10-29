@@ -9,7 +9,7 @@ import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import androidx.room3.Update
 
-// Schema v2 (04-platforms.md section 7). Enums are stored by name; lists, maps, the snapshot and the digest as JSON text
+// Schema v4 (04-platforms.md section 7). Enums are stored by name; lists, maps, the snapshot and the digest as JSON text
 // (StoredJson.kt), since they are read whole and never queried inside.
 
 @Entity(tableName = "runs", indices = [Index(value = ["state"]), Index(value = ["model"])])
@@ -105,18 +105,14 @@ interface CheckDao {
 data class DigestEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "run_id") val runId: Long,
-    val status: String,
     @ColumnInfo(name = "generated_at") val generatedAt: Long,
     val subject: String,
-    val html: String,
-    val text: String,
     val summary: String,
     @ColumnInfo(name = "topic_count") val topicCount: Int,
     val digest: String,
     val model: String,
     @ColumnInfo(name = "attention_mode") val attentionMode: String,
     val persona: String,
-    val recipient: String?,
     @ColumnInfo(name = "tokens_billed") val tokensBilled: Long?,
     /** The digest's topic tags as a JSON list, for topic mode (schema v3; rows from v2 read "[]"). */
     @ColumnInfo(name = "topic_tags", defaultValue = "'[]'") val topicTags: String,
@@ -137,7 +133,7 @@ interface DigestDao {
     suspend fun get(id: Long): DigestEntity?
 
     /** The History list: never the HTML (01-product.md section 5). */
-    @Query("SELECT id, generated_at, status, topic_count, summary FROM digests ORDER BY generated_at DESC, id DESC")
+    @Query("SELECT id, generated_at, topic_count, summary FROM digests ORDER BY generated_at DESC, id DESC")
     suspend fun cards(): List<DigestCardRow>
 
     @Query("DELETE FROM digests WHERE id = :id")
@@ -147,7 +143,6 @@ interface DigestDao {
 data class DigestCardRow(
     val id: Long,
     @ColumnInfo(name = "generated_at") val generatedAt: Long,
-    val status: String,
     @ColumnInfo(name = "topic_count") val topicCount: Int,
     val summary: String,
 )

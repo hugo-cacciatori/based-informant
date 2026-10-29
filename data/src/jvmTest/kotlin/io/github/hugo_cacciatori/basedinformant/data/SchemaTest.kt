@@ -32,7 +32,7 @@ class SchemaTest {
 
     @Test
     fun everyVersionIsExported() {
-        for (version in 1..3) {
+        for (version in 1..4) {
             assertTrue(Files.exists(schemas.resolve(AppDatabase::class.qualifiedName!!).resolve("$version.json")), "missing $version.json")
         }
     }
@@ -91,6 +91,32 @@ class SchemaTest {
                 assertEquals(0L, statement.getLong(0))
             }
             connection.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name = 'curated_topics'").use { statement ->
+                assertTrue(statement.step())
+                assertEquals(0L, statement.getLong(0))
+            }
+        }
+        Unit
+    }
+
+    @Test
+    fun version3To4KeepsTheDigestAndDropsItsStoredMail() = runBlocking {
+        helper.createDatabase(3).use { connection ->
+            connection.execSQL(
+                "INSERT INTO digests (run_id, status, generated_at, subject, html, text, summary, topic_count, digest, model, " +
+                    "attention_mode, persona, recipient, tokens_billed, topic_tags) VALUES " +
+                    "(1, 'SAVED', 5, 'S', '<p>x</p>', 'x', 's', 1, '{}', 'm', 'BALANCED', 'OFF', NULL, 1440, '[\"Club chess\"]')",
+            )
+        }
+        helper.runMigrationsAndValidate(4).use { connection ->
+            connection.prepare("SELECT subject, summary, digest, topic_tags, tokens_billed FROM digests").use { statement ->
+                assertTrue(statement.step())
+                assertEquals("S", statement.getText(0))
+                assertEquals("s", statement.getText(1))
+                assertEquals("{}", statement.getText(2))
+                assertEquals("[\"Club chess\"]", statement.getText(3))
+                assertEquals(1440L, statement.getLong(4))
+            }
+            connection.prepare("SELECT COUNT(*) FROM pragma_table_info('digests') WHERE name IN ('status', 'html', 'text', 'recipient')").use { statement ->
                 assertTrue(statement.step())
                 assertEquals(0L, statement.getLong(0))
             }

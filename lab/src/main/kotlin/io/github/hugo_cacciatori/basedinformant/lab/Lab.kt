@@ -12,7 +12,6 @@ import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 import io.github.hugo_cacciatori.basedinformant.core.render.DigestRenderer
-import io.github.hugo_cacciatori.basedinformant.core.render.MimeBuilder
 import io.github.hugo_cacciatori.basedinformant.core.render.RenderMeta
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
@@ -42,7 +41,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.io.PrintStream
 import java.time.LocalDateTime
-import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
 
@@ -275,7 +273,7 @@ class Lab(
         return renderDigest(written, answer, prompt, persona, command.model, dir, report)
     }
 
-    /** Joins the written topics with the answer's sources, selects them as the app does and writes the email files. */
+    /** Joins the written topics with the answer's sources, selects them as the app does and writes the digest files. */
     private fun renderDigest(written: WriterAnswer, answer: SearchAnswer, prompt: PromptInput, persona: Persona, model: String, dir: File, report: Report): Int {
         val (digest, findings) = Writer.toDigest(written, answer, prompt)
         findings.forEach { report.line(finding(it)) }
@@ -284,10 +282,8 @@ class Lab(
         val rendered = DigestRenderer.render(selected, RenderMeta(LabInput.displayName(persona), model))
         dir.resolve("digest.html").writeText(rendered.html)
         dir.resolve("digest.txt").writeText(rendered.text)
-        val date = ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME)
-        dir.resolve("digest.eml").writeText(MimeBuilder.build("lab@example.com", "you@example.com", rendered, date))
         report.line("topics: ${digest.topics.size} written; selected: ${selected.topics.size}")
-            .line("written: digest.json, digest.html, digest.txt, digest.eml").write(out)
+            .line("written: digest.json, digest.html, digest.txt").write(out)
         return 0
     }
 

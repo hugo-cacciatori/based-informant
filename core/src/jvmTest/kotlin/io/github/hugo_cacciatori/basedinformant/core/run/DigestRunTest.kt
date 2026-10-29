@@ -14,6 +14,8 @@ import io.github.hugo_cacciatori.basedinformant.core.fakes.responseBody
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatRequest
 import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
+import io.github.hugo_cacciatori.basedinformant.core.render.DigestViews
+import io.github.hugo_cacciatori.basedinformant.core.render.RenderMeta
 import io.github.hugo_cacciatori.basedinformant.core.rfab.ChatResponse
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabError
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
@@ -45,8 +47,6 @@ class DigestRunTest {
             knownTopicTags = listOf("Deep-sea mining rules"),
         ),
         personaDisplayName = null,
-        emailOn = false,
-        recipient = null,
     )
 
     private val search = fixture("search-synthetic.json")
@@ -91,7 +91,6 @@ class DigestRunTest {
         assertEquals(1, client.paidCalls)
 
         val saved = digests.saved.single()
-        assertEquals(DigestStatus.SAVED, saved.status)
         assertEquals("Plasma record and a seabed vote", saved.subject)
         assertEquals("A plasma record and a mining vote.", saved.summary)
         val first = saved.digest.topics.first()
@@ -235,7 +234,7 @@ class DigestRunTest {
         assertTrue("\"mode\":\"topics\"" in writerMessage)
         val digest = digests.saved.single().digest
         assertEquals(listOf("Mars exploration"), digest.missingTopics)
-        assertTrue(digests.saved.single().text.contains("No article found this time for: Mars exploration."))
+        assertEquals("No article found this time for: Mars exploration.", DigestViews.build(digest, RenderMeta(null, "m")).missingLine)
         assertEquals("topics", calls.calls.single().mode)
     }
 

@@ -78,7 +78,6 @@
     <string name="confirm_low">Your balance is below twice the average cost.</string>
     <string name="confirm_settings">Attention mode: %1$s · Persona: %2$s</string>
     <string name="confirm_topics">Topic mode: %1$s</string>
-    <string name="confirm_destination">The digest is saved in the app only.</string>
     <string name="confirm_last">Last digest on this device: %1$s</string>
     <string name="confirm_last_none">No digest on this device yet.</string>
     <string name="confirm_chat_recent">A chat call was billed on your rfab account less than an hour ago, maybe a digest from another device.</string>
@@ -116,12 +115,9 @@
 
     <!-- History -->
     <string name="history_empty">Your digests will appear here.</string>
-    <string name="history_send_failed">Send failed</string>
     <string name="history_topics">%1$d topics</string>
     <string name="history_one_topic">1 topic</string>
     <string name="history_missing">That digest is no longer available.</string>
-    <string name="viewer_show_emailed">Show as emailed</string>
-    <string name="viewer_show_app">Show in the app</string>
     <string name="viewer_less">Less</string>
     <string name="viewer_delete">Delete digest</string>
     <string name="viewer_delete_title">Delete this digest?</string>

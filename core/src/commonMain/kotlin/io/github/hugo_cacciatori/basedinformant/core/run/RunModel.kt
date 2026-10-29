@@ -11,10 +11,8 @@ import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
  */
 data class RunSnapshot(
     val prompt: PromptInput,
-    /** The persona's display name for the email header, or null when Persona is Off. */
+    /** The persona's display name for the digest's header, or null when Persona is Off. */
     val personaDisplayName: String?,
-    val emailOn: Boolean,
-    val recipient: String?,
 )
 
 /** 04-platforms.md section 7, `runs`. */
@@ -55,17 +53,11 @@ data class RunRecord(
     val digestId: Long? = null,
 )
 
-/** 01-product.md section 4 steps 4 and 5: email off gives `SAVED`; email on starts at `GENERATED` (stage 5 sends it). */
-enum class DigestStatus { SAVED, GENERATED, SENDING, SENT, SEND_FAILED }
-
-/** One History entry (01-product.md section 5). [html] and [text] are the exact strings an email would carry. */
+/** One History entry (01-product.md section 5). The mail is built from [digest] when it is shared (section 8). */
 data class StoredDigest(
     val runId: Long,
-    val status: DigestStatus,
     val generatedAt: Long,
     val subject: String,
-    val html: String,
-    val text: String,
     /** The card summary: the writer's line in the voice, else the top 3 titles by score, then "+N more". */
     val summary: String,
     val topicCount: Int,
@@ -73,8 +65,6 @@ data class StoredDigest(
     val model: String,
     val attentionMode: String,
     val persona: String,
-    /** The snapshot's recipient when email was on, else null. */
-    val recipient: String?,
     val tokensBilled: Long?,
 )
 

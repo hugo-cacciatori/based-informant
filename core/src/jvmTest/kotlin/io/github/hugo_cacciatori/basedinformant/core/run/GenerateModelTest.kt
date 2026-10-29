@@ -67,7 +67,6 @@ class GenerateModelTest {
         assertEquals(listOf("science"), snapshot.prompt.interestTags)
         assertEquals("Roach King", snapshot.personaDisplayName)
         assertEquals(listOf("Stellarator research", "Deep-sea mining rules"), snapshot.prompt.knownTopicTags)
-        assertFalse(snapshot.emailOn, "email comes with stage 5")
         assertEquals(1, calls.checks.size, "the check is recorded")
         assertTrue(started.isEmpty(), "nothing runs before confirm")
     }

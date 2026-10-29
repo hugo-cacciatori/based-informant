@@ -16,7 +16,8 @@ import kotlinx.serialization.json.Json
 
 /**
  * The JSON text columns. Field names are part of the stored format: renaming one needs a migration, like a column.
- * Unknown fields are ignored, so a newer build's rows still open in this one.
+ * Unknown fields are ignored, so a newer build's rows still open in this one, and older rows' dropped fields (the
+ * snapshot's `emailOn` and `recipient`, removed 2026-10-29) are skipped.
  */
 internal object StoredJson {
     val json = Json { ignoreUnknownKeys = true }
@@ -32,8 +33,6 @@ internal object StoredJson {
         val mode: String = "KEYWORDS",
         val model: String,
         val personaDisplayName: String?,
-        val emailOn: Boolean,
-        val recipient: String?,
     )
 
     @Serializable
@@ -47,7 +46,7 @@ internal object StoredJson {
             Snapshot.serializer(),
             Snapshot(
                 keywords, interestTags, knownTopicTags, attentionMode.name, persona.name, today,
-                mode.name, model, snapshot.personaDisplayName, snapshot.emailOn, snapshot.recipient,
+                mode.name, model, snapshot.personaDisplayName,
             ),
         )
     }
@@ -66,8 +65,6 @@ internal object StoredJson {
                 knownTopicTags = s.knownTopicTags,
             ),
             s.personaDisplayName,
-            s.emailOn,
-            s.recipient,
         )
     }
 

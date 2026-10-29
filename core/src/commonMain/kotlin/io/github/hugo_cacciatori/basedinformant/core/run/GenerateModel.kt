@@ -121,9 +121,6 @@ class GenerateModel(
                 mode = mode,
             ),
             personaDisplayName = personaName(current.persona),
-            // Email comes with stage 5: every digest is saved in the app only.
-            emailOn = false,
-            recipient = null,
         )
         _state.update { it.copy(step = GenerateStep.Confirm(confirmation, snapshot, digests.lastGeneratedAt())) }
     }

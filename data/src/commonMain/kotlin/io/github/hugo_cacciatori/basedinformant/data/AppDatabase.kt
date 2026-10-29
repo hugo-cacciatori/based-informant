@@ -28,10 +28,15 @@ import kotlinx.coroutines.IO
         KeywordEntity::class, RunEntity::class, CallEntity::class, CheckEntity::class, DigestEntity::class,
         PresetEntity::class,
     ],
-    version = 3,
+    version = 4,
     // v2 only adds tables (2026-10-20); v3 (2026-10-29, template v2) drops the curated memory and two unused call
-    // columns, and adds presets, the digests' topic tags and the call mode. Room writes both; SchemaTest checks them.
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = Migration2To3::class)],
+    // columns, and adds presets, the digests' topic tags and the call mode; v4 (2026-10-29, Share) drops the digests'
+    // stored mail and email state. Room writes them; SchemaTest checks them.
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2),
+        AutoMigration(from = 2, to = 3, spec = Migration2To3::class),
+        AutoMigration(from = 3, to = 4, spec = Migration3To4::class),
+    ],
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -57,6 +62,13 @@ abstract class AppDatabase : RoomDatabase() {
 @DeleteColumn(tableName = "calls", columnName = "wide_window")
 @DeleteColumn(tableName = "calls", columnName = "repeats")
 class Migration2To3 : AutoMigrationSpec
+
+/** v4: the app no longer sends mail; Share builds the mail from the digest JSON (01-product.md section 8). */
+@DeleteColumn(tableName = "digests", columnName = "status")
+@DeleteColumn(tableName = "digests", columnName = "html")
+@DeleteColumn(tableName = "digests", columnName = "text")
+@DeleteColumn(tableName = "digests", columnName = "recipient")
+class Migration3To4 : AutoMigrationSpec
 
 // The Room compiler generates the `actual` implementations.
 @Suppress("KotlinNoActualForExpect")

@@ -54,14 +54,6 @@ class EmailGoldenTest {
         if (differ.isNotEmpty()) fail("Golden email files differ: $differ. Review build/golden-actual/.")
     }
 
-    @Test
-    fun goldenMime() {
-        val rendered = DigestRenderer.render(fixture("good.json"), meta)
-        val eml = MimeBuilder.build("sender@example.com", "reader@example.com", rendered, "Sun, 18 Oct 2026 08:00:00 +0000")
-        val differ = mutableListOf<String>()
-        compare("email-good.eml", eml.replace("\r\n", "\n"), differ)
-        if (differ.isNotEmpty()) fail("Golden MIME differs. Review build/golden-actual/.")
-    }
 
     private fun compare(file: String, actual: String, differ: MutableList<String>) {
         val expected = javaClass.getResource("/golden/$file")?.readText()?.replace("\r\n", "\n")
