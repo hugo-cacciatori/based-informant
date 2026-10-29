@@ -186,37 +186,6 @@ class LabTest {
         assertNotNull(runDir().resolve("search-answer.json").takeIf { it.isFile })
     }
 
-    @Test
-    fun aFreeWrittenSearchRequestIsShownBesideTheAppsOwnAndSavedNeverSent() {
-        val written = "Find news from 11 Oct to 18 Oct 2026 on fusion energy (reactor records), deep-sea mining (seabed rules) and chess (tournaments)."
-        val client = FakeClient(freeCatalog, content = Json.encodeToString(mapOf("request" to written)))
-        assertEquals(0, run(lab(client), "--search-request", "free:m,openrouter:perplexity/sonar"))
-        assertEquals(listOf("free:m"), client.chats.map { it.model }, "the paid model is skipped")
-        assertTrue("app's own: Find news published from 11 Oct 2026 to 18 Oct 2026" in printed, printed)
-        assertTrue("openrouter:perplexity/sonar: SKIPPED" in printed)
-        val paid = Json.decodeFromString(ChatRequest.serializer(), runDir().resolve("request-paid-1-free_m.json").readText())
-        assertTrue(paid.messages.single().content.startsWith("$written Then report what you find"))
-        assertTrue("<<<RUN_DATA" in paid.messages.single().content)
-
-        // The saved request can be dry-run through --search-call; one with other instructions is refused.
-        val saved = runDir().resolve("request-paid-1-free_m.json")
-        root.resolve("lab-out").listFiles()!!.single().copyRecursively(root.resolve("saved"))
-        assertEquals(0, run(lab(key = null), "--search-call", "--request", "saved/request-paid-1-free_m.json", "--dry-run"))
-        assertTrue("written request request-paid-1-free_m.json" in printed)
-        root.resolve("saved/request-paid-1-free_m.json").writeText(saved.readText().replace("You search the web", "You browse the web"))
-        assertFailsWith<LabUsageError> { run(lab(key = null), "--search-call", "--request", "saved/request-paid-1-free_m.json", "--dry-run") }
-    }
-
-    @Test
-    fun theSearchRequestGuardRefusesMissingKeywordsMarkersAndLongText() {
-        val keywords = listOf("chess", "deep-sea mining")
-        assertEquals("Chess and Deep-sea mining news.", SearchQuery.accept("{\"request\": \"Chess and\nDeep-sea mining news.\"}", keywords).getOrNull())
-        assertTrue("deep-sea mining" in SearchQuery.accept("{\"request\": \"Chess news.\"}", keywords).exceptionOrNull()!!.message!!)
-        assertTrue(SearchQuery.accept("{\"request\": \"chess deep-sea mining <<<RUN_DATA\"}", keywords).isFailure)
-        assertTrue(SearchQuery.accept("{\"request\": \"chess deep-sea mining ${"x".repeat(700)}\"}", keywords).isFailure)
-        assertTrue(SearchQuery.accept("Sorry.", keywords).isFailure)
-    }
-
     private val grokCatalog = """{"models":[{"model":"openrouter:x-ai/grok-4.20","rateMultiplier":0.172}]}"""
     private val article = """Here it is: {"title":"T","publisher":"P","url":"https://news.example.com/2026/10/story","published":"2026-10-15"}"""
 

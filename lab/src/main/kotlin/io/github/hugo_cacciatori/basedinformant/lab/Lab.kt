@@ -71,12 +71,7 @@ sealed interface LabCommand {
         val model: String?,
         val paid: Boolean,
         val research: Boolean = false,
-        /** A saved request-paid-*.json from --search-request, sent instead of the app's own request (redesign step 5). */
-        val request: String? = null,
     ) : LabCommand
-
-    /** The free-written search request (redesign step 5), once per free model in [models], beside the app's own. */
-    data class SearchRequestTest(val models: List<String>, val input: String?) : LabCommand
 
     /** The free fact check (02-ai-call.md section 12, items 7 and 8) on the writer answer saved in a --write run folder. */
     data class FactCheck(val model: String, val run: String, val input: String?, val persona: String?, val answer: String? = null) : LabCommand
@@ -138,12 +133,6 @@ sealed interface LabCommand {
                         else -> throw LabUsageError("--search-call needs --dry-run (free, sends nothing) or --confirm-paid (spends tokens, only after the owner's OK)")
                     },
                     "--persona-research" in flags,
-                    flags["--request"],
-                )
-                "--search-request" in flags -> SearchRequestTest(
-                    flags.getValue("--search-request")!!.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                        .ifEmpty { throw LabUsageError("--search-request needs <model>[,<model>...] (free models only)") },
-                    flags["--input"],
                 )
                 "--fact-check" in flags -> FactCheck(
                     flags.getValue("--fact-check")!!,
@@ -166,9 +155,9 @@ sealed interface LabCommand {
             }
         }
 
-        private val MODES = listOf("--write", "--search-call", "--search-request", "--fact-check", "--repair", "--probe", "--check-input", "--models", "--balance")
+        private val MODES = listOf("--write", "--search-call", "--fact-check", "--repair", "--probe", "--check-input", "--models", "--balance")
         private val VALUED = setOf(
-            "--write", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword", "--list", "--fact-check", "--run", "--answer", "--search-request", "--request", "--repair", "--broken",
+            "--write", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken",
         )
         private val SWITCHES = setOf(
             "--search-call", "--persona-research", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--fetch-articles", "--models", "--balance", "--help",
@@ -183,18 +172,11 @@ sealed interface LabCommand {
             |                                           --fetch-articles downloads each source
             |                                           page's text (no tokens) and saves it as articles.json, reusable
             |                                           with --articles; refuses unless the model is at 0x
-            |  --search-call [--input FILE] [--persona P] [--model ID] [--persona-research] [--request FILE]
-            |                --dry-run | --confirm-paid
+            |  --search-call [--input FILE] [--persona P] [--model ID] [--persona-research] --dry-run | --confirm-paid
             |                                           the paid search (search.txt; the persona research, off for
             |                                           now, only with --persona-research), then the free source and
-            |                                           link checks; --request sends a saved request-paid file from
-            |                                           --search-request instead (refused unless its instructions match
-            |                                           today's); --dry-run builds and saves the request, sending
+            |                                           link checks; --dry-run builds and saves the request, sending
             |                                           nothing; --confirm-paid SPENDS TOKENS, only after the owner's OK
-            |  --search-request <model>[,<model>...] [--input FILE]
-            |                                           free: each free model writes the plain-language search request
-            |                                           (searchquery.txt), shown beside the app's own; the paid request
-            |                                           it would make is saved, never sent; skips any model not at 0x
             |  --fact-check <model> --run DIR [--input FILE] [--persona P] [--answer FILE]
             |                                           free: the fact check on the writer answer and article texts
             |                                           of a --write run folder; refuses unless the model is at 0x;
@@ -237,7 +219,6 @@ class Lab(
         LabCommand.Help -> 0.also { out.println(LabCommand.USAGE) }
         is LabCommand.Write -> write(command)
         is LabCommand.SearchCall -> searchCall(command)
-        is LabCommand.SearchRequestTest -> searchRequest(command)
         is LabCommand.FactCheck -> factCheck(command)
         is LabCommand.Repair -> repair(command)
         is LabCommand.Probe -> probe(command)
@@ -328,22 +309,11 @@ class Lab(
         val model = command.model ?: TemplateConfig.DEFAULT_MODEL
         val prompt = input.toPromptInput(model, persona)
         val window = prompt.window()
-        val own = when (val built = SearchRequest.build(prompt, command.research)) {
+        val request = when (val built = SearchRequest.build(prompt, command.research)) {
             is SearchRequest.Result.Built -> built.request
             is SearchRequest.Result.OverLimit -> throw LabUsageError("over the input limits, nothing built: ${built.violations}")
         }
-        val request = command.request?.let { path ->
-            val file = root.resolve(path).takeIf { it.isFile } ?: File(path)
-            if (!file.isFile) throw LabUsageError("no request file $path")
-            val saved = Json.decodeFromString(ChatRequest.serializer(), file.readText())
-            // Only the plain-language request may differ: a stale file with other instructions or data is never sent.
-            if (saved.systemPrompt != own.systemPrompt || saved.model != own.model || saved.maxTokens != own.maxTokens ||
-                saved.messages.single().content.substringAfter(SearchQuery.DATA_INTRO) != own.messages.single().content.substringAfter(SearchQuery.DATA_INTRO)
-            ) throw LabUsageError("${file.name} does not match today's search request (instructions, model or data differ): rebuild it with --search-request")
-            saved
-        } ?: own
-        val head = "persona ${persona.name.lowercase()}, research ${if (command.research) "on" else "off"}, window ${window.start} to ${window.end}" +
-            (command.request?.let { ", written request ${File(it).name}" } ?: "")
+        val head = "persona ${persona.name.lowercase()}, research ${if (command.research) "on" else "off"}, window ${window.start} to ${window.end}"
         if (!command.paid) {
             val dir = outDir("search-dry-run")
             dir.resolve("request.json").writeText(pretty.encodeToString(ChatRequest.serializer(), request))
@@ -461,61 +431,6 @@ class Lab(
             }
         }
         report.write(out)
-        return 0
-    }
-
-    /**
-     * The free-written search request (02-ai-call.md section 12, brainstorm 6): free calls only, one per model, compared
-     * by eye with the app's own. The paid request each would make is saved as request-paid-<model>.json, never sent.
-     */
-    private suspend fun searchRequest(command: LabCommand.SearchRequestTest): Int {
-        val input = input(command.input)
-        val prompt = input.toPromptInput(TemplateConfig.DEFAULT_MODEL)
-        val own = when (val built = SearchRequest.build(prompt)) {
-            is SearchRequest.Result.Built -> built.request
-            is SearchRequest.Result.OverLimit -> throw LabUsageError("over the input limits, nothing built: ${built.violations}")
-        }
-        val key = loadKey() ?: return noKey()
-        out.println(KeyLoader.describe(key))
-        val client = clientFor(key)
-        val dir = outDir("search-request")
-        val report = Report(dir).line("mode: search-request, ${command.models.size} models, input ${command.input ?: Lab.DEFAULT_INPUT}")
-            .line("app's own: ${SearchQuery.ownRequest(own)}")
-        val models = client.models()
-        if (models !is RfabResult.Ok) return refuse(report, "could not read the models list (${(models as RfabResult.Error).kind}); nothing sent")
-        val before = (client.balance() as? RfabResult.Ok)?.value?.tokenBalance
-        for ((m, model) in command.models.withIndex()) {
-            val rate = models.value.multiplierOf(model)
-            if (rate != 0.0) {
-                report.line("$model: SKIPPED, rate ${rate ?: "not found"} (free models only)")
-                continue
-            }
-            val slug = "${m + 1}-" + model.substringAfterLast('/').replace(Regex("[^A-Za-z0-9.-]"), "_")
-            val request = SearchQuery.request(model, prompt)
-            dir.resolve("$slug-request.json").writeText(pretty.encodeToString(ChatRequest.serializer(), request))
-            val started = clockMillis()
-            val response = client.chat(request)
-            val seconds = (clockMillis() - started) / 1000.0
-            val ok = when (response) {
-                is RfabResult.Error -> {
-                    report.line("$model: FAILED ${response.kind} (HTTP ${response.httpStatus ?: "-"})${charged(response)}")
-                    continue
-                }
-                is RfabResult.Ok -> response
-            }
-            dir.resolve("$slug-raw.json").writeText(ok.raw)
-            ok.value.tokensBilled?.takeIf { it != 0L }?.let { report.line("WARNING: $model billed $it tokens: log it in docs/api-spend-log.md") }
-            SearchQuery.accept(ok.value.content.orEmpty(), prompt.keywords).fold(
-                onSuccess = { written ->
-                    dir.resolve("request-paid-$slug.json").writeText(pretty.encodeToString(ChatRequest.serializer(), SearchQuery.substitute(own, written)))
-                    report.line("$model (${"%.1f".format(seconds)} s, ${written.length} chars): $written")
-                },
-                onFailure = { report.line("$model: REFUSED, ${it.message}; the app's own request would be used") },
-            )
-        }
-        val after = (client.balance() as? RfabResult.Ok)?.value?.tokenBalance
-        val changed = if (before != null && after != null && before != after) " (CHANGED: check the transactions and log it)" else ""
-        report.line("balance before -> after: ${before ?: "?"} -> ${after ?: "?"}$changed").write(out)
         return 0
     }
 
