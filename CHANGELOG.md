@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Based now shapes the writing too: with Based on, the digest takes a direct, opinionated outlook in the persona's voice, facts kept as sourced; with no persona, a Based voice replaces the plain news voice.
 - Stage 9 step 2: a Based switch in Settings; the confirmation before Generate now lists the keywords or topics, the interest tags, the attention mode, the persona and Based.
 - Stage 9 step 1: the Based setting (right-wing sources only) in the core: stored, carried by each run and call record, sent to the search with its own instructions and to the writer, so a persona can play on it; database schema v5 keeps every digest.
 - Shorter digest cards (a summary of 1-2 sentences, More of 2-4); with no persona the opening line stays plain; the voices now cover the subject, card line and titles too.

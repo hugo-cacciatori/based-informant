@@ -1,5 +1,6 @@
 package io.github.hugo_cacciatori.basedinformant.core.writer
 
+import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptFiles
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue.Kind
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
@@ -46,10 +47,21 @@ class WriterTest {
     }
 
     @Test
-    fun `the writer knows whether Based is on`() {
-        fun request(based: Boolean) = Writer.request("m", input.copy(based = based), synthetic).messages.single().content
-        assertTrue("\"based\":true" in request(true))
-        assertTrue("\"based\":false" in request(false))
+    fun `Based adds the outlook and gives Persona Off the Based voice`() {
+        fun prompt(based: Boolean, persona: Persona) = Writer.request("m", input.copy(based = based, persona = persona), synthetic).systemPrompt
+        val files = PromptFiles.all
+        val outlook = files.getValue(Writer.BASED_OUTLOOK_FILE).trim()
+        // A persona keeps its voice and gets the outlook.
+        val persona = prompt(based = true, persona = Persona.ROACH_KING)
+        assertTrue(files.getValue("voices/roach-king.txt").trim() in persona)
+        assertTrue(persona.endsWith(outlook))
+        // Persona Off: the Based voice replaces the neutral one.
+        val off = prompt(based = true, persona = Persona.OFF)
+        assertTrue(files.getValue(Writer.BASED_VOICE_FILE).trim() in off)
+        assertTrue(files.getValue("voices/neutral.txt").trim() !in off)
+        // Based off: the prompt is what it was before Based.
+        assertTrue("BASED OUTLOOK" !in prompt(based = false, persona = Persona.ROACH_KING))
+        assertTrue(files.getValue("voices/neutral.txt").trim() in prompt(based = false, persona = Persona.OFF))
     }
 
     @Test
