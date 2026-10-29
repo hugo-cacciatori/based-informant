@@ -28,6 +28,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +60,16 @@ import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
+import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
+import io.github.hugo_cacciatori.basedinformant.ui.resources.animations_hint
+import io.github.hugo_cacciatori.basedinformant.ui.resources.animations_switch
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_drift
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_drift_hint
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_night
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_night_hint
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_plain
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_plain_hint
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_section
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsState
 import io.github.hugo_cacciatori.basedinformant.ui.resources.Res
 import io.github.hugo_cacciatori.basedinformant.ui.resources.attention_balanced
@@ -129,13 +140,15 @@ interface SettingsActions {
     fun dismissTagUndo()
     fun setAttentionMode(mode: AttentionMode)
     fun setPersona(persona: Persona)
+    fun setTheme(id: String)
+    fun setAnimations(on: Boolean)
     fun setModel(id: String)
     fun setReminder(reminder: Reminder)
 }
 
 /**
- * Settings (01-product.md section 3), stage 2 part: the key (paste + Test key only), the balance, what feeds the call,
- * the reminder and the privacy note. The theme joins in its own stage. Every change is saved at once.
+ * Settings (01-product.md section 3): the key (paste + Test key only), the balance, what feeds the call, the reminder,
+ * the look and the privacy note. Every change is saved at once.
  */
 @Composable
 fun SettingsScreen(
@@ -200,6 +213,26 @@ fun SettingsScreen(
             ReminderSection(state.settings.reminder, actions::setReminder, reminder, snackbar)
             HorizontalDivider()
         }
+        Choice(
+            title = Res.string.theme_section,
+            options = BuiltInThemes.IDS,
+            selected = state.settings.theme,
+            label = { stringResource(themeRes(it).first) },
+            hint = { stringResource(themeRes(it).second) },
+            onSelect = actions::setTheme,
+        )
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(Res.string.animations_switch))
+                Text(stringResource(Res.string.animations_hint), style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(
+                checked = state.settings.animations,
+                onCheckedChange = actions::setAnimations,
+                modifier = Modifier.testTag("animations"),
+            )
+        }
+        HorizontalDivider()
         SectionTitle(Res.string.privacy_section)
         Text(stringResource(Res.string.privacy_note), Modifier.testTag("privacy-note"))
     }
@@ -342,6 +375,13 @@ private fun <T> Choice(
             }
         }
     }
+}
+
+/** A built-in theme's name and mood; every id in [BuiltInThemes.IDS] has both. */
+private fun themeRes(id: String): Pair<StringResource, StringResource> = when (id) {
+    "night" -> Res.string.theme_night to Res.string.theme_night_hint
+    "drift" -> Res.string.theme_drift to Res.string.theme_drift_hint
+    else -> Res.string.theme_plain to Res.string.theme_plain_hint
 }
 
 @Composable

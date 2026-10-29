@@ -197,6 +197,17 @@
     <string name="reminder_exact_allow">Allow exact reminders</string>
     <string name="reminder_notifications_off">Notifications are off: allow them to get reminders.</string>
 
+    <!-- Look (01-product.md section 10) -->
+    <string name="theme_section">Theme</string>
+    <string name="theme_plain">Plain</string>
+    <string name="theme_plain_hint">Calm, no animation</string>
+    <string name="theme_night">Night</string>
+    <string name="theme_night_hint">A twinkling starfield</string>
+    <string name="theme_drift">Drift</string>
+    <string name="theme_drift_hint">Slowly drifting colors</string>
+    <string name="animations_switch">Animations</string>
+    <string name="animations_hint">Moving backgrounds. They stay still in battery saver or when the phone’s animations are off.</string>
+
     <!-- Privacy (05-security.md section 6) -->
     <string name="privacy_section">Privacy</string>
     <string name="privacy_note">To write a digest, the app sends your keywords, your interest tags, a short memory of past digests and your persona choice to rfab.ai and the AI providers it uses. Don’t put sensitive personal details in them. To check links, the app opens each source page. Nothing else leaves this device: no analytics, no crash reports, no server of ours.</string>

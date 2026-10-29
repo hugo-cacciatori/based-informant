@@ -4,6 +4,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -218,6 +219,24 @@ class ScreensTest {
         onNodeWithText("Dog Zapper").performScrollTo().performClick()
         waitForIdle()
         assertEquals(Persona.DOG_ZAPPER, store.settings.persona)
+    }
+
+    @Test
+    fun choosingAThemeAndTurningAnimationsOffSavesThem() = runComposeUiTest {
+        val store = MemorySettings()
+        val vm = SettingsViewModel(SettingsModel(store, MemorySecrets(), balanceOnly(0)))
+        setContent {
+            AppTheme {
+                val state by vm.state.collectAsStateWithLifecycle()
+                SettingsScreen(state, vm, SnackbarHostState())
+            }
+        }
+        onNodeWithText("A twinkling starfield").assertExists()
+        onNodeWithText("Drift").performScrollTo().performClick()
+        onNodeWithTag("animations").performScrollTo().assertIsOn().performClick()
+        waitForIdle()
+        assertEquals("drift", store.settings.theme)
+        assertEquals(false, store.settings.animations)
     }
 
     /** Thursday 29 Oct 2026, 10:00 UTC. */

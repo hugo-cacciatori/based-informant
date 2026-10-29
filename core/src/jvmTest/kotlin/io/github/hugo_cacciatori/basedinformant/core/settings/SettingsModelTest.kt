@@ -99,6 +99,15 @@ class SettingsModelTest {
     }
 
     @Test
+    fun onlyBuiltInThemesAreSavedAndAnimationsSwitch() = runBlocking {
+        model.open()
+        assertFalse(model.setTheme("removed"))
+        assertTrue(model.setTheme("night"))
+        model.setAnimations(false)
+        assertEquals(AppSettings(theme = "night", animations = false), store.settings)
+    }
+
+    @Test
     fun tagsRefuseDuplicatesAndOfferUndo() = runBlocking {
         model.open()
         assertTrue(model.addTag("energy"))

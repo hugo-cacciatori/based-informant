@@ -11,6 +11,7 @@ import io.github.hugo_cacciatori.basedinformant.core.limits.TextListRules
 import io.github.hugo_cacciatori.basedinformant.core.limits.TextListRules.EditResult
 import io.github.hugo_cacciatori.basedinformant.core.prompt.TemplateConfig
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
+import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -104,6 +105,15 @@ class SettingsModel(
     suspend fun setAttentionMode(mode: AttentionMode) = change { it.copy(attentionMode = mode) }
 
     suspend fun setPersona(persona: Persona) = change { it.copy(persona = persona) }
+
+    /** Only built-in themes (01-product.md section 10). */
+    suspend fun setTheme(id: String): Boolean {
+        if (id !in BuiltInThemes.IDS) return false
+        change { it.copy(theme = id) }
+        return true
+    }
+
+    suspend fun setAnimations(on: Boolean) = change { it.copy(animations = on) }
 
     /** Saved as set: on with no weekday sets no alarm (owner, 2026-10-29). */
     suspend fun setReminder(reminder: Reminder) {

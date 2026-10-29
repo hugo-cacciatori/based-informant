@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stage 8 step 4: Settings gets a Theme choice (Plain, Night, Drift, each with a one-line mood) and an Animations switch; the look changes at once.
 - Stage 8 step 3: two more themes, Night (a twinkling starfield) and Drift (slowly drifting colors), each in light and dark.
 - Stage 8 step 2: the theme engine. The chosen theme colors every screen in light or dark following the phone, over a drawn background (still, drifting gradient or starfield) that pauses when the app is hidden and stays still with Animations off, battery saver or system animations off. Screens sit on the theme's surface so text stays readable. The Plain theme ships; theme packs are embedded at build time and checked for contrast.
 - Stage 8 step 1: theme packs in the core: the pack format (light and dark palettes, font, drawn background), its reader and the pack check (fields, size budget, text contrast at WCAG AA, also through translucent surfaces); Theme and Animations stored in Settings.
