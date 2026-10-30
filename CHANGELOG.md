@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Topic mode: tapping a topic picks it; a Select button switches to deleting, with checkboxes, Cancel and Delete (N).
+
 - Long article pages are read in full (GB News articles were cut off), and scraps of a page are no longer used to check facts; the spellcheck accepts streamer and channel names.
 - Based feeds: with Based on, the phone also reads GB News, Fox News politics and Donald Trump's Truth Social posts for free, so Based digests can fill five cards from right-wing sources; the writer now fills free slots with trending stories more reliably.
 - Based names example right-wing sites in the search, so its digests draw on them.

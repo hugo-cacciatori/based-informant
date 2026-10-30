@@ -129,7 +129,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.saveable.rememberSaveable
 import io.github.hugo_cacciatori.basedinformant.ui.resources.keywords_delete_ticked
 import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_select_all
-import io.github.hugo_cacciatori.basedinformant.ui.resources.topic_tick
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_select
+import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_selected
 
 /** What Generate and the runner can be asked for; [GenerateViewModel] does it, tests use [NoGenerate]. */
 interface GenerateActions {
@@ -215,18 +220,49 @@ fun ModeSwitch(state: GenerateState, actions: GenerateActions, modifier: Modifie
 }
 
 /**
- * Topic mode (01-product.md section 3): the saved topics, 0 to [InputLimits.KEYWORDS_MAX] picked by tapping their chip.
- * The checkbox before each one ticks it for **Delete (N)**, with a select-all checkbox by the count, like keywords.
+ * Topic mode (01-product.md section 3): the saved topics as chips, 0 to [InputLimits.KEYWORDS_MAX] picked by a tap.
+ * **Select** switches to a delete mode, as in a photo gallery: picking pauses, each topic gets a checkbox, with
+ * select-all, **Cancel** and **Delete (N)** (owner, 2026-10-30).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TopicPicker(state: GenerateState, actions: GenerateActions, modifier: Modifier = Modifier) {
+    var selecting by rememberSaveable { mutableStateOf(false) }
     // Ticked for deletion, by lowercase tag, so a reload never shifts them.
     var ticked by rememberSaveable { mutableStateOf(listOf<String>()) }
     val tickedTags = state.topics.filter { it.lowercase() in ticked }
+    fun done() {
+        selecting = false
+        ticked = emptyList()
+    }
     Column(modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(Res.string.topics_note, InputLimits.KEYWORDS_MAX), Modifier.testTag("topics-note"))
         if (state.topics.isEmpty()) {
             Text(stringResource(Res.string.topics_none))
+            return@Column
+        }
+        if (!selecting) {
+            Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(Res.string.topics_count, state.chosen.size, InputLimits.KEYWORDS_MAX),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { selecting = true }, modifier = Modifier.testTag("topics-select")) {
+                    Text(stringResource(Res.string.topics_select))
+                }
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                state.topics.forEach { tag ->
+                    val picked = tag in state.chosen
+                    FilterChip(
+                        selected = picked,
+                        onClick = { actions.toggleTopic(tag) },
+                        label = { Text(tag) },
+                        enabled = picked || state.chosen.size < InputLimits.KEYWORDS_MAX,
+                    )
+                }
+            }
             return@Column
         }
         Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -241,33 +277,26 @@ fun TopicPicker(state: GenerateState, actions: GenerateActions, modifier: Modifi
                 modifier = Modifier.semantics { contentDescription = selectAll }.testTag("topics-select-all"),
             )
             Text(
-                stringResource(Res.string.topics_count, state.chosen.size, InputLimits.KEYWORDS_MAX),
+                stringResource(Res.string.topics_selected, tickedTags.size),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.weight(1f),
             )
-            if (tickedTags.isNotEmpty()) {
-                TextButton(
-                    onClick = { actions.deleteTopics(tickedTags); ticked = emptyList() },
-                    modifier = Modifier.testTag("topics-delete"),
-                ) { Text(stringResource(Res.string.keywords_delete_ticked, tickedTags.size)) }
-            }
+            TextButton(onClick = ::done, modifier = Modifier.testTag("topics-cancel")) { Text(stringResource(Res.string.cancel)) }
+            TextButton(
+                onClick = { actions.deleteTopics(tickedTags); done() },
+                enabled = tickedTags.isNotEmpty(),
+                modifier = Modifier.testTag("topics-delete"),
+            ) { Text(stringResource(Res.string.keywords_delete_ticked, tickedTags.size)) }
         }
         state.topics.forEach { tag ->
             val key = tag.lowercase()
-            val picked = tag in state.chosen
-            val tick = stringResource(Res.string.topic_tick, tag)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = key in ticked,
-                    onCheckedChange = { on -> ticked = if (on) ticked + key else ticked - key },
-                    modifier = Modifier.semantics { contentDescription = tick },
-                )
-                FilterChip(
-                    selected = picked,
-                    onClick = { actions.toggleTopic(tag) },
-                    label = { Text(tag) },
-                    enabled = picked || state.chosen.size < InputLimits.KEYWORDS_MAX,
-                )
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .toggleable(value = key in ticked, role = Role.Checkbox, onValueChange = { on -> ticked = if (on) ticked + key else ticked - key }),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(checked = key in ticked, onCheckedChange = null)
+                Text(tag, Modifier.padding(start = 12.dp))
             }
         }
     }
