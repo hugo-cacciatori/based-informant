@@ -290,12 +290,15 @@ class Lab(
         val content = send(client, listOf(Call(input.keywords, request)), dir, report, paid = false, command.model, "free writer test")
             .singleOrNull() ?: return refuse(report, "no answer from the writer")
         val raw = Writer.parse(content) ?: return refuse(report, "unreadable writer answer: the raw file is kept")
-        val (written, deleted) = Writer.removeCopies(raw, answer)
+        val (uncopied, copies) = Writer.removeCopies(raw, answer)
+        val (written, named) = Writer.removeNames(uncopied, answer, Writer.personaNames(persona))
+        val deleted = copies + named
         dir.resolve(WRITER_ANSWER).writeText(pretty.encodeToString(WriterAnswer.serializer(), written))
         report.line("subject: ${written.subject}").line("card summary: ${written.cardSummary}")
         written.topics.forEach { report.line("topic: story ${it.story}, tag \"${Writer.cutTag(it.topicTag)}\", sources ${it.sources}") }
         deleted.forEach { report.line(finding(it)) }
-        if (deleted.isEmpty()) report.line("copied quotes: none")
+        if (copies.isEmpty()) report.line("copied quotes: none")
+        if (named.isEmpty()) report.line("persona names: none")
         return renderDigest(written, answer, prompt, persona, command.model, dir, report)
     }
 

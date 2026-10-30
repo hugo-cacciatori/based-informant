@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Personas no longer name themselves, their channels or their pet: the writer is told not to, and the app removes any sentence that still does, except on a card whose story is about that person.
 - Topic mode sorts the saved topics by the date of their newest source, with the past week's under a "Hot" heading; database schema v8 dates the existing topics from the stored digests.
 
 - Richer persona voices, each with the person's known bits and catchphrases.

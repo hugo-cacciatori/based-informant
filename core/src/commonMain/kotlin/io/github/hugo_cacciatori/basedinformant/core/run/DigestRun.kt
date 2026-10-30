@@ -128,19 +128,20 @@ class DigestRun(
         return write(record, answer, catalog, Report(issues))
     }
 
-    /** The free writer, then the copied-quote removal, the fact check and selection. */
+    /** The free writer, then the copied-quote and persona-name removal, the fact check and selection. */
     private suspend fun write(record: RunRecord, answer: SearchAnswer, catalog: ModelCatalog, before: Report): Pair<RunOutcome, Report> {
         val input = record.snapshot.prompt
         val written = FreeModels.first(client, catalog, FreeModels.WRITER, { Writer.request(it, input, answer) }, Writer::parse).value
             ?: return notWritten(record) to before
-        val (clean, copies) = Writer.removeCopies(written, answer)
+        val (uncopied, copies) = Writer.removeCopies(written, answer)
+        val (clean, named) = Writer.removeNames(uncopied, answer, Writer.personaNames(input.persona))
         // No free model for the fact check: the cards stay as written (owner, 2026-10-29).
         val check = FreeModels.first(client, catalog, FreeModels.CHECKER, { FactCheck.request(it, clean, answer) }, FactCheck::parse).value
         val (checked, facts) = check?.let { FactCheck.apply(clean, answer, it) } ?: (clean to emptyList())
         val (digest, joined) = Writer.toDigest(checked, answer, input)
         val selected = select(digest, input)
         val report = Report(
-            before.issues + (copies + facts + joined).map { it.issue } + listOfNotNull(Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null }),
+            before.issues + (copies + named + facts + joined).map { it.issue } + listOfNotNull(Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null }),
             digest.topics.size,
             selected.topics.size,
         )

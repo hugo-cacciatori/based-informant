@@ -64,6 +64,9 @@ object Writer {
     /** Last in the prompt when a persona is selected: the persona in every card (owner, 2026-10-29). */
     const val PERSONA_CHECK_FILE = "voices/persona-check.txt"
 
+    /** How a voice file's last line starts when it lists the persona's real names. */
+    private const val NAMES_LINE = "Never write these names"
+
     /** Always last: five cards, trending ones in the free slots (owner, 2026-10-29); free models follow the end best. */
     const val FILL_CHECK_FILE = "fill-check.txt"
 
@@ -133,6 +136,53 @@ object Writer {
         )
         return cleaned to findings
     }
+
+    /** The active persona's real names, from its voice file's last line (owner, 2026-10-30); none for Off. */
+    fun personaNames(persona: Persona, files: Map<String, String> = PromptFiles.all): List<String> {
+        if (persona == Persona.OFF) return emptyList()
+        val line = files.getValue(TemplateConfig.voiceFile(persona)).lines().lastOrNull { it.startsWith(NAMES_LINE) } ?: return emptyList()
+        return line.substringAfter(':').trim().removeSuffix(".").split(',').map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    /**
+     * Removes the active persona's [names] from its voice (owner, 2026-10-30): each sentence naming it is dropped, and a
+     * title or summary left empty keeps its sentences with the names cut out. A card whose story's keywords or sources
+     * carry a name keeps that name: the story is about the person.
+     */
+    fun removeNames(written: WriterAnswer, answer: SearchAnswer, names: List<String>): Pair<WriterAnswer, List<Finding>> {
+        if (names.isEmpty()) return written to emptyList()
+        val findings = mutableListOf<Finding>()
+        val stories = answer.stories.associateBy { it.story }
+        fun clean(text: String?, banned: List<Regex>, topic: Int? = null, required: Boolean = false): String? {
+            if (text == null || banned.none { it.containsMatchIn(text) }) return text
+            val (named, kept) = sentences(text).partition { s -> banned.any { it.containsMatchIn(s) } }
+            named.forEach { findings += Finding(Issue(Issue.Kind.PERSONA_NAME_DELETED, topic = topic), it) }
+            if (kept.isNotEmpty() || !required) return kept.joinToString(" ").ifEmpty { null }
+            return banned.fold(text) { t, r -> r.replace(t, "") }
+                .replace(Regex("\\s+([,.;:!?])"), "$1").replace(Regex("\\s{2,}"), " ").trim().trimStart(',', ';', ':', '-', '—', ' ')
+        }
+        val all = names.map(::nameRegex)
+        val cleaned = written.copy(
+            opening = clean(written.opening, all),
+            closing = clean(written.closing, all),
+            subject = clean(written.subject, all),
+            cardSummary = clean(written.cardSummary, all),
+            topics = written.topics.mapIndexed { i, t ->
+                val story = stories[t.story]
+                val about = plain((story?.keywords.orEmpty() + story?.sources.orEmpty().flatMap { listOf(it.title, it.publisher, it.url) }).joinToString(" "))
+                val banned = names.filter { plain(it) !in about }.map(::nameRegex)
+                if (banned.isEmpty()) return@mapIndexed t
+                t.copy(title = clean(t.title, banned, i, required = true)!!, summary = clean(t.summary, banned, i, required = true)!!, detail = clean(t.detail, banned, i))
+            },
+        )
+        return cleaned to findings
+    }
+
+    /** The name as a whole word, ignoring case, with its possessive. */
+    private fun nameRegex(name: String) = Regex("(?<![\\p{L}\\p{N}])${Regex.escape(name)}(?:['’]s)?(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
+
+    /** Lowercase words between single spaces, so a URL's "hasan-piker" reads as " hasan piker ". */
+    private fun plain(text: String) = " " + text.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }.joinToString(" ") + " "
 
     /**
      * Joins the writer's topics with the search answer's checked sources into the stored digest. A topic naming an
