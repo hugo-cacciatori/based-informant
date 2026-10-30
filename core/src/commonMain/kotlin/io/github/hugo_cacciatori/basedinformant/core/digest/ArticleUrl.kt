@@ -12,7 +12,7 @@ object ArticleUrl {
     )
 
     /** A section word as the last path segment: /en/video, /news/; any word ending in "updates" counts too. Not applied with a query, as in /news?id=12. */
-    private val SECTION_ENDINGS = setOf("video", "videos", "news", "latest")
+    private val SECTION_ENDINGS = setOf("video", "videos", "news", "latest", "trending")
 
     /** A numbered list page: page2, page2.html, or page followed by a number segment. */
     private val PAGE_N = Regex("page\\d+(\\.html?)?")

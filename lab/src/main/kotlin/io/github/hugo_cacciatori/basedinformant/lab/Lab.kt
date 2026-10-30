@@ -18,7 +18,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabClient
 import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 import io.github.hugo_cacciatori.basedinformant.core.search.Repair
 import io.github.hugo_cacciatori.basedinformant.core.search.BasedFeeds
-import io.github.hugo_cacciatori.basedinformant.core.search.HomepageRescue
+import io.github.hugo_cacciatori.basedinformant.core.search.ListingRescue
 import io.github.hugo_cacciatori.basedinformant.core.search.FeedFetcher
 import io.github.hugo_cacciatori.basedinformant.core.search.OutletCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
@@ -376,9 +376,9 @@ class Lab(
             report.line("story ${s.story}: [${s.keywords.joinToString("; ")}] ${s.whatHappened ?: "-"} (attention ${s.attention ?: "-"})")
             s.sources.forEach { src -> report.line("  source ${src.n}: ${src.publisher} | ${src.published} | ${src.facts.size} facts | ${src.url}") }
         }
-        // The homepage rescue, then Based's free feeds, as the app runs them (owner, 2026-10-30).
-        val (rescued, rescueIssues) = HomepageRescue.apply(answer, feedFetcher())
-        report.line("homepage rescue: ${rescueIssues.size} sources")
+        // The listing rescue, then Based's free feeds, as the app runs them (owner, 2026-10-30).
+        val (rescued, rescueIssues) = ListingRescue.apply(answer, feedFetcher())
+        report.line("listing rescue: ${rescueIssues.size} sources")
         val (fed, feedIssues) = if (prompt.based) BasedFeeds.stories(feedFetcher(), prompt.keywords, prompt.today) else emptyList<SearchAnswer.Story>() to emptyList()
         if (prompt.based) report.line("feeds: ${fed.size} stories (${fed.count { !it.trending }} on the keywords)")
         (rescueIssues + feedIssues).forEach { report.line(finding(Finding(it))) }

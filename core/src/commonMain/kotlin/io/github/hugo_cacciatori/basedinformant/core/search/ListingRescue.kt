@@ -4,32 +4,36 @@ import io.github.hugo_cacciatori.basedinformant.core.digest.ArticleUrl
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 
 /**
- * The homepage rescue (02-ai-call.md section 8, owner 2026-10-30): the search cites a site's homepage for headline
- * stories, so the phone reads that homepage for free and takes the link on the same site whose text (or address)
- * holds at least half of the source title's words and looks like an article. Runs before the source checks; without a match the
- * source stays as it was, and the source-type filter drops it as before.
+ * The listing rescue (02-ai-call.md section 8, owner 2026-10-30): the search cites a site's homepage or a listing page
+ * (a trending, section or category page) for headline stories, so the phone reads that page for free and takes the
+ * link on the same site whose text (or address) holds at least half of the words of the source's title, or of the
+ * story's one-line summary, and looks like an article. Runs before the source checks; without a match, or when the page
+ * refuses to be read, the source stays as it was and the source-type filter drops it as before.
  */
-object HomepageRescue {
-    /** The share of the title's words a link must hold: front-page headlines are often shorter than the title. */
+object ListingRescue {
+    /** The share of the words a link must hold: front-page headlines are often shorter than the title. */
     const val MIN_SHARE = 0.5
 
     suspend fun apply(answer: SearchAnswer, fetcher: FeedFetcher): Pair<SearchAnswer, List<Issue>> {
-        val homepages = answer.stories.flatMap { it.sources }.map { it.url }.filter(::isHomepage).distinct()
-        if (homepages.isEmpty()) return answer to emptyList()
-        val links = homepages.associateWith { url -> fetcher.get(url)?.let { links(it, url) }.orEmpty() }
+        val listings = answer.stories.flatMap { it.sources }.map { it.url }.filter(::isListing).distinct()
+        if (listings.isEmpty()) return answer to emptyList()
+        val links = listings.associateWith { url -> fetcher.get(url)?.let { links(it, url) }.orEmpty() }
         val issues = mutableListOf<Issue>()
         val stories = answer.stories.mapIndexed { i, story ->
             story.copy(
                 sources = story.sources.map { s ->
-                    if (!isHomepage(s.url)) return@map s
-                    val found = match(s.title, links[s.url].orEmpty()) ?: return@map s
-                    issues += Issue(Issue.Kind.SOURCE_HOMEPAGE_RESCUED, story = story.story ?: (i + 1), source = s.n)
+                    if (!isListing(s.url)) return@map s
+                    val found = match(listOfNotNull(s.title, story.whatHappened), links[s.url].orEmpty()) ?: return@map s
+                    issues += Issue(Issue.Kind.SOURCE_LISTING_RESCUED, story = story.story ?: (i + 1), source = s.n)
                     s.copy(url = found)
                 },
             )
         }
         return answer.copy(stories = stories) to issues
     }
+
+    /** An https page that is not one article: a homepage or a listing ([ArticleUrl]). */
+    fun isListing(url: String): Boolean = url.startsWith("https://") && !ArticleUrl.looksLikeArticle(url)
 
     /** A site's front page: an https URL with no path, query or fragment beyond "/". */
     fun isHomepage(url: String): Boolean {
@@ -39,20 +43,20 @@ object HomepageRescue {
         return slash < 0 || rest.substring(slash).trim('/').isEmpty()
     }
 
-    /** The best link for [title]: the most of its words, at least [MIN_SHARE]; the first on the page wins a tie. */
-    fun match(title: String, links: List<Link>): String? {
-        val wanted = words(title)
-        if (wanted.isEmpty()) return null
-        return links.map { it to wanted.count { w -> w in it.words }.toDouble() / wanted.size }
-            .filter { it.second >= MIN_SHARE }
-            .maxByOrNull { it.second }?.first?.url
-    }
+    /**
+     * The best link for any of [texts] (the source's title, the story's summary): the most of a text's words, at least
+     * [MIN_SHARE]; the first on the page wins a tie.
+     */
+    fun match(texts: List<String>, links: List<Link>): String? = texts.map(::words).filter { it.isNotEmpty() }
+        .flatMap { wanted -> links.map { it to wanted.count { w -> w in it.words }.toDouble() / wanted.size } }
+        .filter { it.second >= MIN_SHARE }
+        .maxByOrNull { it.second }?.first?.url
 
     data class Link(val url: String, val words: Set<String>)
 
     /** The page's links on the same site that look like articles, each with the words of its text and address. */
-    fun links(html: String, homepage: String): List<Link> {
-        val host = host(homepage)
+    fun links(html: String, page: String): List<Link> {
+        val host = host(page)
         return ANCHOR.findAll(html).mapNotNull { m ->
             val url = resolve(m.groupValues[1].trim(), host) ?: return@mapNotNull null
             if (!sameSite(host(url), host) || isHomepage(url) || !ArticleUrl.looksLikeArticle(url)) return@mapNotNull null

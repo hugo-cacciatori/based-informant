@@ -31,8 +31,8 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
         /** The URL looks like a homepage, index, archive, event, calendar or reference page (source-type filter). */
         SOURCE_NOT_AN_ARTICLE,
 
-        /** The source was a homepage, replaced by the matching article link found on it (owner, 2026-10-30). */
-        SOURCE_HOMEPAGE_RESCUED,
+        /** The source was a homepage or listing page, replaced by the matching article link found on it (owner, 2026-10-30). */
+        SOURCE_LISTING_RESCUED,
         SOURCE_BAD_DATE,
 
         /** Dated after tomorrow: impossible for published news (one day of tolerance for time zones). */
