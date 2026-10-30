@@ -121,8 +121,11 @@ class LabTest {
             0,
             run(lab(client), "--write", "free:m", "--search-answer", "lab/inputs/search-answer-synthetic.json", "--input", "lab/inputs/writer.json", "--persona", "roach-king"),
         )
-        val sent = client.chats.single()
+        val (sent, pass) = client.chats
         assertTrue("<<<SEARCH_REPORT" in sent.messages.single().content && "VOICE" in sent.systemPrompt)
+        // With a persona, the voice pass follows; the fake's writer answer is no voice-pass answer, so cards stay as written.
+        assertTrue("<<<CARDS" in pass.messages.single().content)
+        assertTrue("voice pass: no readable answer, cards as written" in printed, printed)
         assertTrue("copied quotes: none" in printed && "topics: 1 written; selected: 1" in printed, printed)
         assertTrue(runDir().resolve("digest.html").isFile && runDir().resolve(Lab.WRITER_ANSWER).isFile)
     }

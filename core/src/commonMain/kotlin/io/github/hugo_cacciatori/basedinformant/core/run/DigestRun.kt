@@ -27,7 +27,9 @@ import io.github.hugo_cacciatori.basedinformant.core.search.OutletCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
+import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
+import io.github.hugo_cacciatori.basedinformant.core.writer.VoicePass
 import io.github.hugo_cacciatori.basedinformant.core.writer.Writer
 import kotlinx.serialization.json.Json
 
@@ -128,20 +130,27 @@ class DigestRun(
         return write(record, answer, catalog, Report(issues))
     }
 
-    /** The free writer, then the copied-quote and persona-name removal, the fact check and selection. */
+    /** The free writer, then the copied-quote removal, the voice pass, the persona-name removal, the fact check and selection. */
     private suspend fun write(record: RunRecord, answer: SearchAnswer, catalog: ModelCatalog, before: Report): Pair<RunOutcome, Report> {
         val input = record.snapshot.prompt
         val written = FreeModels.first(client, catalog, FreeModels.WRITER, { Writer.request(it, input, answer) }, Writer::parse).value
             ?: return notWritten(record) to before
         val (uncopied, copies) = Writer.removeCopies(written, answer)
-        val (clean, named) = Writer.removeNames(uncopied, answer, Writer.personaNames(input.persona))
+        // With a persona, a free pass puts its voice in every card (owner, 2026-10-30); with no free model, cards stay as written.
+        val voiced = if (input.persona == Persona.OFF) {
+            uncopied
+        } else {
+            FreeModels.first(client, catalog, FreeModels.WRITER, { VoicePass.request(it, uncopied, input) }, VoicePass::parse).value
+                ?.let { VoicePass.apply(uncopied, it) }
+        }
+        val (clean, named) = Writer.removeNames(voiced ?: uncopied, answer, Writer.personaNames(input.persona))
         // No free model for the fact check: the cards stay as written (owner, 2026-10-29).
         val check = FreeModels.first(client, catalog, FreeModels.CHECKER, { FactCheck.request(it, clean, answer) }, FactCheck::parse).value
         val (checked, facts) = check?.let { FactCheck.apply(clean, answer, it) } ?: (clean to emptyList())
         val (digest, joined) = Writer.toDigest(checked, answer, input)
         val selected = select(digest, input)
         val report = Report(
-            before.issues + (copies + named + facts + joined).map { it.issue } + listOfNotNull(Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null }),
+            before.issues + (copies + named + facts + joined).map { it.issue } + listOfNotNull(Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null }, Issue(Issue.Kind.VOICE_NOT_PASSED).takeIf { voiced == null }),
             digest.topics.size,
             selected.topics.size,
         )
@@ -152,13 +161,12 @@ class DigestRun(
     }
 
     /**
-     * Keyword mode: [Selection] as usual. Topic mode: every chosen topic counts, so no score cutoff, and the chosen topics
-     * left without a card are listed in the digest (owner, 2026-10-29).
+     * [Selection], then the keywords (or chosen topics) left without a card are listed in the digest (owner, 2026-10-29
+     * for topics, 2026-10-30 for keywords).
      */
     private fun select(digest: Digest, input: PromptInput): Digest {
-        if (input.mode == DigestMode.KEYWORDS) return digest.copy(topics = Selection.select(digest.topics))
         val topics = Selection.select(digest.topics)
-        // A chosen topic is covered by a card matched to it, or filed under it (a feed's trending card reusing its tag).
+        // A keyword or topic is covered by a card matched to it, or filed under it (a feed's trending card reusing its tag).
         val missing = input.keywords.filter { tag ->
             topics.none { t -> t.keywords.any { it.equals(tag.trim(), ignoreCase = true) } || t.topicTag?.equals(tag.trim(), ignoreCase = true) == true }
         }

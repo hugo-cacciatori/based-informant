@@ -28,6 +28,7 @@ import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
 import io.github.hugo_cacciatori.basedinformant.core.writer.Finding
+import io.github.hugo_cacciatori.basedinformant.core.writer.VoicePass
 import io.github.hugo_cacciatori.basedinformant.core.writer.Writer
 import io.github.hugo_cacciatori.basedinformant.core.writer.WriterAnswer
 import kotlinx.datetime.DatePeriod
@@ -291,7 +292,17 @@ class Lab(
             .singleOrNull() ?: return refuse(report, "no answer from the writer")
         val raw = Writer.parse(content) ?: return refuse(report, "unreadable writer answer: the raw file is kept")
         val (uncopied, copies) = Writer.removeCopies(raw, answer)
-        val (written, named) = Writer.removeNames(uncopied, answer, Writer.personaNames(persona))
+        // The voice pass, as the app runs it with a persona, on the same model; its files go to voice-pass/.
+        val voiced = if (persona == Persona.OFF) {
+            uncopied
+        } else {
+            val passDir = dir.resolve("voice-pass").apply { mkdirs() }
+            val pass = send(client, listOf(Call(input.keywords, VoicePass.request(command.model, uncopied, prompt))), passDir, report, paid = false, command.model, "free voice pass test")
+                .singleOrNull()?.let(VoicePass::parse)
+            report.line(if (pass == null) "voice pass: no readable answer, cards as written" else "voice pass: ${pass.cards.size} cards rewritten")
+            pass?.let { VoicePass.apply(uncopied, it) } ?: uncopied
+        }
+        val (written, named) = Writer.removeNames(voiced, answer, Writer.personaNames(persona))
         val deleted = copies + named
         dir.resolve(WRITER_ANSWER).writeText(pretty.encodeToString(WriterAnswer.serializer(), written))
         report.line("subject: ${written.subject}").line("card summary: ${written.cardSummary}")

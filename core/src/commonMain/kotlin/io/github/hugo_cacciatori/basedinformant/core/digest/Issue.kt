@@ -58,6 +58,9 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
 
         /** A written sentence named the active persona's real identity and was deleted, or the name cut (owner, 2026-10-30). */
         PERSONA_NAME_DELETED,
+
+        /** With a persona on, no free model answered the voice pass: the cards stay as the writer wrote them (owner, 2026-10-30). */
+        VOICE_NOT_PASSED,
         FACT_UNSUPPORTED,
         FACT_SECOND_STORY,
 
@@ -67,6 +70,9 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
         FACT_BAD_SENTENCE_NUMBER,
         FACT_NOT_CHECKED,
         TOPIC_DROPPED_TWO_STORIES,
+
+        /** The fact check found the title tells another event than the card's sentences (owner, 2026-10-30). */
+        TOPIC_DROPPED_TITLE_OFF,
         TOPIC_DROPPED_EMPTY,
     }
 }

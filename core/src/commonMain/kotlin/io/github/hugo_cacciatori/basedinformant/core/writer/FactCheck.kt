@@ -26,6 +26,8 @@ data class FactCheckAnswer(val cards: List<Card>) {
         @SerialName("two_stories") val twoStories: Boolean = false,
         @SerialName("second_story") val secondStory: List<Int> = emptyList(),
         val unclear: Boolean = false,
+        /** The title names an event none of the card's sentences tells (owner, 2026-10-30). */
+        @SerialName("title_off") val titleOff: Boolean = false,
     )
 
     @Serializable
@@ -79,7 +81,8 @@ object FactCheck {
      * Applies the check: unsupported sentences go, but only on a card with at least one downloaded page; a card telling
      * two stories loses the second story's sentences, and is dropped when the split is unclear; a check that puts every
      * sentence in the second story is ignored; a summary left empty takes the detail's sentences; a card left with
-     * nothing is dropped. A card the check did not cover stays as written.
+     * nothing is dropped, and so is a card whose title tells another event than its sentences (owner, 2026-10-30). A card
+     * the check did not cover stays as written.
      */
     fun apply(written: WriterAnswer, answer: SearchAnswer, check: FactCheckAnswer): Pair<WriterAnswer, List<Finding>> {
         val findings = mutableListOf<Finding>()
@@ -89,6 +92,7 @@ object FactCheck {
             fun finding(kind: Issue.Kind, sentence: Int? = null, text: String? = null) = Finding(Issue(kind, story = t.story, topic = i, sentence = sentence), text)
             val result = byCard[i + 1] ?: return@mapIndexedNotNull t.also { findings += finding(Issue.Kind.FACT_NOT_CHECKED) }
             if (result.twoStories && result.unclear) return@mapIndexedNotNull null.also { findings += finding(Issue.Kind.TOPIC_DROPPED_TWO_STORIES, text = t.title) }
+            if (result.titleOff) return@mapIndexedNotNull null.also { findings += finding(Issue.Kind.TOPIC_DROPPED_TITLE_OFF, text = t.title) }
             val summary = Writer.sentences(t.summary)
             val detail = t.detail?.takeUnless { it == "null" }?.let(Writer::sentences).orEmpty()
             val all = summary + detail

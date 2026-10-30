@@ -99,6 +99,8 @@ class DigestRunTest {
         assertEquals("A research stellarator held a stable plasma for 40 minutes.", first.summary, "the fact check deleted the cost")
         assertEquals(78, first.score, "relevance 50 + the search's attention 28")
         assertEquals(listOf("https://science.example.com/2026/10/stellarator-record", "https://sciences.example.org/stellarator-record"), first.sources.map { it.url })
+        // The keyword with no card is listed, as in topic mode (owner, 2026-10-30).
+        assertEquals(listOf("chess"), saved.digest.missingTopics)
 
         val record = runs.runs.getValue(stored.runId)
         assertEquals(RunState.DONE, record.state)
@@ -152,6 +154,24 @@ class DigestRunTest {
         assertIs<RunOutcome.Stored>(digestRun.execute(snapshot))
         assertTrue("2 billion" in digests.saved.single().digest.topics.first().summary)
         assertEquals(1, calls.calls.single().issues[Issue.Kind.FACT_NOT_CHECKED])
+    }
+
+    @Test
+    fun withAPersonaTheVoicePassRewritesTheCardsBeforeTheFactCheck() = runBlocking {
+        val persona = snapshot.copy(prompt = snapshot.prompt.copy(persona = Persona.DOCTOR_WIFE))
+        var checked = ""
+        val (_, digestRun) = run(free = { model, request ->
+            val message = request.messages.single().content
+            if ("CHECK_DATA" in message) checked = message
+            if ("<<<CARDS" in message) """{"cards": [{"card": 1, "title": "Logically, a plasma record"}]}""" else writes(model, request)
+        })
+        assertIs<RunOutcome.Stored>(digestRun.execute(persona))
+        assertEquals("Logically, a plasma record", digests.saved.single().digest.topics.first().title)
+        assertTrue("Logically, a plasma record" in checked, "the fact check reads the rewritten card")
+        // With no free model for it, the cards stay as written and the history says so.
+        val (_, down) = run(free = { model, request -> if ("<<<CARDS" in request.messages.single().content) null else writes(model, request) })
+        assertIs<RunOutcome.Stored>(down.execute(persona))
+        assertEquals(1, calls.calls.last().issues[Issue.Kind.VOICE_NOT_PASSED])
     }
 
     @Test

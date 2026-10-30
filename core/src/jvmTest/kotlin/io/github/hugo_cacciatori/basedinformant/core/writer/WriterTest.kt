@@ -187,6 +187,30 @@ class WriterTest {
     }
 
     @Test
+    fun `the voice pass gets the cards and the persona, and keeps what it leaves out`() {
+        val request = VoicePass.request("m", written, input.copy(persona = Persona.DOCTOR_WIFE, based = true))
+        assertTrue("A plasma lasted 40 minutes." in request.messages.single().content)
+        assertTrue(PromptFiles.all.getValue("voices/doctor-wife.txt").trim() in request.systemPrompt)
+        assertTrue(PromptFiles.all.getValue(Writer.BASED_PERSONA_FILE).trim() in request.systemPrompt)
+        val answer = VoicePass.parse("""Sure: {"cards": [{"card": 1, "title": "Logically, plasma", "summary": "  ", "detail": "Hypothetically, more."}, {"card": 2, "detail": "Invented detail."}]}""")!!
+        val voiced = VoicePass.apply(written, answer)
+        assertEquals("Logically, plasma", voiced.topics[0].title)
+        assertEquals(written.topics[0].summary, voiced.topics[0].summary, "a blank text keeps the writer's")
+        assertEquals("Hypothetically, more.", voiced.topics[0].detail)
+        assertEquals(written.topics[1], voiced.topics[1], "a card with no detail gets none")
+        assertNull(VoicePass.parse("no json"))
+    }
+
+    @Test
+    fun `a title telling another event drops the card, and an old answer without the field keeps it`() {
+        val off = FactCheck.apply(written, withPages, check(FactCheckAnswer.Card(1, titleOff = true), FactCheckAnswer.Card(2)))
+        assertEquals(listOf("Title 2"), off.first.topics.map { it.title })
+        assertEquals(listOf(Kind.TOPIC_DROPPED_TITLE_OFF), kinds(off.second))
+        val parsed = FactCheck.parse("""{"cards": [{"card": 1, "unsupported": []}, {"card": 2, "title_off": true}]}""")!!
+        assertEquals(listOf(false, true), parsed.cards.map { it.titleOff })
+    }
+
+    @Test
     fun `an emptied summary takes the detail, and a card left with nothing is dropped`() {
         val one = FactCheck.apply(written, withPages, check(FactCheckAnswer.Card(1, listOf(1, 2).map { FactCheckAnswer.Unsupported(it) }), FactCheckAnswer.Card(2)))
         assertEquals("The lab plans more. Ha, cool.", one.first.topics[0].summary)

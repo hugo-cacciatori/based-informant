@@ -36,6 +36,17 @@ class TrendingTest {
     }
 
     @Test
+    fun trendingCardsFillOneSlotPerSubject() {
+        fun tagged(id: String, tag: String, score: Int, trending: Boolean = true) = topic(id, score, trending).copy(topicTag = tag)
+        val topics = listOf(
+            tagged("k1", "Ballot scheme", 80, trending = false), tagged("k2", "Ballot scheme", 70, trending = false),
+            tagged("t1", "ballot SCHEME", 60), tagged("t2", "Oil profits", 50), tagged("t3", "Oil profits", 55), tagged("t4", "Pub protest", 20),
+        )
+        // Keyword cards keep several stories per subject; trending ones skip a subject already shown (owner, 2026-10-30).
+        assertEquals(listOf("k1", "k2", "t3", "t4"), Selection.select(topics).map { it.id })
+    }
+
+    @Test
     fun aTrendingStoryNeedsNoKeyword() {
         fun source(url: String) = SearchAnswer.SearchSource(title = "t", publisher = "p", url = url, language = "en", published = "2026-10-29")
         val answer = SearchAnswer(
