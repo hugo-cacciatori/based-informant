@@ -21,6 +21,7 @@ import io.github.hugo_cacciatori.basedinformant.core.run.RunRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
 import io.github.hugo_cacciatori.basedinformant.core.run.RunState
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
+import io.github.hugo_cacciatori.basedinformant.core.run.SavedTopic
 import io.github.hugo_cacciatori.basedinformant.core.run.StoredDigest
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -76,9 +77,10 @@ class FakeDigestStore : DigestStore {
         return saved.size.toLong()
     }
 
-    override suspend fun topicTags(): List<String> {
+    override suspend fun savedTopics(): List<SavedTopic> {
         val seen = mutableSetOf<String>()
-        return saved.reversed().flatMap { d -> d.digest.topics.mapNotNull { it.topicTag } }.filter { seen.add(it.lowercase()) }
+        return saved.reversed().flatMap { d -> d.digest.topics.mapNotNull { it.topicTag }.map { SavedTopic(it, d.generatedAt) } }
+            .filter { seen.add(it.tag.lowercase()) }
     }
 
     override suspend fun lastGeneratedAt(): Long? = saved.maxOfOrNull { it.generatedAt }

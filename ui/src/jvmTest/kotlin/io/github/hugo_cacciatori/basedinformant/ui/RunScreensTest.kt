@@ -124,9 +124,11 @@ internal class RunFixture(
     }
     /** The saved topics; deleting and Undo change them. */
     var savedTopics = topics
+    /** Recency by tag, for the Hot section (today is 2026-10-29). */
+    var topicDates = mapOf<String, LocalDate>()
     private val digests = object : DigestStore, TopicStore {
         override suspend fun save(digest: StoredDigest) = 1L
-        override suspend fun topicTags() = savedTopics
+        override suspend fun savedTopics() = savedTopics.map { SavedTopic(it, 1L, topicDates[it]) }
         override suspend fun lastGeneratedAt(): Long? = null
         override suspend fun delete(tags: Collection<String>): List<SavedTopic> {
             val gone = savedTopics.filter { t -> tags.any { it.equals(t, ignoreCase = true) } }
@@ -382,6 +384,22 @@ class RunScreensTest {
         // No pick is fine: the free slots get trending news (owner, 2026-10-29).
         onNodeWithTag("generate-reason").assertDoesNotExist()
         onNodeWithTag("generate").assertIsEnabled()
+    }
+
+    @Test
+    fun hotTopicsHaveTheirHeadingOnlyWhenThereAreAny() = runComposeUiTest {
+        val f = RunFixture(topics = listOf("Stellarator research", "Club chess"))
+        show(f)
+        f.generateVm.reload()
+        waitForIdle()
+        onNodeWithTag("mode-topics").performClick()
+        waitForIdle()
+        onNodeWithTag("topics-hot").assertDoesNotExist()
+        f.topicDates = mapOf("Stellarator research" to LocalDate(2026, 10, 28))
+        f.generateVm.reload()
+        waitForIdle()
+        onNodeWithTag("topics-hot").assertTextContains("Hot")
+        assertEquals(1, f.generateVm.state.value.hotCount)
     }
 
     @Test

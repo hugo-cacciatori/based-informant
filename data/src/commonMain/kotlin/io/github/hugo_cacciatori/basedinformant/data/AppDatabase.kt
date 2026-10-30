@@ -30,7 +30,7 @@ import kotlinx.coroutines.IO
         KeywordEntity::class, RunEntity::class, CallEntity::class, CheckEntity::class, DigestEntity::class,
         PresetEntity::class, TopicEntity::class,
     ],
-    version = 7,
+    version = 8,
     // v2 only adds tables (2026-10-20); v3 (2026-10-29, template v2) drops the curated memory and two unused call
     // columns, and adds presets, the digests' topic tags and the call mode; v4 (2026-10-29, Share) drops the digests'
     // stored mail and email state; v5 (2026-10-29, Based) adds the Based flag to calls and digests; v6 (2026-10-30,
@@ -43,6 +43,7 @@ import kotlinx.coroutines.IO
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6, spec = Migration5To6::class),
         AutoMigration(from = 6, to = 7, spec = Migration6To7::class),
+        AutoMigration(from = 7, to = 8, spec = Migration7To8::class),
     ],
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -96,6 +97,24 @@ class Migration5To6 : AutoMigrationSpec {
 /** v7: the saved topics replace the digests' own tag lists (one source of truth). */
 @DeleteColumn(tableName = "digests", columnName = "topic_tags")
 class Migration6To7 : AutoMigrationSpec
+
+/**
+ * v8: each saved topic's recency (owner, 2026-10-30), the newest source date on its cards in the newest stored digest
+ * that has it; a topic whose digests are all deleted stays null and is listed last.
+ */
+class Migration7To8 : AutoMigrationSpec {
+    override suspend fun onPostMigrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "UPDATE topics SET latest_source = (" +
+                "SELECT MAX(json_extract(s.value, '$.published')) " +
+                "FROM digests d, json_each(d.digest, '$.topics') t, json_each(t.value, '$.sources') s " +
+                "WHERE TRIM(json_extract(t.value, '$.topic_tag')) = topics.tag AND d.id = (" +
+                "SELECT d2.id FROM digests d2, json_each(d2.digest, '$.topics') t2 " +
+                "WHERE TRIM(json_extract(t2.value, '$.topic_tag')) = topics.tag " +
+                "ORDER BY d2.generated_at DESC, d2.id DESC LIMIT 1))",
+        )
+    }
+}
 
 // The Room compiler generates the `actual` implementations.
 @Suppress("KotlinNoActualForExpect")

@@ -149,7 +149,7 @@ class RoomRunStoresTest {
         store.save(stored(1, "Club chess", "Seabed rules"))
         store.save(stored(2, "Fusion records", "club CHESS"))
         // Seen again (ignoring case): one topic, its first spelling, now among the newest.
-        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.topicTags())
+        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.savedTopics().map { it.tag })
 
         // History: newest first, without the HTML; deleting a digest keeps its topics (owner, 2026-10-29).
         val cards = store.cards()
@@ -157,13 +157,36 @@ class RoomRunStoresTest {
         assertEquals(listOf(2, 2), cards.map { it.topicCount })
         store.delete(cards.first().id)
         assertNull(store.get(cards.first().id))
-        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.topicTags())
+        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.savedTopics().map { it.tag })
 
         // The owner deletes topics, several at once (ignoring case), and Undo puts them back in their place.
         val gone = store.delete(listOf("CLUB CHESS", "Seabed rules"))
-        assertEquals(listOf("Fusion records"), store.topicTags())
+        assertEquals(listOf("Fusion records"), store.savedTopics().map { it.tag })
         store.restore(gone)
-        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.topicTags())
+        assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.savedTopics().map { it.tag })
+    }
+
+    @Test
+    fun topicsAreOrderedByTheNewestSourceOfTheirLatestDigest() = runBlocking {
+        val store = RoomDigestStore(db)
+        fun source(day: Int) = Source("T", "P", "https://example.com/$day", "en", LocalDate(2026, 10, day))
+        fun card(tag: String, vararg days: Int) =
+            Topic("t-$tag", tag, "Title", "Summary.", null, listOf("chess"), 80, null, days.map(::source))
+        fun stored(at: Long, vararg cards: Topic) = StoredDigest(
+            runId = at, generatedAt = at, subject = "S", summary = "s",
+            topicCount = cards.size, model = "m", attentionMode = "BALANCED", persona = "OFF", tokensBilled = null,
+            digest = Digest(2, LocalDate(2026, 10, 20), null, null, cards.toList()),
+        )
+        store.save(stored(1, card("Club chess", 28), card("Seabed rules", 20, 25)))
+        // The latest digest's date counts, even when older; two cards of one topic give their newest source.
+        store.save(stored(2, card("club CHESS", 10), card("Club chess", 12), card("Fusion records")))
+        assertEquals(
+            listOf("Seabed rules" to LocalDate(2026, 10, 25), "Club chess" to LocalDate(2026, 10, 12), "Fusion records" to null),
+            store.savedTopics().map { it.tag to it.latestSource },
+        )
+        val gone = store.delete(listOf("Seabed rules"))
+        store.restore(gone)
+        assertEquals(LocalDate(2026, 10, 25), store.savedTopics().first().latestSource, "Undo keeps the date")
     }
 
     @Test

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Topic mode sorts the saved topics by the date of their newest source, with the past week's under a "Hot" heading; database schema v8 dates the existing topics from the stored digests.
+
 - Richer persona voices, each with the person's known bits and catchphrases.
 - A fourth persona, Based Blue Blob.
 

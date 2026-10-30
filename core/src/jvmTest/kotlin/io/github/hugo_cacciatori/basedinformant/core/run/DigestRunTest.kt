@@ -271,7 +271,7 @@ class DigestRunTest {
     @Test
     fun theStoredTagsAreTheChoicesOfTopicMode() = runBlocking {
         run().second.execute(snapshot)
-        assertEquals(listOf("Stellarator research", "Deep-sea mining rules"), digests.topicTags())
+        assertEquals(listOf("Stellarator research", "Deep-sea mining rules"), digests.savedTopics().map { it.tag })
     }
 
     @Test

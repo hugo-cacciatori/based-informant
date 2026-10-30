@@ -112,6 +112,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.refused_no_reason
 import io.github.hugo_cacciatori.basedinformant.ui.resources.refused_tag
 import io.github.hugo_cacciatori.basedinformant.ui.resources.refused_title
 import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_count
+import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_hot
 import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_none
 import io.github.hugo_cacciatori.basedinformant.ui.resources.topics_note
 import io.github.hugo_cacciatori.basedinformant.ui.resources.view
@@ -222,7 +223,7 @@ fun ModeSwitch(state: GenerateState, actions: GenerateActions, modifier: Modifie
 /**
  * Topic mode (01-product.md section 3): the saved topics as chips, 0 to [InputLimits.KEYWORDS_MAX] picked by a tap.
  * **Select** switches to a delete mode, as in a photo gallery: picking pauses, each topic gets a checkbox, with
- * select-all, **Cancel** and **Delete (N)** (owner, 2026-10-30).
+ * select-all, **Cancel** and **Delete (N)** (owner, 2026-10-30). The Hot topics come first under their heading.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -252,15 +253,21 @@ fun TopicPicker(state: GenerateState, actions: GenerateActions, modifier: Modifi
                     Text(stringResource(Res.string.topics_select))
                 }
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                state.topics.forEach { tag ->
-                    val picked = tag in state.chosen
-                    FilterChip(
-                        selected = picked,
-                        onClick = { actions.toggleTopic(tag) },
-                        label = { Text(tag) },
-                        enabled = picked || state.chosen.size < InputLimits.KEYWORDS_MAX,
-                    )
+            // Hot topics under their heading, then the rest with none (owner, 2026-10-30).
+            val (hot, rest) = state.topics.withIndex().partition { it.index < state.hotCount }
+            for ((part, tags) in listOf(hot, rest).withIndex()) {
+                if (tags.isEmpty()) continue
+                if (part == 0) TopicsHotHeading()
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    tags.forEach { (_, tag) ->
+                        val picked = tag in state.chosen
+                        FilterChip(
+                            selected = picked,
+                            onClick = { actions.toggleTopic(tag) },
+                            label = { Text(tag) },
+                            enabled = picked || state.chosen.size < InputLimits.KEYWORDS_MAX,
+                        )
+                    }
                 }
             }
             return@Column
@@ -288,7 +295,8 @@ fun TopicPicker(state: GenerateState, actions: GenerateActions, modifier: Modifi
                 modifier = Modifier.testTag("topics-delete"),
             ) { Text(stringResource(Res.string.keywords_delete_ticked, tickedTags.size)) }
         }
-        state.topics.forEach { tag ->
+        state.topics.forEachIndexed { i, tag ->
+            if (i == 0 && state.hotCount > 0) TopicsHotHeading()
             val key = tag.lowercase()
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -301,6 +309,10 @@ fun TopicPicker(state: GenerateState, actions: GenerateActions, modifier: Modifi
         }
     }
 }
+
+@Composable
+private fun TopicsHotHeading() =
+    Text(stringResource(Res.string.topics_hot), style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("topics-hot"))
 
 /** Shown instead of Generate while a job runs. There is no cancel button: once sent, the call is paid. */
 @Composable

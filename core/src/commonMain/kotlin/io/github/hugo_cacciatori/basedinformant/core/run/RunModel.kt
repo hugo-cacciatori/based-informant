@@ -4,6 +4,7 @@ import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
+import kotlinx.datetime.LocalDate
 
 /**
  * Everything one run uses, taken when the owner confirms (01-product.md section 4 step 3), so later changes in
@@ -158,10 +159,11 @@ interface DigestStore {
     suspend fun save(digest: StoredDigest): Long
 
     /**
-     * The saved topics, most recently seen first, each once (ignoring case): the choices of topic mode. Every stored
-     * digest's topic tags are saved, and stay until the owner deletes them (01-product.md section 3, owner 2026-10-29).
+     * The saved topics, each once (ignoring case): the choices of topic mode, newest [SavedTopic.latestSource] first,
+     * ties by name, undated last. Every stored digest's topic tags are saved, and stay until the owner deletes them
+     * (01-product.md section 3, owner 2026-10-29 and 2026-10-30).
      */
-    suspend fun topicTags(): List<String>
+    suspend fun savedTopics(): List<SavedTopic>
 
     /** When the newest digest was stored on this device, for the confirmation dialog; null before the first. */
     suspend fun lastGeneratedAt(): Long?
@@ -175,8 +177,11 @@ interface TopicStore {
     suspend fun restore(topics: List<SavedTopic>)
 }
 
-/** A saved topic and when a digest last had it. */
-data class SavedTopic(val tag: String, val savedAt: Long)
+/**
+ * A saved topic, when a digest last had it, and its recency: the newest source date on its cards in that digest, null
+ * when unknown (its digest deleted before schema v8).
+ */
+data class SavedTopic(val tag: String, val savedAt: Long, val latestSource: LocalDate? = null)
 
 interface CallLog {
     suspend fun record(call: CallRecord)

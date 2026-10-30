@@ -22,6 +22,7 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.PresetStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.LocalDate
 
 /** The runs in Room, their raw answers in [raw] (04-platforms.md section 7). */
 class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : RunStore {
@@ -78,7 +79,10 @@ class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : Run
 }
 
 class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore, TopicStore {
-    /** Stores the digest and saves its topic tags, a tag already saved (ignoring case) only seen again. */
+    /**
+     * Stores the digest and saves its topic tags, a tag already saved (ignoring case) only seen again; each takes this
+     * digest's newest source on its cards as its recency, even when older than before (owner, 2026-10-30).
+     */
     override suspend fun save(digest: StoredDigest): Long = db.withWriteTransaction {
         val id = db.digests().insert(
             with(digest) {
@@ -90,25 +94,33 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore, 
             },
         )
         val saved = db.topics().all().associateBy { it.tag.lowercase() }
-        digest.digest.topics.mapNotNull { it.topicTag?.trim()?.takeIf(String::isNotEmpty) }.distinctBy { it.lowercase() }.forEach { tag ->
-            val old = saved[tag.lowercase()]
-            db.topics().upsert(old?.copy(savedAt = digest.generatedAt) ?: TopicEntity(tag = tag, savedAt = digest.generatedAt))
-        }
+        digest.digest.topics.mapNotNull { t -> t.topicTag?.trim()?.takeIf(String::isNotEmpty)?.let { it to t.sources } }
+            .groupBy({ it.first.lowercase() }) { it }
+            .forEach { (key, cards) ->
+                val latest = cards.flatMap { it.second }.maxOfOrNull { it.published }?.toString()
+                val old = saved[key]
+                db.topics().upsert(
+                    old?.copy(savedAt = digest.generatedAt, latestSource = latest)
+                        ?: TopicEntity(tag = cards.first().first, savedAt = digest.generatedAt, latestSource = latest),
+                )
+            }
         id
     }
 
-    override suspend fun topicTags(): List<String> = db.topics().all().map { it.tag }
+    override suspend fun savedTopics(): List<SavedTopic> = db.topics().all().map(::savedTopic)
+
+    private fun savedTopic(t: TopicEntity) = SavedTopic(t.tag, t.savedAt, t.latestSource?.let(LocalDate::parse))
 
     override suspend fun delete(tags: Collection<String>): List<SavedTopic> = db.withWriteTransaction {
         val keys = tags.map { it.lowercase() }.toSet()
         val gone = db.topics().all().filter { it.tag.lowercase() in keys }
         gone.forEach { db.topics().delete(it.id) }
-        gone.map { SavedTopic(it.tag, it.savedAt) }
+        gone.map(::savedTopic)
     }
 
     override suspend fun restore(topics: List<SavedTopic>) = db.withWriteTransaction {
         val saved = db.topics().all().map { it.tag.lowercase() }.toSet()
-        topics.filter { it.tag.lowercase() !in saved }.forEach { db.topics().upsert(TopicEntity(tag = it.tag, savedAt = it.savedAt)) }
+        topics.filter { it.tag.lowercase() !in saved }.forEach { db.topics().upsert(TopicEntity(tag = it.tag, savedAt = it.savedAt, latestSource = it.latestSource?.toString())) }
     }
 
     override suspend fun lastGeneratedAt(): Long? = db.digests().lastGeneratedAt()

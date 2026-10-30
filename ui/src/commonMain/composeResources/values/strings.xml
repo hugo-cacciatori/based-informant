@@ -48,6 +48,7 @@
     <string name="topics_note">Keywords are not used in this mode. Pick up to %1$d topics, or none: each gets one story, and free slots get trending news.</string>
     <string name="topics_none">No saved topics yet. Generate now for a digest of trending news: the topics of every digest are saved here.</string>
     <string name="topics_count">%1$d / %2$d topics</string>
+    <string name="topics_hot">Hot</string>
     <string name="topics_select_all">Select all topics</string>
     <string name="topics_select">Select</string>
     <string name="topics_selected">%1$d selected</string>

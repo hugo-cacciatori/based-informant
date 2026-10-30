@@ -36,8 +36,10 @@ class GenerateModelTest {
 
     /** The fake digest store, with fixed topic tags and one digest stored at 500. */
     private class TopicDigests(var tags: List<String>) : DigestStore, TopicStore {
+        /** Recency by tag; the store's order is the test's. */
+        var dates = mapOf<String, LocalDate>()
         override suspend fun save(digest: StoredDigest) = 1L
-        override suspend fun topicTags() = tags
+        override suspend fun savedTopics() = tags.map { SavedTopic(it, 1L, dates[it]) }
         override suspend fun lastGeneratedAt() = 500L
         override suspend fun delete(tags: Collection<String>): List<SavedTopic> {
             val keys = tags.map { it.lowercase() }.toSet()
@@ -160,6 +162,18 @@ class GenerateModelTest {
         digests.tags = listOf("Topic 3")
         model.loadTopics()
         assertEquals(listOf("Topic 3"), model.state.value.chosen, "a tag no longer stored is dropped")
+    }
+
+    @Test
+    fun topicsWithASourceInTheLastSevenDaysAreHot() = runBlocking {
+        // Today is 2026-10-29: Hot from 2026-10-23 on (owner, 2026-10-30).
+        digests.tags = listOf("Today", "Six days ago", "Seven days ago", "Undated")
+        digests.dates = mapOf("Today" to LocalDate(2026, 10, 29), "Six days ago" to LocalDate(2026, 10, 23), "Seven days ago" to LocalDate(2026, 10, 22))
+        model.loadTopics()
+        assertEquals(2, model.state.value.hotCount)
+        digests.tags = listOf("Seven days ago", "Undated")
+        model.loadTopics()
+        assertEquals(0, model.state.value.hotCount)
     }
 
     @Test

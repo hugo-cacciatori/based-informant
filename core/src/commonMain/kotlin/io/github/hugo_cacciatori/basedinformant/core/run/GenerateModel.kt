@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 
 /** Where Generate stands (01-product.md section 4 steps 1 to 3). */
 sealed interface GenerateStep {
@@ -33,8 +35,10 @@ sealed interface GenerateStep {
 
 data class GenerateState(
     val mode: DigestMode = DigestMode.KEYWORDS,
-    /** The saved topics, newest first: topic mode's choices. */
+    /** The saved topics, most recent first: topic mode's choices. */
     val topics: List<String> = emptyList(),
+    /** How many of [topics], from the top, are Hot: recency within [GenerateModel.HOT_DAYS] (owner, 2026-10-30). */
+    val hotCount: Int = 0,
     val chosen: List<String> = emptyList(),
     /** The topics just deleted, while their Undo is offered (01-product.md section 3). */
     val topicUndo: List<SavedTopic>? = null,
@@ -67,12 +71,14 @@ class GenerateModel(
     private val _state = MutableStateFlow(GenerateState())
     val state: StateFlow<GenerateState> = _state.asStateFlow()
 
-    /** Each time the screen opens: the stored topic tags; a chosen tag no longer stored is dropped. */
+    /** Each time the screen opens: the stored topic tags and the Hot ones; a chosen tag no longer stored is dropped. */
     suspend fun loadTopics() {
-        val topics = digests.topicTags()
+        val saved = digests.savedTopics()
+        val hotFrom = today().minus(HOT_DAYS - 1, DateTimeUnit.DAY)
+        val topics = saved.map { it.tag }
         _state.update { s ->
             val chosen = s.chosen.filter { c -> topics.any { it.equals(c, ignoreCase = true) } }
-            s.copy(topics = topics, chosen = chosen)
+            s.copy(topics = topics, hotCount = saved.takeWhile { it.latestSource?.let { d -> d >= hotFrom } == true }.size, chosen = chosen)
         }
     }
 
@@ -135,7 +141,7 @@ class GenerateModel(
                 persona = current.persona,
                 today = today(),
                 model = current.model,
-                knownTopicTags = digests.topicTags(),
+                knownTopicTags = digests.savedTopics().map { it.tag },
                 mode = mode,
                 based = current.based,
             ),
@@ -155,4 +161,9 @@ class GenerateModel(
 
     /** Cancel in the dialog, or OK on the refusals. */
     fun dismiss() = _state.update { it.copy(step = GenerateStep.Idle) }
+
+    companion object {
+        /** A topic is Hot when its recency is today or within the days before, this many days in all. */
+        const val HOT_DAYS = 7
+    }
 }

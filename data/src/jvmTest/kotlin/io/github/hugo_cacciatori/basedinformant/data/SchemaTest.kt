@@ -32,7 +32,7 @@ class SchemaTest {
 
     @Test
     fun everyVersionIsExported() {
-        for (version in 1..7) {
+        for (version in 1..8) {
             assertTrue(Files.exists(schemas.resolve(AppDatabase::class.qualifiedName!!).resolve("$version.json")), "missing $version.json")
         }
     }
@@ -148,6 +148,31 @@ class SchemaTest {
             connection.prepare("SELECT COUNT(*) FROM digests").use { statement ->
                 assertTrue(statement.step())
                 assertEquals(3L, statement.getLong(0))
+            }
+        }
+        Unit
+    }
+
+    @Test
+    fun version7To8DatesEachTopicByTheNewestSourceOfItsLatestDigest() = runBlocking {
+        helper.createDatabase(7).use { connection ->
+            fun card(tag: String, vararg dates: String) =
+                """{"topic_tag":"$tag","sources":[${dates.joinToString(",") { "{\"published\":\"$it\"}" }}]}"""
+            fun digest(at: Int, vararg cards: String) = connection.execSQL(
+                "INSERT INTO digests (run_id, generated_at, subject, summary, topic_count, digest, model, attention_mode, persona, " +
+                    "tokens_billed, based) VALUES ($at, $at, 'S', 's', 2, '{\"topics\":[${cards.joinToString(",")}]}', 'm', 'BALANCED', 'OFF', 1440, 0)",
+            )
+            // Chess: newer in digest 1 than in digest 2, but digest 2 is the latest to have it; two cards there.
+            digest(1, card("Club chess", "2026-10-28"), card("Seabed rules", "2026-10-20", "2026-10-25"))
+            digest(2, card("club CHESS", "2026-10-10"), card("Club chess", "2026-10-12"))
+            listOf("Club chess", "Seabed rules", "Gone topic").forEach {
+                connection.execSQL("INSERT INTO topics (tag, saved_at) VALUES ('$it', 1)")
+            }
+        }
+        helper.runMigrationsAndValidate(8).use { connection ->
+            connection.prepare("SELECT tag, latest_source FROM topics ORDER BY tag").use { statement ->
+                val rows = buildList { while (statement.step()) add(statement.getText(0) to if (statement.isNull(1)) null else statement.getText(1)) }
+                assertEquals(listOf("Club chess" to "2026-10-12", "Gone topic" to null, "Seabed rules" to "2026-10-25"), rows)
             }
         }
         Unit

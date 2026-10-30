@@ -169,18 +169,20 @@ interface PresetDao {
 
 /**
  * A saved topic (01-product.md section 3, schema v6): every stored digest's topic tags, kept until the owner deletes
- * them. The unique index is a backstop to the app's own rule (ignoring case); [savedAt] is when a digest last had it.
+ * them. The unique index is a backstop to the app's own rule (ignoring case); [savedAt] is when a digest last had it,
+ * [latestSource] (schema v8, ISO date) the newest source on its cards in that digest, the list's order.
  */
 @Entity(tableName = "topics", indices = [Index(value = ["tag"], unique = true)])
 data class TopicEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(collate = ColumnInfo.NOCASE) val tag: String,
     @ColumnInfo(name = "saved_at") val savedAt: Long,
+    @ColumnInfo(name = "latest_source") val latestSource: String? = null,
 )
 
 @Dao
 interface TopicDao {
-    @Query("SELECT * FROM topics ORDER BY saved_at DESC, tag ASC")
+    @Query("SELECT * FROM topics ORDER BY latest_source IS NULL, latest_source DESC, tag ASC")
     suspend fun all(): List<TopicEntity>
 
     @Upsert
