@@ -62,6 +62,7 @@ data class LabInput(
             Persona.ROACH_KING -> "Roach King"
             Persona.DOCTOR_WIFE -> "Doctor Wife"
             Persona.DOG_ZAPPER -> "Dog Zapper"
+            Persona.BLUE_BLOB -> "Based Blue Blob"
         }
     }
 }

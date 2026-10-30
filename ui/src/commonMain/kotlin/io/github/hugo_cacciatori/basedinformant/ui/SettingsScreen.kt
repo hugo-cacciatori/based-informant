@@ -108,6 +108,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.key_test_works
 import io.github.hugo_cacciatori.basedinformant.ui.resources.model_hint
 import io.github.hugo_cacciatori.basedinformant.ui.resources.model_section
 import io.github.hugo_cacciatori.basedinformant.ui.resources.persona_doctor_wife
+import io.github.hugo_cacciatori.basedinformant.ui.resources.persona_blue_blob
 import io.github.hugo_cacciatori.basedinformant.ui.resources.persona_dog_zapper
 import io.github.hugo_cacciatori.basedinformant.ui.resources.persona_off
 import io.github.hugo_cacciatori.basedinformant.ui.resources.persona_roach_king
@@ -431,6 +432,7 @@ internal fun personaRes(persona: Persona) = when (persona) {
     Persona.ROACH_KING -> Res.string.persona_roach_king
     Persona.DOCTOR_WIFE -> Res.string.persona_doctor_wife
     Persona.DOG_ZAPPER -> Res.string.persona_dog_zapper
+    Persona.BLUE_BLOB -> Res.string.persona_blue_blob
 }
 
 @Composable

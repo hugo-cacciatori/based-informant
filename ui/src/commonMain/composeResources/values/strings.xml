@@ -193,6 +193,7 @@
     <string name="persona_roach_king">Roach King</string>
     <string name="persona_doctor_wife">Doctor Wife</string>
     <string name="persona_dog_zapper">Dog Zapper</string>
+    <string name="persona_blue_blob">Based Blue Blob</string>
 
     <string name="model_section">Model (advanced)</string>
     <string name="model_hint">Only models checked in testing are offered.</string>

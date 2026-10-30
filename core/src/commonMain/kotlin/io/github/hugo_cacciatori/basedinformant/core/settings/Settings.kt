@@ -12,4 +12,5 @@ enum class Persona(val voiceFile: String) {
     ROACH_KING("roach-king"),
     DOCTOR_WIFE("doctor-wife"),
     DOG_ZAPPER("dog-zapper"),
+    BLUE_BLOB("blue-blob"),
 }
