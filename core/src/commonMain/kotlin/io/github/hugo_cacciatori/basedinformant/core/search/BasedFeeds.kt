@@ -17,6 +17,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.cancellation.CancellationException
 
+/** The keywords [text] mentions as whole words, ignoring case: a free item becomes a keyword story by them. */
+fun keywordsIn(text: String, keywords: List<String>): List<String> {
+    val lower = text.lowercase()
+    return keywords.filter { k -> k.isNotBlank() && Regex("\\b" + Regex.escape(k.trim().lowercase()) + "\\b").containsMatchIn(lower) }
+}
+
 /** Reads a feed; null when it does not answer. */
 fun interface FeedFetcher {
     suspend fun get(url: String): String?
@@ -92,8 +98,7 @@ object BasedFeeds {
 
     /** A keyword story for every keyword the item mentions (ignoring case), a trending story when it mentions none. */
     fun story(item: Item, publisher: String, keywords: List<String>): SearchAnswer.Story {
-        val text = (item.title + " " + item.summary).lowercase()
-        val matched = keywords.filter { k -> k.isNotBlank() && Regex("\\b" + Regex.escape(k.trim().lowercase()) + "\\b").containsMatchIn(text) }
+        val matched = keywordsIn(item.title + " " + item.summary, keywords)
         return SearchAnswer.Story(
             keywords = matched,
             trending = matched.isEmpty(),

@@ -28,6 +28,7 @@ import io.github.hugo_cacciatori.basedinformant.core.search.OutletCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
+import io.github.hugo_cacciatori.basedinformant.core.search.WikipediaEvents
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
 import io.github.hugo_cacciatori.basedinformant.core.writer.VoicePass
@@ -47,7 +48,7 @@ class DigestRun(
     private val calls: CallLog,
     private val client: RfabClient,
     private val linkChecker: LinkChecker,
-    /** Free page reads: Based's feeds and the pages of the listing rescue (02-ai-call.md sections 4 and 8); none in tests unless given. */
+    /** Free page reads: Based's feeds, Wikipedia's Current events and the listing rescue's pages (02-ai-call.md sections 4 and 8); none in tests unless given. */
     private val feeds: FeedFetcher = FeedFetcher { null },
     /** Milliseconds since the epoch. */
     private val now: () -> Long,
@@ -119,8 +120,13 @@ class DigestRun(
         val context = ValidationContext(snapshot.prompt.keywords.map(KeywordRules::normalize), snapshot.prompt.today)
         // A homepage or listing page cited for a headline becomes the article it links to (owner, 2026-10-30).
         val (rescued, rescueIssues) = ListingRescue.apply(parsed, feeds)
-        // Based: the free feeds' items join the paid answer and go through the same checks (owner, 2026-10-30).
-        val (fed, feedIssues) = if (snapshot.prompt.based) BasedFeeds.stories(feeds, context.keywords, context.today) else emptyList<SearchAnswer.Story>() to emptyList()
+        // Free stories join the paid answer and go through the same checks (owner, 2026-10-30): Based's feeds, or
+        // without Based, Wikipedia's Current events, which prefers no outlet.
+        val (fed, feedIssues) = if (snapshot.prompt.based) {
+            BasedFeeds.stories(feeds, context.keywords, context.today)
+        } else {
+            WikipediaEvents.stories(feeds, context.keywords, context.today)
+        }
         issues += rescueIssues + feedIssues
         val (checked, checkIssues) = SearchCheck.apply(rescued.copy(stories = rescued.stories + fed), context)
         val (sourced, outletIssues) = if (snapshot.prompt.based) outlets(checked, catalog) else checked to emptyList()

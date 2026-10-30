@@ -45,7 +45,7 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
         /** Based is on but no free model answered the outlet check: the sources were kept unchecked. */
         OUTLETS_NOT_CHECKED,
 
-        /** Based is on and one of its feeds did not answer or could not be read: skipped. */
+        /** A free feed (Based's, or Wikipedia's Current events without Based) did not answer or could not be read: skipped. */
         FEED_UNREADABLE,
         SOURCE_DEAD_LINK,
         SOURCE_PAGE_DATE_IN_FUTURE,

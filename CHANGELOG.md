@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Without Based, the phone reads Wikipedia's Current events for free, so digests fill up to five cards with the day's news.
 - When the search cites a homepage or a listing page, the app finds the matching article on it; the search asks for top stories from several outlets, so digests without Based fill up to five cards too.
 - With a persona on, a second free pass rewrites every card in its voice before the fact check.
 - Trending cards fill free slots with one card per subject.

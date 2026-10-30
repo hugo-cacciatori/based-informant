@@ -26,6 +26,7 @@ import io.github.hugo_cacciatori.basedinformant.core.search.SearchCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
+import io.github.hugo_cacciatori.basedinformant.core.search.WikipediaEvents
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
 import io.github.hugo_cacciatori.basedinformant.core.writer.Finding
@@ -200,7 +201,8 @@ sealed interface LabCommand {
             |  --repair <model> --broken FILE           free: rebuild an unreadable search answer; accepted only when
             |                                           every URL is in the original; refuses unless the model is at 0x
             |  --feeds [--input FILE]                   free, no key: reads Based's feeds (GB News, Fox News politics,
-            |                                           Trump's Truth Social posts) and shows their stories for the
+            |                                           Trump's Truth Social posts), or Wikipedia's Current events when
+            |                                           the input's Based is off, and shows their stories for the
             |                                           input's keywords
             |  --outlet-check <model> --search-answer FILE
             |                                           free: Based's outlet check on a saved search answer: which
@@ -376,11 +378,15 @@ class Lab(
             report.line("story ${s.story}: [${s.keywords.joinToString("; ")}] ${s.whatHappened ?: "-"} (attention ${s.attention ?: "-"})")
             s.sources.forEach { src -> report.line("  source ${src.n}: ${src.publisher} | ${src.published} | ${src.facts.size} facts | ${src.url}") }
         }
-        // The listing rescue, then Based's free feeds, as the app runs them (owner, 2026-10-30).
+        // The listing rescue, then the free stories (Based's feeds, or Wikipedia's Current events), as the app runs them (owner, 2026-10-30).
         val (rescued, rescueIssues) = ListingRescue.apply(answer, feedFetcher())
         report.line("listing rescue: ${rescueIssues.size} sources")
-        val (fed, feedIssues) = if (prompt.based) BasedFeeds.stories(feedFetcher(), prompt.keywords, prompt.today) else emptyList<SearchAnswer.Story>() to emptyList()
-        if (prompt.based) report.line("feeds: ${fed.size} stories (${fed.count { !it.trending }} on the keywords)")
+        val (fed, feedIssues) = if (prompt.based) {
+            BasedFeeds.stories(feedFetcher(), prompt.keywords, prompt.today)
+        } else {
+            WikipediaEvents.stories(feedFetcher(), prompt.keywords, prompt.today)
+        }
+        report.line("${if (prompt.based) "feeds" else "Wikipedia events"}: ${fed.size} stories (${fed.count { !it.trending }} on the keywords)")
         (rescueIssues + feedIssues).forEach { report.line(finding(Finding(it))) }
         val (checked, issues) = SearchCheck.apply(rescued.copy(stories = rescued.stories + fed), ValidationContext(prompt.keywords, prompt.today))
         // Based: the free outlet check, as the app runs it (owner, 2026-10-30).
@@ -482,18 +488,22 @@ class Lab(
         return 0
     }
 
-    /** Based's feeds today: no key, no tokens; each feed's stories for the input's keywords. */
+    /**
+     * The free stories today, as the app reads them: no key, no tokens. Based's feeds, or with an input whose Based is
+     * off, Wikipedia's Current events; each story for the input's keywords.
+     */
     private suspend fun feeds(command: LabCommand.Feeds): Int {
         val input = command.input?.let { input(it) }
         val keywords = input?.keywords.orEmpty()
+        val based = input?.based ?: true
         val today = input?.todayDate() ?: LocalDate.parse(now().toLocalDate().toString())
         val dir = outDir("feeds")
-        val report = Report(dir).line("mode: feeds, keywords ${keywords.ifEmpty { listOf("none") }.joinToString("; ")}, today $today")
-        val (stories, issues) = BasedFeeds.stories(feedFetcher(), keywords, today)
+        val report = Report(dir).line("mode: feeds (${if (based) "Based" else "Wikipedia events"}), keywords ${keywords.ifEmpty { listOf("none") }.joinToString("; ")}, today $today")
+        val (stories, issues) = if (based) BasedFeeds.stories(feedFetcher(), keywords, today) else WikipediaEvents.stories(feedFetcher(), keywords, today)
         issues.forEach { report.line(finding(Finding(it))) }
         stories.forEach { s ->
-            val src = s.sources.single()
-            report.line("${if (s.trending) "trending" else "[" + s.keywords.joinToString("; ") + "]"} | ${src.publisher} | ${src.published} | ${s.whatHappened} | ${src.url}")
+            val sources = s.sources.joinToString(", ") { "${it.publisher} ${it.url}" }
+            report.line("${if (s.trending) "trending" else "[" + s.keywords.joinToString("; ") + "]"} | ${s.sources.first().published} | ${s.whatHappened} | $sources")
         }
         dir.resolve("feeds.json").writeText(pretty.encodeToString(SearchAnswer.serializer(), SearchAnswer(searchedAt = today.toString(), stories = stories)))
         report.line("stories: ${stories.size} (${stories.count { !it.trending }} on the keywords)")
