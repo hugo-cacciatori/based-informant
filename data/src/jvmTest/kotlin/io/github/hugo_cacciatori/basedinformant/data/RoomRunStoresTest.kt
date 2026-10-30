@@ -6,6 +6,7 @@ import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
 import io.github.hugo_cacciatori.basedinformant.core.check.Refusal
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
+import io.github.hugo_cacciatori.basedinformant.core.prompt.EarlierCard
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 import io.github.hugo_cacciatori.basedinformant.core.digest.Source
 import io.github.hugo_cacciatori.basedinformant.core.digest.ScoreParts
@@ -164,6 +165,24 @@ class RoomRunStoresTest {
         assertEquals(listOf("Fusion records"), store.savedTopics().map { it.tag })
         store.restore(gone)
         assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.savedTopics().map { it.tag })
+    }
+
+    @Test
+    fun earlierCardsAreEachTopicsLatestCardNewestFirst() = runBlocking {
+        val store = RoomDigestStore(db)
+        fun card(tag: String, title: String) = Topic("t-$tag", tag, title, "Summary of $title.", null, listOf("chess"), 80, null, emptyList())
+        fun stored(at: Long, day: Int, vararg cards: Topic) = StoredDigest(
+            runId = at, generatedAt = at, subject = "S", summary = "s",
+            topicCount = cards.size, model = "m", attentionMode = "BALANCED", persona = "OFF", tokensBilled = null,
+            digest = Digest(2, LocalDate(2026, 10, day), null, null, cards.toList()),
+        )
+        store.save(stored(1, 20, card("Club chess", "Old chess"), card("Seabed rules", "Seabed")))
+        store.save(stored(2, 25, card("club CHESS", "New chess")))
+        assertEquals(
+            listOf(EarlierCard("club CHESS", "2026-10-25", "New chess", "Summary of New chess."), EarlierCard("Seabed rules", "2026-10-20", "Seabed", "Summary of Seabed.")),
+            store.earlierCards(10),
+        )
+        assertEquals(1, store.earlierCards(1).size)
     }
 
     @Test

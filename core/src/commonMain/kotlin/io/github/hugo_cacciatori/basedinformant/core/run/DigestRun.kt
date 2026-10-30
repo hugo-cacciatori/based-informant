@@ -31,6 +31,8 @@ import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
 import io.github.hugo_cacciatori.basedinformant.core.search.WikipediaEvents
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
+import io.github.hugo_cacciatori.basedinformant.core.writer.WriterAnswer
+import io.github.hugo_cacciatori.basedinformant.core.writer.Briefing
 import io.github.hugo_cacciatori.basedinformant.core.writer.VoicePass
 import io.github.hugo_cacciatori.basedinformant.core.writer.Writer
 import kotlinx.serialization.json.Json
@@ -157,9 +159,16 @@ class DigestRun(
         val check = FreeModels.first(client, catalog, FreeModels.CHECKER, { FactCheck.request(it, clean, answer) }, FactCheck::parse).value
         val (checked, facts) = check?.let { FactCheck.apply(clean, answer, it) } ?: (clean to emptyList())
         val (digest, joined) = Writer.toDigest(checked, answer, input)
-        val selected = select(digest, input)
+        val chosen = select(digest, input)
+        // The briefing, from the final cards only (01-product.md section 4.6); with no free model, none.
+        val brief = if (chosen.topics.isEmpty()) null else briefing(chosen, input, answer, catalog)
+        val selected = chosen.copy(briefing = brief.orEmpty())
         val report = Report(
-            before.issues + (copies + named + facts + joined).map { it.issue } + listOfNotNull(Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null }, Issue(Issue.Kind.VOICE_NOT_PASSED).takeIf { voiced == null }),
+            before.issues + (copies + named + facts + joined).map { it.issue } + listOfNotNull(
+                Issue(Issue.Kind.FACT_NOT_CHECKED).takeIf { check == null },
+                Issue(Issue.Kind.VOICE_NOT_PASSED).takeIf { voiced == null },
+                Issue(Issue.Kind.BRIEFING_NOT_WRITTEN).takeIf { chosen.topics.isNotEmpty() && brief == null },
+            ),
             digest.topics.size,
             selected.topics.size,
         )
@@ -167,6 +176,16 @@ class DigestRun(
         val digestId = store(record, selected)
         finish(record, RunState.DONE, error = null, digestId = digestId)
         return RunOutcome.Stored(record.id, digestId, selected.topics.size, record.tokensBilled) to report
+    }
+
+    /** The briefing's lines, with the persona's names replaced as in the cards; null when no free model answered. */
+    private suspend fun briefing(digest: Digest, input: PromptInput, answer: SearchAnswer, catalog: ModelCatalog): List<String>? {
+        val written = FreeModels.first(client, catalog, FreeModels.WRITER, { Briefing.request(it, digest, input) }, Briefing::parse).value
+            ?: return null
+        val names = Writer.personaNames(input.persona)
+        return Briefing.lines(written, digest).map { line ->
+            Writer.replaceNames(WriterAnswer(TemplateConfig.TEMPLATE_VERSION, cardSummary = line, topics = emptyList()), answer, names).first.cardSummary ?: line
+        }
     }
 
     /**

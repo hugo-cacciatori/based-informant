@@ -14,6 +14,7 @@ import io.github.hugo_cacciatori.basedinformant.core.run.RunRecord
 import io.github.hugo_cacciatori.basedinformant.core.run.RunSnapshot
 import io.github.hugo_cacciatori.basedinformant.core.run.RunState
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
+import io.github.hugo_cacciatori.basedinformant.core.prompt.EarlierCard
 import io.github.hugo_cacciatori.basedinformant.core.run.SavedTopic
 import io.github.hugo_cacciatori.basedinformant.core.run.StoredDigest
 import io.github.hugo_cacciatori.basedinformant.core.run.TopicStore
@@ -79,6 +80,11 @@ class RoomRunStore(private val db: AppDatabase, private val raw: RawFiles) : Run
 }
 
 class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore, TopicStore {
+    private companion object {
+        /** How many recent digests are read for the earlier cards. */
+        const val RECENT_DIGESTS = 30
+    }
+
     /**
      * Stores the digest and saves its topic tags, a tag already saved (ignoring case) only seen again; each takes this
      * digest's newest source on its cards as its recency, even when older than before (owner, 2026-10-30).
@@ -124,6 +130,17 @@ class RoomDigestStore(private val db: AppDatabase) : DigestStore, HistoryStore, 
     }
 
     override suspend fun lastGeneratedAt(): Long? = db.digests().lastGeneratedAt()
+
+    /** Reads the newest digests until [limit] topics have their latest card; a digest that cannot be read is skipped. */
+    override suspend fun earlierCards(limit: Int): List<EarlierCard> {
+        val seen = mutableSetOf<String>()
+        return db.digests().recentDigests(RECENT_DIGESTS).asSequence()
+            .mapNotNull { runCatching { StoredJson.json.decodeFromString(Digest.serializer(), it) }.getOrNull() }
+            .flatMap { d -> d.topics.mapNotNull { t -> t.topicTag?.let { EarlierCard(it, d.generatedAt.toString(), t.title, t.summary) } } }
+            .filter { seen.add(it.topicTag.lowercase()) }
+            .take(limit)
+            .toList()
+    }
 
     override suspend fun cards(): List<HistoryCard> = db.digests().cards().map {
         HistoryCard(it.id, it.generatedAt, it.topicCount, it.summary)

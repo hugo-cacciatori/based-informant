@@ -138,6 +138,10 @@ interface DigestDao {
 
     @Query("DELETE FROM digests WHERE id = :id")
     suspend fun delete(id: Long)
+
+    /** The newest digests' JSON, for the earlier cards (01-product.md section 4.6). */
+    @Query("SELECT digest FROM digests ORDER BY generated_at DESC, id DESC LIMIT :limit")
+    suspend fun recentDigests(limit: Int): List<String>
 }
 
 data class DigestCardRow(

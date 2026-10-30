@@ -28,6 +28,7 @@ import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
 import io.github.hugo_cacciatori.basedinformant.core.search.WikipediaEvents
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
+import io.github.hugo_cacciatori.basedinformant.core.writer.Briefing
 import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
 import io.github.hugo_cacciatori.basedinformant.core.writer.Finding
 import io.github.hugo_cacciatori.basedinformant.core.writer.VoicePass
@@ -313,14 +314,25 @@ class Lab(
         deleted.forEach { report.line(finding(it)) }
         if (copies.isEmpty()) report.line("copied quotes: none")
         if (named.isEmpty()) report.line("persona names: none")
-        return renderDigest(written, answer, prompt, persona, command.model, dir, report)
+        return renderDigest(written, answer, prompt, persona, command.model, dir, report, client)
     }
 
     /** Joins the written topics with the answer's sources, selects them as the app does and writes the digest files. */
-    private fun renderDigest(written: WriterAnswer, answer: SearchAnswer, prompt: PromptInput, persona: Persona, model: String, dir: File, report: Report): Int {
+    /** With a [client], the briefing too, as the app writes it after selection; its files go to briefing/. */
+    private suspend fun renderDigest(
+        written: WriterAnswer, answer: SearchAnswer, prompt: PromptInput, persona: Persona, model: String, dir: File, report: Report,
+        client: RfabClient? = null,
+    ): Int {
         val (digest, findings) = Writer.toDigest(written, answer, prompt)
         findings.forEach { report.line(finding(it)) }
-        val selected = digest.copy(topics = Selection.select(digest.topics))
+        val chosen = digest.copy(topics = Selection.select(digest.topics))
+        val brief = client?.takeIf { chosen.topics.isNotEmpty() }?.let { c ->
+            val briefDir = dir.resolve("briefing").apply { mkdirs() }
+            send(c, listOf(Call(prompt.keywords, Briefing.request(model, chosen, prompt))), briefDir, report, paid = false, model, "free briefing test")
+                .singleOrNull()?.let(Briefing::parse)?.let { Briefing.lines(it, chosen) }
+        }
+        if (client != null) report.line(if (brief == null) "briefing: no readable answer" else "briefing: ${brief.size} lines")
+        val selected = chosen.copy(briefing = brief.orEmpty())
         dir.resolve("digest.json").writeText(pretty.encodeToString(Digest.serializer(), selected))
         val rendered = DigestRenderer.render(selected, RenderMeta(LabInput.displayName(persona), model))
         dir.resolve("digest.html").writeText(rendered.html)

@@ -1,5 +1,6 @@
 package io.github.hugo_cacciatori.basedinformant.core.writer
 
+import io.github.hugo_cacciatori.basedinformant.core.digest.FactStatus
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 import io.github.hugo_cacciatori.basedinformant.core.digest.PageText
 import io.github.hugo_cacciatori.basedinformant.core.prompt.ChatMessage
@@ -94,8 +95,10 @@ object FactCheck {
             if (result.twoStories && result.unclear) return@mapIndexedNotNull null.also { findings += finding(Issue.Kind.TOPIC_DROPPED_TWO_STORIES, text = t.title) }
             if (result.titleOff) return@mapIndexedNotNull null.also { findings += finding(Issue.Kind.TOPIC_DROPPED_TITLE_OFF, text = t.title) }
             val summary = Writer.sentences(t.summary)
-            val detail = t.detail?.takeUnless { it == "null" }?.let(Writer::sentences).orEmpty()
-            val all = summary + detail
+            val detail = optional(t.detail)
+            val since = optional(t.sinceLast)
+            val framing = optional(t.framing)
+            val all = summary + detail + since + framing
             val hasPage = sourcesOf(t, stories[t.story]).any { it.pageText != null }
             val delete = mutableSetOf<Int>()
             if (hasPage) {
@@ -116,6 +119,8 @@ object FactCheck {
             }
             var keptSummary = summary.filterIndexed { s, _ -> (s + 1) !in delete }
             var keptDetail = detail.filterIndexed { s, _ -> (summary.size + s + 1) !in delete }
+            val keptSince = since.filterIndexed { s, _ -> (summary.size + detail.size + s + 1) !in delete }
+            val keptFraming = framing.filterIndexed { s, _ -> (summary.size + detail.size + since.size + s + 1) !in delete }
             // A summary that lost its lead sentence takes as many from the detail, so it never keeps only a joke (device check, 2026-10-30).
             val lost = summary.size - keptSummary.size
             if (1 in delete && lost > 0 && keptDetail.isNotEmpty()) {
@@ -123,14 +128,22 @@ object FactCheck {
                 keptDetail = keptDetail.drop(lost)
             }
             if (keptSummary.isEmpty()) return@mapIndexedNotNull null.also { findings += finding(Issue.Kind.TOPIC_DROPPED_EMPTY, text = t.title) }
-            t.copy(summary = keptSummary.joinToString(" "), detail = keptDetail.joinToString(" ").ifEmpty { null })
+            t.copy(
+                summary = keptSummary.joinToString(" "),
+                detail = keptDetail.joinToString(" ").ifEmpty { null },
+                sinceLast = keptSince.joinToString(" ").ifEmpty { null },
+                framing = keptFraming.joinToString(" ").ifEmpty { null },
+                check = if (hasPage) FactStatus.CHECKED else FactStatus.NO_PAGE,
+            )
         }
         return written.copy(topics = topics) to findings
     }
 
-    /** The summary's sentences then the detail's, numbered from 1 in the request. */
+    /** The summary's sentences, then the detail's, what's new and the framing line, numbered from 1 in the request. */
     private fun sentences(t: WriterAnswer.WriterTopic) =
-        Writer.sentences(t.summary) + t.detail?.takeUnless { it == "null" }?.let(Writer::sentences).orEmpty()
+        Writer.sentences(t.summary) + optional(t.detail) + optional(t.sinceLast) + optional(t.framing)
+
+    private fun optional(text: String?) = text?.takeUnless { it.isBlank() || it == "null" }?.let(Writer::sentences).orEmpty()
 
     /** The topic's own sources, or all of its story's when it named none of them (as [Writer.toDigest] does). */
     private fun sourcesOf(t: WriterAnswer.WriterTopic, story: SearchAnswer.Story?): List<SearchAnswer.SearchSource> {

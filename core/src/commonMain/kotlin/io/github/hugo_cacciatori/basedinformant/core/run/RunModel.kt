@@ -167,6 +167,9 @@ interface DigestStore {
 
     /** When the newest digest was stored on this device, for the confirmation dialog; null before the first. */
     suspend fun lastGeneratedAt(): Long?
+
+    /** The latest card on each topic of the stored digests, newest first, at most [limit] (01-product.md section 4.6). */
+    suspend fun earlierCards(limit: Int): List<io.github.hugo_cacciatori.basedinformant.core.prompt.EarlierCard> = emptyList()
 }
 
 /** Deleting saved topics (01-product.md section 3): one or several at once, with Undo. */

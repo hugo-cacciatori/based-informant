@@ -1,6 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.core.render
 
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
+import io.github.hugo_cacciatori.basedinformant.core.digest.FactStatus
 import io.github.hugo_cacciatori.basedinformant.core.digest.isHttpsUrl
 import io.github.hugo_cacciatori.basedinformant.core.digest.Source
 import io.github.hugo_cacciatori.basedinformant.core.digest.Topic
@@ -25,6 +26,8 @@ data class DigestView(
     val headerLine: String,
     val title: String,
     val opening: String?,
+    /** The three things that matter most today, under [DigestViews.BRIEFING] (01-product.md section 4.6); may be empty. */
+    val briefing: List<String>,
     /** Shown instead of the cards when no topic survived. */
     val emptyMessage: String?,
     val cards: List<CardView>,
@@ -38,12 +41,18 @@ data class DigestView(
 data class CardView(
     val title: String,
     val summary: String,
-    /** "Matched: x, y", or "Trending"; the score is never shown. */
+    /** "Matched: x, y", or "Trending": why the card was picked; the score is never shown. */
     val matched: String,
     /** The longer text behind **More**. */
     val detail: String?,
-    /** "1 source" when the topic has a single source (owner, 2026-10-18), else null. */
-    val singleSourceLabel: String?,
+    /** What is new since the reader's earlier card on this topic, shown under [DigestViews.SINCE_LAST]. */
+    val sinceLast: String?,
+    /** How the outlets frame the event, shown under [DigestViews.FRAMING]. */
+    val framing: String?,
+    /** The trust layer (01-product.md section 4.6): "Reported by 2 outlets", replacing the "1 source" label of 2026-10-18. */
+    val outlets: String,
+    /** Whether the card was fact-checked against its pages; null for a digest stored before the trust layer. */
+    val checkLine: String?,
     val sources: List<SourceView>,
 )
 
@@ -61,8 +70,12 @@ object DigestViews {
 
     const val MISSING = "No article found this time for: "
 
-    /** Shown on a topic backed by one article only (owner, 2026-10-18: kept, and said so). */
-    const val SINGLE_SOURCE = "1 source"
+    const val BRIEFING = "Today's briefing"
+    const val SINCE_LAST = "Since last time"
+    const val FRAMING = "How outlets frame it"
+    const val CHECKED = "Fact-checked against the article pages"
+    const val NO_PAGE = "Not fact-checked: no article page could be read"
+    const val NOT_CHECKED = "Not fact-checked this time"
 
     private val MONTHS = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
@@ -75,6 +88,7 @@ object DigestViews {
             headerLine = listOfNotNull(date, count, meta.personaDisplayName).joinToString(" · "),
             title = TITLE,
             opening = digest.opening,
+            briefing = digest.briefing,
             emptyMessage = EMPTY.takeIf { digest.topics.isEmpty() },
             cards = digest.topics.map(::card),
             closing = digest.closing,
@@ -106,13 +120,29 @@ object DigestViews {
         // A trending card has no keyword: it fills a free slot (owner, 2026-10-29).
         matched = if (topic.trending) "Trending" else "Matched: ${topic.keywords.joinToString(", ")}",
         detail = topic.detail,
-        singleSourceLabel = SINGLE_SOURCE.takeIf { topic.sources.size == 1 },
+        sinceLast = topic.sinceLast,
+        framing = topic.framing,
+        // A topic backed by one article only is kept, and said so (owner, 2026-10-18).
+        outlets = topic.sources.map { it.publisher.trim().lowercase() }.distinct().size.let { if (it == 1) "Reported by 1 outlet" else "Reported by $it outlets" },
+        checkLine = when (topic.check) {
+            FactStatus.CHECKED -> CHECKED
+            FactStatus.NO_PAGE -> NO_PAGE
+            FactStatus.NOT_CHECKED -> NOT_CHECKED
+            FactStatus.UNKNOWN -> null
+        },
         sources = topic.sources.map(::source),
     )
 
     // The search check already allows only https; checked again here because the views are the last line.
     private fun source(s: Source) = SourceView(
-        label = listOf(s.publisher, formatDate(s.published), s.language).filter { it.isNotBlank() }.joinToString(", "),
+        label = listOf(outlet(s), formatDate(s.published), s.language).filter { it.isNotBlank() }.joinToString(", "),
         url = s.url.takeIf(::isHttpsUrl),
     )
+
+    /** The publisher, with its site when no word of the name is in it: "Fox News (wfmd.com)" shows a mislabel (trust layer). */
+    private fun outlet(s: Source): String {
+        val site = s.url.substringAfter("://", "").takeWhile { it != '/' && it != '?' }.lowercase().removePrefix("www.")
+        val named = s.publisher.lowercase().split(Regex("[^a-z0-9]+")).any { it.length >= 3 && it in site }
+        return if (named || site.isEmpty()) s.publisher else "${s.publisher} ($site)"
+    }
 }

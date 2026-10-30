@@ -1,6 +1,7 @@
 package io.github.hugo_cacciatori.basedinformant.lab
 
 import io.github.hugo_cacciatori.basedinformant.core.prompt.DigestMode
+import io.github.hugo_cacciatori.basedinformant.core.prompt.EarlierCard
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
@@ -28,6 +29,8 @@ data class LabInput(
     @SerialName("known_topic_tags") val knownTopicTags: List<String> = emptyList(),
     /** Right-wing sources only (02-ai-call.md section 4). */
     val based: Boolean = false,
+    /** The reader's earlier cards, for "what's new since last time" (01-product.md section 4.6). */
+    val earlier: List<EarlierCard> = emptyList(),
 ) {
     fun todayDate(): LocalDate = today?.let(LocalDate::parse) ?: LocalDate.parse(java.time.LocalDate.now().toString())
 
@@ -40,6 +43,7 @@ data class LabInput(
         model = model,
         knownTopicTags = knownTopicTags,
         based = based,
+        earlier = earlier,
         mode = DigestMode.entries.firstOrNull { it.name.equals(mode, ignoreCase = true) } ?: throw LabUsageError("unknown mode \"$mode\" (keywords, topics)"),
     )
 

@@ -60,6 +60,12 @@ object DigestRenderer {
         append(paragraph(view.headerLine, "margin:0 0 4px;font-size:13px;color:#5a5a55;"))
         append("<h1 style=\"margin:0 0 12px;font-size:22px;color:#1d1d1b;\">").append(esc(view.title)).append("</h1>\n")
         view.opening?.let { append(paragraph(it, "margin:0 0 16px;")) }
+        if (view.briefing.isNotEmpty()) {
+            append("<div style=\"margin:0 0 16px;padding:12px 16px;background-color:#1d1d1b;color:#f2f2ef;border-radius:8px;\">\n")
+            append(paragraph(DigestViews.BRIEFING, "margin:0 0 6px;font-size:13px;font-weight:bold;letter-spacing:0.5px;color:#f2f2ef;"))
+            view.briefing.forEach { append(paragraph("• $it", "margin:0 0 4px;color:#f2f2ef;")) }
+            append("</div>\n")
+        }
 
         view.emptyMessage?.let { append(paragraph(it, "margin:0 0 16px;")) }
         view.cards.forEach { append(card(it)) }
@@ -77,7 +83,9 @@ object DigestRenderer {
         append("<div style=\"margin:0 0 16px;padding:16px;background-color:#ffffff;border:1px solid #d0d0ca;border-radius:8px;\">\n")
         append("<h2 style=\"margin:0 0 8px;font-size:18px;color:#1d1d1b;\">").append(esc(card.title)).append("</h2>\n")
         append(paragraph(card.summary, "margin:0 0 8px;"))
-        append(paragraph(card.matched, "margin:0 0 8px;font-size:13px;color:#5a5a55;"))
+        card.sinceLast?.let { append(labelled(DigestViews.SINCE_LAST, it, "#e8f0fb")) }
+        card.framing?.let { append(labelled(DigestViews.FRAMING, it, "#f3efe6")) }
+        append(paragraph(listOfNotNull(card.matched, card.outlets, card.checkLine).joinToString(" · "), "margin:0 0 8px;font-size:13px;color:#5a5a55;"))
         card.detail?.let {
             append("<details style=\"margin:0 0 8px;\"><summary style=\"cursor:pointer;color:#1d1d1b;\">")
             append(DigestViews.MORE).append("</summary>\n")
@@ -85,13 +93,15 @@ object DigestRenderer {
             append("</details>\n")
         }
         append("<p style=\"margin:0;font-size:13px;\">")
-        card.singleSourceLabel?.let { append("<span style=\"color:#5a5a55;\">").append(esc(it)).append(": </span>") }
         card.sources.forEachIndexed { i, s ->
             if (i > 0) append(" · ")
             append(sourceChip(s))
         }
         append("</p>\n</div>\n")
     }
+
+    private fun labelled(label: String, text: String, background: String) =
+        "<p style=\"margin:0 0 8px;padding:8px 10px;background-color:$background;border-radius:6px;\"><b>${esc(label)}:</b> ${esc(text)}</p>\n"
 
     private fun sourceChip(s: SourceView): String =
         s.url?.let { "<a href=\"${esc(it)}\" style=\"color:#1a4f9c;\">${esc(s.label)}</a>" } ?: esc(s.label)
@@ -113,13 +123,19 @@ object DigestRenderer {
     private fun text(view: DigestView): String = buildString {
         append(view.title).append(" · ").append(view.headerLine).append("\n\n")
         view.opening?.let { append(it).append("\n\n") }
+        if (view.briefing.isNotEmpty()) {
+            append(DigestViews.BRIEFING).append('\n')
+            view.briefing.forEach { append("- ").append(it).append('\n') }
+            append('\n')
+        }
         view.emptyMessage?.let { append(it).append("\n\n") }
         view.cards.forEachIndexed { i, c ->
             append(i + 1).append(". ").append(c.title).append('\n')
             append(c.summary).append('\n')
-            append(c.matched).append('\n')
+            c.sinceLast?.let { append(DigestViews.SINCE_LAST).append(": ").append(it).append('\n') }
+            c.framing?.let { append(DigestViews.FRAMING).append(": ").append(it).append('\n') }
+            append(listOfNotNull(c.matched, c.outlets, c.checkLine).joinToString(" · ")).append('\n')
             c.detail?.let { append(DigestViews.MORE).append(": ").append(it).append('\n') }
-            c.singleSourceLabel?.let { append(it).append(":\n") }
             c.sources.forEach { s ->
                 append("- ").append(s.label)
                 s.url?.let { append(": ").append(it) }

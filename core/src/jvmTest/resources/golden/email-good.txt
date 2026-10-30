@@ -6,21 +6,20 @@ Three stories this week.
 
 1. Test stellarator holds plasma for a record 40 minutes
 A research stellarator held a stable plasma for 40 minutes, four times its previous best. The team credits new wall coatings. Independent physicists call it a step, not a breakthrough.
-Matched: fusion energy
+Matched: fusion energy · Reported by 2 outlets
 More: The run used a lower-power heating mode. The next campaign aims for an hour at higher density.
 - Example Science Daily, 16 Oct 2026, en: https://science.example.com/2026/10/stellarator-record
 - Exemple Sciences, 17 Oct 2026, fr: https://sciences.example.org/stellarator-record
 
 2. Seabed authority schedules a moratorium vote
 The council of an international seabed body set a date to vote on a mining moratorium. Twelve member states back a pause; two mining applicants object.
-Matched: Deep-Sea Mining
+Matched: Deep-Sea Mining · Reported by 2 outlets
 - Example Ocean News, 14 Oct 2026, en: https://ocean.example.com/seabed-vote
 - Example Wire, 15 Oct 2026, en: https://wire.example.net/council-agenda
 
 3. A regional chess open draws a record field
 A regional open tournament drew 900 players, its largest field so far.
-Matched: chess
-1 source:
+Matched: chess · Reported by 1 outlet
 - Example Chess, 12 Oct 2026, en: https://chess.example.com/open-record
 
 That is all for now.

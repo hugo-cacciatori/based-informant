@@ -163,6 +163,14 @@ private fun NativeDigest(open: OpenDigest, modifier: Modifier) {
         Text(view.title, style = MaterialTheme.typography.headlineSmall)
         Text(view.headerLine, style = MaterialTheme.typography.labelMedium)
         view.opening?.let { Text(it) }
+        if (view.briefing.isNotEmpty()) {
+            Card(Modifier.fillMaxWidth().testTag("briefing")) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(DigestViews.BRIEFING, style = MaterialTheme.typography.titleSmall)
+                    view.briefing.forEach { Text("• $it") }
+                }
+            }
+        }
         view.emptyMessage?.let { Text(it) }
         view.cards.forEach { DigestCard(it) }
         view.missingLine?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
@@ -180,14 +188,16 @@ private fun DigestCard(card: CardView) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(card.title, style = MaterialTheme.typography.titleMedium)
             Text(card.summary)
+            card.sinceLast?.let { Text(DigestViews.SINCE_LAST + ": " + it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("since-last")) }
+            card.framing?.let { Text(DigestViews.FRAMING + ": " + it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("framing")) }
             card.detail?.let { detail ->
                 TextButton(onClick = { more = !more }) {
                     Text(if (more) stringResource(Res.string.viewer_less) else DigestViews.MORE)
                 }
                 if (more) Text(detail)
             }
-            Text(card.matched, style = MaterialTheme.typography.labelMedium)
-            card.singleSourceLabel?.let { Text(it, style = MaterialTheme.typography.labelMedium) }
+            // The trust layer (01-product.md section 4.6): why it was picked, how many outlets, whether it was fact-checked.
+            Text(listOfNotNull(card.matched, card.outlets, card.checkLine).joinToString(" · "), style = MaterialTheme.typography.labelMedium, modifier = Modifier.testTag("trust"))
             card.sources.forEach { source ->
                 // Links: https only (the view keeps no other), opened in the system browser; without one, plain text.
                 val url = source.url

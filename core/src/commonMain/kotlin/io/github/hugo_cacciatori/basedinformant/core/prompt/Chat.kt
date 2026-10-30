@@ -25,6 +25,15 @@ object TemplateConfig {
     fun voiceFile(persona: Persona) = "voices/${persona.voiceFile}.txt"
 }
 
+/** The reader's latest card on a topic, as the writer reads it to say what is new (01-product.md section 4.6). */
+@kotlinx.serialization.Serializable
+data class EarlierCard(
+    @kotlinx.serialization.SerialName("topic_tag") val topicTag: String,
+    val date: String,
+    val title: String,
+    val summary: String,
+)
+
 /** Keyword mode, or topic mode: the digest covers up to 5 topic tags of earlier digests (01-product.md section 3). */
 enum class DigestMode { KEYWORDS, TOPICS }
 
@@ -42,6 +51,8 @@ data class PromptInput(
     val mode: DigestMode = DigestMode.KEYWORDS,
     /** Right-wing sources only (02-ai-call.md section 4). */
     val based: Boolean = false,
+    /** The reader's latest card on each saved topic, newest first, for "what's new since last time" (01-product.md section 4.6). */
+    val earlier: List<EarlierCard> = emptyList(),
 ) {
     /** Topic mode does not use the interest tags (owner, 2026-10-23). */
     fun tagsSent(): List<String> = if (mode == DigestMode.TOPICS) emptyList() else interestTags

@@ -72,10 +72,10 @@ class DigestRendererTest {
     @Test
     fun aSingleSourceTopicIsLabeled() {
         val single = DigestRenderer.render(digest(topic()), meta)
-        assertTrue("1 source: " in single.html)
-        assertTrue("1 source:\n- Example Wire" in single.text)
-        val two = topic().let { it.copy(sources = it.sources + it.sources.single().copy(url = "https://example.com/b")) }
-        assertFalse("1 source" in DigestRenderer.render(digest(two), meta).html)
+        assertTrue("Reported by 1 outlet" in single.html)
+        assertTrue("Reported by 1 outlet" in single.text)
+        val two = topic().let { it.copy(sources = it.sources + it.sources.single().copy(publisher = "Other Wire", url = "https://example.com/b")) }
+        assertTrue("Reported by 2 outlets" in DigestRenderer.render(digest(two), meta).html)
     }
 
     @Test

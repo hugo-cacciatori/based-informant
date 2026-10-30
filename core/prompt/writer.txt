@@ -21,6 +21,10 @@ When a story has persona_notes, they are statements by the real person behind th
 TOPIC TAGS
 topic_tag names the ongoing subject the story belongs to, so the reader can follow it across digests: 2 to 5 words, at most 40 characters, the subject rather than this one event ("Neuralink brain implants", not "Neuralink implants third patient"). If one of known_topic_tags names the same subject, reuse it exactly, letter for letter. Otherwise write a new one.
 
+SINCE LAST TIME AND FRAMING
+- since_last: RUN_DATA's "earlier" lists the reader's latest card on topics they have read before, with its date. When your topic_tag is one of them, write one sentence saying what is new in this story since that card ("Since 28 Oct, ..."), stating only facts this story's sources give; never repeat the earlier card. Null when nothing is new or the topic has no earlier card.
+- framing: when the topic's sources come from at least two different outlets that tell the event differently, one sentence comparing how they frame it (the angle each takes), drawn from those sources only and naming the outlets. Null otherwise.
+
 WRITING
 - All text you write is in English, whatever the language of the sources.
 - title: up to 12 words. summary: 1 to 2 sentences, about 35 words. detail: the longer "More" text, 2 to 4 sentences of further facts from the sources, or null when the sources say nothing beyond the summary. Never pad.
@@ -38,4 +42,4 @@ WRITING
 
 OUTPUT
 Reply with one JSON object and nothing else: no markdown fences, no text before or after.
-{"template_version": 2, "opening": "...", "closing": "...", "subject": "...", "card_summary": "...", "topics": [{"story": 1, "topic_tag": "...", "title": "...", "summary": "...", "detail": "... or null", "keywords": ["..."], "relevance": 0, "sources": [1, 2]}]}
+{"template_version": 2, "opening": "...", "closing": "...", "subject": "...", "card_summary": "...", "topics": [{"story": 1, "topic_tag": "...", "title": "...", "summary": "...", "detail": "... or null", "since_last": "... or null", "framing": "... or null", "keywords": ["..."], "relevance": 0, "sources": [1, 2]}]}

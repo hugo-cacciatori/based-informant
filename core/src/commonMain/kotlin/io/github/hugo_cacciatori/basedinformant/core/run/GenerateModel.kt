@@ -144,6 +144,8 @@ class GenerateModel(
                 today = today(),
                 model = current.model,
                 knownTopicTags = digests.savedTopics().map { it.tag },
+                // Cards from earlier days only: "since today" says nothing (lab, 2026-10-30).
+                earlier = digests.earlierCards(EARLIER_CARDS).filter { runCatching { LocalDate.parse(it.date) < today() }.getOrDefault(false) },
                 mode = mode,
                 based = current.based,
             ),
@@ -167,5 +169,8 @@ class GenerateModel(
     companion object {
         /** A topic is Hot when its recency is today or within the days before, this many days in all. */
         const val HOT_DAYS = 7
+
+        /** How many earlier cards the writer gets for "what's new since last time". */
+        const val EARLIER_CARDS = 20
     }
 }

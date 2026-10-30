@@ -64,6 +64,9 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
 
         /** With a persona on, no free model answered the voice pass: the cards stay as the writer wrote them (owner, 2026-10-30). */
         VOICE_NOT_PASSED,
+
+        /** No free model answered the briefing: the digest has none (owner, 2026-10-30). */
+        BRIEFING_NOT_WRITTEN,
         FACT_UNSUPPORTED,
         FACT_SECOND_STORY,
 

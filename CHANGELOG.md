@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Every digest opens with a three-line briefing; cards on topics you read before say what is new since then; cards from several outlets say how they frame the story; every card shows how many outlets report it, whether it was fact-checked, and the site behind a mislabelled outlet.
 - Sentences are no longer cut after initials such as "U.S.", a summary that loses its lead takes one from the detail, and the voice pass never lengthens a card.
 - Personas use nicknames only where they would name themselves, and never joke about deaths or victims.
 - The confirmation no longer warns about another device after this phone's own digest; the History tab always opens on the list; the Based description is up to date.

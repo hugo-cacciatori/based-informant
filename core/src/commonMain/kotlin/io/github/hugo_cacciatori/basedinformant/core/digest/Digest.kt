@@ -21,6 +21,8 @@ data class Digest(
     @SerialName("card_summary") val cardSummary: String? = null,
     /** The keywords or chosen topics left without a card, listed in the digest (owner, 2026-10-29 and 2026-10-30). */
     @SerialName("missing_topics") val missingTopics: List<String> = emptyList(),
+    /** The three things that matter most today across the cards, in the digest's voice (01-product.md section 4.6). */
+    val briefing: List<String> = emptyList(),
 )
 
 @Serializable
@@ -40,7 +42,29 @@ data class Topic(
     val sources: List<Source>,
     /** Today's popular news in a free slot, not from the keywords (owner, 2026-10-29); [keywords] is then empty. */
     val trending: Boolean = false,
+    /** What is new since the reader's earlier card on this topic (01-product.md section 4.6), or null. */
+    @SerialName("since_last") val sinceLast: String? = null,
+    /** How the outlets frame the event, when they differ (01-product.md section 4.6), or null. */
+    val framing: String? = null,
+    /** Whether the fact check read this card against its article pages (the trust layer). */
+    val check: FactStatus = FactStatus.UNKNOWN,
 )
+
+/** The fact check's verdict on one card, shown in its trust line (01-product.md section 4.6). */
+@Serializable
+enum class FactStatus {
+    /** Read against at least one downloaded article page. */
+    @SerialName("checked") CHECKED,
+
+    /** No article page could be read, so nothing could be checked. */
+    @SerialName("no_page") NO_PAGE,
+
+    /** No free model answered the fact check. */
+    @SerialName("not_checked") NOT_CHECKED,
+
+    /** A digest stored before the trust layer. */
+    @SerialName("unknown") UNKNOWN,
+}
 
 /** The writer's relevance and the search's attention (template v2: no repeat penalty, owner 2026-10-23). */
 @Serializable

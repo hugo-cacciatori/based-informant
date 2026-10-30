@@ -6,9 +6,8 @@ News digest · 18 Oct 2026 · 1 topic
 
 1. <script>alert('x')</script> & co
 <img src=x onerror=alert(1)>
-Matched: fusion energy
+Matched: fusion energy · Reported by 1 outlet
 More: </details><a href="javascript:alert(1)">click</a>
-1 source:
 - <i>Wire</i>, 16 Oct 2026, en
 
 That is all for now.

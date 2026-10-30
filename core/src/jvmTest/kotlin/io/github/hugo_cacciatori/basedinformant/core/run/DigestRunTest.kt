@@ -66,10 +66,16 @@ class DigestRunTest {
     private val factCheck = """{"cards": [{"card": 1, "unsupported": [{"s": 2, "why": "no cost"}]}, {"card": 2}]}"""
 
     /** MiniMax writes and checks; every other free model is at its limit. */
+    private companion object {
+        /** The briefing's answer: one line on the first card. */
+        const val BRIEFING = """{"briefing": [{"card": 1, "line": "A plasma held for 40 minutes."}]}"""
+    }
+
     private fun writes(model: String, request: ChatRequest): String? = when {
         model != "openrouter:minimax/minimax-m3" -> null
         "SEARCH_REPORT" in request.messages.single().content -> written
         "CHECK_DATA" in request.messages.single().content -> factCheck
+        "briefing" in request.systemPrompt -> BRIEFING
         else -> null
     }
 
@@ -178,7 +184,8 @@ class DigestRunTest {
     fun theFactCheckRunsOnlyOnMiniMaxThenKimi() = runBlocking {
         val (client, digestRun) = run(free = { model, request -> if ("CHECK_DATA" in request.messages.single().content) null else writes(model, request) })
         digestRun.execute(snapshot)
-        assertEquals(listOf("openrouter:minimax/minimax-m3", "openrouter:minimax/minimax-m3", "openrouter:moonshotai/kimi-k2.6"), client.freeCalls)
+        // The writer, then the fact check on MiniMax then Kimi only, then the briefing.
+        assertEquals(listOf("openrouter:minimax/minimax-m3", "openrouter:minimax/minimax-m3", "openrouter:moonshotai/kimi-k2.6", "openrouter:minimax/minimax-m3"), client.freeCalls)
     }
 
     @Test

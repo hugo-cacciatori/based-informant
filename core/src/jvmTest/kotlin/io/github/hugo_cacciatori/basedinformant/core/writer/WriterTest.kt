@@ -1,6 +1,8 @@
 package io.github.hugo_cacciatori.basedinformant.core.writer
 
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptFiles
+import io.github.hugo_cacciatori.basedinformant.core.prompt.EarlierCard
+import io.github.hugo_cacciatori.basedinformant.core.digest.FactStatus
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue.Kind
 import io.github.hugo_cacciatori.basedinformant.core.prompt.PromptInput
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
@@ -156,6 +158,36 @@ class WriterTest {
     }
 
     @Test
+    fun `what's new needs an earlier card and framing needs two outlets`() {
+        // Story 1 has two outlets (Example Science Daily, Exemple Sciences); the seabed card cites one source.
+        val answer = Writer.parse(
+            """{"template_version": 2, "topics": [
+               {"story": 1, "topic_tag": "Stellarator research", "title": "Record", "summary": "A plasma lasted 40 minutes.", "keywords": ["fusion energy"], "relevance": 50, "sources": [],
+                "since_last": "Since 15 Oct, the record doubled.", "framing": "One outlet stresses the record, the other the cost."},
+               {"story": 2, "topic_tag": "Deep-sea mining rules", "title": "Vote", "summary": "A vote is set.", "keywords": ["deep-sea mining"], "relevance": 50, "sources": [3],
+                "since_last": "Since 15 Oct, a date was set.", "framing": "Two takes."}]}""",
+        )!!
+        val earlier = listOf(EarlierCard("stellarator RESEARCH", "2026-10-15", "Old record", "A plasma lasted 20 minutes."))
+        val (digest, _) = Writer.toDigest(answer, synthetic, input.copy(earlier = earlier))
+        val (stellarator, seabed) = digest.topics
+        assertEquals("Since 15 Oct, the record doubled.", stellarator.sinceLast)
+        assertEquals("One outlet stresses the record, the other the cost.", stellarator.framing)
+        assertNull(seabed.sinceLast, "no earlier card on this topic")
+        assertNull(seabed.framing, "one outlet only")
+        assertEquals(FactStatus.NOT_CHECKED, seabed.check)
+    }
+
+    @Test
+    fun `the briefing keeps up to three lines on known cards`() {
+        val (digest, _) = Writer.toDigest(written, synthetic, input)
+        val request = Briefing.request("m", digest, input)
+        assertTrue("<<<CARDS" in request.messages.single().content && "briefing" in request.systemPrompt)
+        val answer = Briefing.parse("""{"briefing": [{"card": 2, "line": "A vote is set."}, {"card": 9, "line": "Unknown card."}, {"card": 2, "line": "Again."}, {"card": 1, "line": " "}]}""")!!
+        assertEquals(listOf("A vote is set."), Briefing.lines(answer, digest))
+        assertNull(Briefing.parse("""{"briefing": []}"""))
+    }
+
+    @Test
     fun `the fact check request numbers sentences and sends page text, or facts when no page`() {
         val content = FactCheck.request("m", written, withPages).messages.single().content
         assertTrue("\"s\":4,\"text\":\"Ha, cool.\"" in content)
@@ -184,7 +216,7 @@ class WriterTest {
         assertEquals(1, dropped.first.topics.size)
         assertEquals(listOf(Kind.TOPIC_DROPPED_TWO_STORIES), kinds(dropped.second))
         val whole = FactCheck.apply(written, withPages, check(FactCheckAnswer.Card(2, twoStories = true, secondStory = listOf(1, 2)), FactCheckAnswer.Card(1)))
-        assertEquals(written.topics, whole.first.topics)
+        assertEquals(written.topics, whole.first.topics.map { it.copy(check = null) })
         assertEquals(listOf(Kind.FACT_SECOND_STORY_IGNORED), kinds(whole.second))
     }
 
@@ -244,7 +276,7 @@ class WriterTest {
     @Test
     fun `a card the check left out stays as written, and bad sentence numbers are ignored`() {
         val (checked, findings) = FactCheck.apply(written, withPages, check(FactCheckAnswer.Card(1, listOf(FactCheckAnswer.Unsupported(9)))))
-        assertEquals(written.topics, checked.topics)
+        assertEquals(written.topics, checked.topics.map { it.copy(check = null) })
         assertEquals(listOf(Kind.FACT_BAD_SENTENCE_NUMBER, Kind.FACT_NOT_CHECKED), kinds(findings))
     }
 
