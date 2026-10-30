@@ -56,8 +56,8 @@ data class Issue(val kind: Kind, val story: Int? = null, val source: Int? = null
         /** A written sentence shared five words in a row with a persona note and was deleted. */
         QUOTE_DELETED,
 
-        /** A written sentence named the active persona's real identity and was deleted, or the name cut (owner, 2026-10-30). */
-        PERSONA_NAME_DELETED,
+        /** A written text named the active persona's real identity and the name was replaced (owner, 2026-10-30). */
+        PERSONA_NAME_REPLACED,
 
         /** With a persona on, no free model answered the voice pass: the cards stay as the writer wrote them (owner, 2026-10-30). */
         VOICE_NOT_PASSED,

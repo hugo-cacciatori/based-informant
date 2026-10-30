@@ -6,7 +6,7 @@
 - Trending cards fill free slots with one card per subject.
 - Keyword digests say which keywords found no article, as topic digests do.
 - The fact check drops a card whose title tells another story than its text.
-- Personas no longer name themselves, their channels or their pet: the writer is told not to, and the app removes any sentence that still does, except on a card whose story is about that person.
+- Personas no longer name themselves, their channels or their pet: they use a nickname in their voice instead, and the app swaps any name that slips through for one, except on a card whose story is about that person.
 - Topic mode sorts the saved topics by the date of their newest source, with the past week's under a "Hot" heading; database schema v8 dates the existing topics from the stored digests.
 
 - Richer persona voices, each with the person's known bits and catchphrases.

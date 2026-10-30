@@ -82,14 +82,16 @@ class WriterTest {
     }
 
     @Test
-    fun `every persona voice lists its real names and Off has none`() {
-        assertEquals(listOf("Hasan Piker", "HasanAbi", "Hasan", "Piker", "Kaya", "Cenk Uygur", "Cenk"), Writer.personaNames(Persona.DOG_ZAPPER))
-        Persona.entries.filter { it != Persona.OFF }.forEach { assertTrue(Writer.personaNames(it).isNotEmpty(), "$it") }
+    fun `every persona voice lists its real names with replacements and Off has none`() {
+        val names = Writer.personaNames(Persona.DOG_ZAPPER)
+        assertEquals(listOf("Hasan Piker", "HasanAbi", "Hasan", "Piker", "Kaya", "Cenk Uygur", "Cenk"), names.map { it.name })
+        assertEquals(listOf("my spoiled princess of a dog", "the best-cared-for dog on Earth"), names.single { it.name == "Kaya" }.replacements)
+        Persona.entries.filter { it != Persona.OFF }.forEach { p -> assertTrue(Writer.personaNames(p).let { it.isNotEmpty() && it.all { n -> n.replacements.isNotEmpty() } }, "$p") }
         assertTrue(Writer.personaNames(Persona.OFF).isEmpty())
     }
 
     @Test
-    fun `the persona's names leave its voice but stay on a card about the person`() {
+    fun `the persona's names are replaced in its voice but stay on a card about the person`() {
         // Story 2's sources are about the person: its card keeps the names they carry.
         val stories = synthetic.stories.map { s ->
             if (s.story != 2) s else s.copy(sources = s.sources.map { it.copy(url = "https://news.example.com/hasan-piker-sues") })
@@ -103,16 +105,16 @@ class WriterTest {
                 topic(2, "Hasan Piker sued a pundit. Kaya slept through it.").copy(title = "Kaya watches Hasan sue"),
             ),
         )
-        val (cleaned, deleted) = Writer.removeNames(naming, answer, Writer.personaNames(Persona.DOG_ZAPPER))
-        assertEquals("What's good, chat. Let's go.", cleaned.opening)
-        assertNull(cleaned.closing)
-        assertEquals("A plasma lasted 40 minutes.", cleaned.topics[0].summary)
-        assertNull(cleaned.topics[0].detail)
-        assertEquals("Hasan Piker sued a pundit.", cleaned.topics[1].summary)
-        // A title left empty keeps its words without the name.
-        assertEquals("watches Hasan sue", cleaned.topics[1].title)
-        assertEquals(6, kinds(deleted).count { it == Kind.PERSONA_NAME_DELETED })
-        assertEquals(naming, Writer.removeNames(naming, answer, Writer.personaNames(Persona.OFF)).first)
+        val (cleaned, replaced) = Writer.replaceNames(naming, answer, Writer.personaNames(Persona.DOG_ZAPPER))
+        // Replacements rotate, start a sentence capitalized and keep a possessive (owner, 2026-10-30: replace, never just remove).
+        assertEquals("What's good, chat. Your favorite comrade here, and my spoiled princess of a dog says hi! Let's go.", cleaned.opening)
+        assertEquals("Feed the best-cared-for dog on Earth, tax the rich.", cleaned.closing)
+        assertEquals("A plasma lasted 40 minutes. Even my spoiled princess of a dog's bowl is warmer.", cleaned.topics[0].summary)
+        assertEquals("Big bro approves.", cleaned.topics[0].detail)
+        assertEquals("The best-cared-for dog on Earth watches Hasan sue", cleaned.topics[1].title)
+        assertEquals("Hasan Piker sued a pundit. My spoiled princess of a dog slept through it.", cleaned.topics[1].summary)
+        assertEquals(7, kinds(replaced).count { it == Kind.PERSONA_NAME_REPLACED })
+        assertEquals(naming, Writer.replaceNames(naming, answer, Writer.personaNames(Persona.OFF)).first)
     }
 
     @Test

@@ -302,7 +302,7 @@ class Lab(
             report.line(if (pass == null) "voice pass: no readable answer, cards as written" else "voice pass: ${pass.cards.size} cards rewritten")
             pass?.let { VoicePass.apply(uncopied, it) } ?: uncopied
         }
-        val (written, named) = Writer.removeNames(voiced, answer, Writer.personaNames(persona))
+        val (written, named) = Writer.replaceNames(voiced, answer, Writer.personaNames(persona))
         val deleted = copies + named
         dir.resolve(WRITER_ANSWER).writeText(pretty.encodeToString(WriterAnswer.serializer(), written))
         report.line("subject: ${written.subject}").line("card summary: ${written.cardSummary}")

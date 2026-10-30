@@ -46,6 +46,9 @@ data class WriterAnswer(
 /** A free check's finding: the [issue] for the call history, and the model text it concerns for the lab report only. */
 data class Finding(val issue: Issue, val text: String? = null)
 
+/** A name tied to a persona's real identity and what the digest says instead (owner, 2026-10-30). */
+data class PersonaName(val name: String, val replacements: List<String>)
+
 /**
  * The free writer (02-ai-call.md section 12): it writes the whole digest from the checked search answer and the pages'
  * text. Its topics point at story and source numbers, so it can never invent a URL.
@@ -137,49 +140,62 @@ object Writer {
         return cleaned to findings
     }
 
-    /** The active persona's real names, from its voice file's last line (owner, 2026-10-30); none for Off. */
-    fun personaNames(persona: Persona, files: Map<String, String> = PromptFiles.all): List<String> {
+    /**
+     * The active persona's real names and their replacements, from its voice file's last line ("Name → a / b; ...",
+     * owner 2026-10-30); none for Off.
+     */
+    fun personaNames(persona: Persona, files: Map<String, String> = PromptFiles.all): List<PersonaName> {
         if (persona == Persona.OFF) return emptyList()
         val line = files.getValue(TemplateConfig.voiceFile(persona)).lines().lastOrNull { it.startsWith(NAMES_LINE) } ?: return emptyList()
-        return line.substringAfter(':').trim().removeSuffix(".").split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        val arrow = line.indexOf('→').takeIf { it > 0 } ?: return emptyList()
+        return line.substring(line.lastIndexOf(':', arrow) + 1).trim().removeSuffix(".").split(';').mapNotNull { entry ->
+            val name = entry.substringBefore('→').trim()
+            val with = entry.substringAfter('→', "").split('/').map { it.trim() }.filter { it.isNotEmpty() }
+            PersonaName(name, with).takeIf { name.isNotEmpty() && with.isNotEmpty() }
+        }
     }
 
     /**
-     * Removes the active persona's [names] from its voice (owner, 2026-10-30): each sentence naming it is dropped, and a
-     * title or summary left empty keeps its sentences with the names cut out. A card whose story's keywords or sources
-     * carry a name keeps that name: the story is about the person.
+     * Replaces the active persona's [names] in its voice with their listed replacements, taken in turn (owner,
+     * 2026-10-30: replace, never just remove). A replacement starting a sentence is capitalized and keeps a possessive.
+     * A card whose story's keywords or sources carry a name keeps that name: the story is about the person.
      */
-    fun removeNames(written: WriterAnswer, answer: SearchAnswer, names: List<String>): Pair<WriterAnswer, List<Finding>> {
+    fun replaceNames(written: WriterAnswer, answer: SearchAnswer, names: List<PersonaName>): Pair<WriterAnswer, List<Finding>> {
         if (names.isEmpty()) return written to emptyList()
         val findings = mutableListOf<Finding>()
         val stories = answer.stories.associateBy { it.story }
-        fun clean(text: String?, banned: List<Regex>, topic: Int? = null, required: Boolean = false): String? {
-            if (text == null || banned.none { it.containsMatchIn(text) }) return text
-            val (named, kept) = sentences(text).partition { s -> banned.any { it.containsMatchIn(s) } }
-            named.forEach { findings += Finding(Issue(Issue.Kind.PERSONA_NAME_DELETED, topic = topic), it) }
-            if (kept.isNotEmpty() || !required) return kept.joinToString(" ").ifEmpty { null }
-            return banned.fold(text) { t, r -> r.replace(t, "") }
-                .replace(Regex("\\s+([,.;:!?])"), "$1").replace(Regex("\\s{2,}"), " ").trim().trimStart(',', ';', ':', '-', '—', ' ')
+        val turns = mutableMapOf<String, Int>()
+        // Longest first, so "Hasan Piker" goes whole before "Hasan" could match inside it.
+        val byLength = names.sortedByDescending { it.name.length }
+        fun replace(text: String?, banned: List<PersonaName>, topic: Int? = null): String? {
+            if (text == null || banned.isEmpty()) return text
+            val pattern = Regex(
+                "(?<![\\p{L}\\p{N}])(${banned.joinToString("|") { Regex.escape(it.name) }})(['’]s)?(?![\\p{L}\\p{N}])",
+                RegexOption.IGNORE_CASE,
+            )
+            return pattern.replace(text) { m ->
+                val name = banned.first { it.name.equals(m.groupValues[1], ignoreCase = true) }
+                val turn = turns.getOrElse(name.name) { 0 }.also { turns[name.name] = it + 1 }
+                findings += Finding(Issue(Issue.Kind.PERSONA_NAME_REPLACED, topic = topic), m.value)
+                val with = name.replacements[turn % name.replacements.size] + m.groupValues[2]
+                val starts = text.substring(0, m.range.first).let { it.isBlank() || Regex("[.!?]\\s*$").containsMatchIn(it) }
+                if (starts) with.replaceFirstChar { it.uppercaseChar() } else with
+            }
         }
-        val all = names.map(::nameRegex)
         val cleaned = written.copy(
-            opening = clean(written.opening, all),
-            closing = clean(written.closing, all),
-            subject = clean(written.subject, all),
-            cardSummary = clean(written.cardSummary, all),
+            opening = replace(written.opening, byLength),
+            closing = replace(written.closing, byLength),
+            subject = replace(written.subject, byLength),
+            cardSummary = replace(written.cardSummary, byLength),
             topics = written.topics.mapIndexed { i, t ->
                 val story = stories[t.story]
                 val about = plain((story?.keywords.orEmpty() + story?.sources.orEmpty().flatMap { listOf(it.title, it.publisher, it.url) }).joinToString(" "))
-                val banned = names.filter { plain(it) !in about }.map(::nameRegex)
-                if (banned.isEmpty()) return@mapIndexed t
-                t.copy(title = clean(t.title, banned, i, required = true)!!, summary = clean(t.summary, banned, i, required = true)!!, detail = clean(t.detail, banned, i))
+                val banned = byLength.filter { plain(it.name) !in about }
+                t.copy(title = replace(t.title, banned, i)!!, summary = replace(t.summary, banned, i)!!, detail = replace(t.detail, banned, i))
             },
         )
         return cleaned to findings
     }
-
-    /** The name as a whole word, ignoring case, with its possessive. */
-    private fun nameRegex(name: String) = Regex("(?<![\\p{L}\\p{N}])${Regex.escape(name)}(?:['’]s)?(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
 
     /** Lowercase words between single spaces, so a URL's "hasan-piker" reads as " hasan piker ". */
     private fun plain(text: String) = " " + text.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }.joinToString(" ") + " "

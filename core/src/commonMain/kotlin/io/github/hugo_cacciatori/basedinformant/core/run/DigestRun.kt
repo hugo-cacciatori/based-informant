@@ -130,7 +130,7 @@ class DigestRun(
         return write(record, answer, catalog, Report(issues))
     }
 
-    /** The free writer, then the copied-quote removal, the voice pass, the persona-name removal, the fact check and selection. */
+    /** The free writer, then the copied-quote removal, the voice pass, the persona-name replacement, the fact check and selection. */
     private suspend fun write(record: RunRecord, answer: SearchAnswer, catalog: ModelCatalog, before: Report): Pair<RunOutcome, Report> {
         val input = record.snapshot.prompt
         val written = FreeModels.first(client, catalog, FreeModels.WRITER, { Writer.request(it, input, answer) }, Writer::parse).value
@@ -143,7 +143,7 @@ class DigestRun(
             FreeModels.first(client, catalog, FreeModels.WRITER, { VoicePass.request(it, uncopied, input) }, VoicePass::parse).value
                 ?.let { VoicePass.apply(uncopied, it) }
         }
-        val (clean, named) = Writer.removeNames(voiced ?: uncopied, answer, Writer.personaNames(input.persona))
+        val (clean, named) = Writer.replaceNames(voiced ?: uncopied, answer, Writer.personaNames(input.persona))
         // No free model for the fact check: the cards stay as written (owner, 2026-10-29).
         val check = FreeModels.first(client, catalog, FreeModels.CHECKER, { FactCheck.request(it, clean, answer) }, FactCheck::parse).value
         val (checked, facts) = check?.let { FactCheck.apply(clean, answer, it) } ?: (clean to emptyList())
