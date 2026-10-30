@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Richer persona voices, each with the person's known bits and catchphrases.
 - A fourth persona, Based Blue Blob.
 
 - With Based on, a persona keeps its own politics and reacts to the right-wing sources as itself; Dog Zapper talks about his dog and openly loves communism.
