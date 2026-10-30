@@ -7,6 +7,7 @@ import io.github.hugo_cacciatori.basedinformant.core.check.CheckRecord
 import io.github.hugo_cacciatori.basedinformant.core.check.Refusal
 import io.github.hugo_cacciatori.basedinformant.core.digest.Digest
 import io.github.hugo_cacciatori.basedinformant.core.prompt.EarlierCard
+import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
 import io.github.hugo_cacciatori.basedinformant.core.digest.Issue
 import io.github.hugo_cacciatori.basedinformant.core.digest.Source
 import io.github.hugo_cacciatori.basedinformant.core.digest.ScoreParts
@@ -165,6 +166,19 @@ class RoomRunStoresTest {
         assertEquals(listOf("Fusion records"), store.savedTopics().map { it.tag })
         store.restore(gone)
         assertEquals(listOf("Club chess", "Fusion records", "Seabed rules"), store.savedTopics().map { it.tag })
+    }
+
+    @Test
+    fun keptThemesAreSavedListedNewestFirstAndDeleted() = runBlocking {
+        var clock = 1L
+        val store = RoomThemeStore(db) { clock++ }
+        val one = BuiltInThemes.pack("drift").copy(id = "gen-1", name = "One")
+        val two = BuiltInThemes.pack("night").copy(id = "gen-2", name = "Two")
+        store.save(one)
+        store.save(two)
+        assertEquals(listOf(two, one), store.all())
+        store.delete("gen-2")
+        assertEquals(listOf(one), store.all())
     }
 
     @Test

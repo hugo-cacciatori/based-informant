@@ -19,7 +19,7 @@ data class AppSettings(
     val reminder: Reminder = Reminder(),
     /** Right-wing sources only (01-product.md section 3, owner 2026-10-29). */
     val based: Boolean = false,
-    /** One of [BuiltInThemes.IDS]. */
+    /** A built-in theme or a kept generated one ([BuiltInThemes.isValidId]); a missing one falls back to the default. */
     val theme: String = BuiltInThemes.DEFAULT,
     val animations: Boolean = true,
 ) {

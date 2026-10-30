@@ -17,6 +17,8 @@ object PackCheck {
     const val MAX_DENSITY = 400
     const val MAX_CORNER = 32
     const val MAX_BORDER = 3f
+    const val MAX_LAYERS = 6
+    const val MAX_PARAMS = 6
 
     /** [folder] is the pack's folder name; [fileSizes] the size in bytes of every file in it. */
     fun problems(pack: ThemePack, folder: String, fileSizes: Map<String, Long>): List<String> = buildList {
@@ -30,6 +32,19 @@ object PackCheck {
         if (pack.shape.corner !in 0..MAX_CORNER) add("corner ${pack.shape.corner} is outside 0..$MAX_CORNER")
         if (pack.shape.border !in 0f..MAX_BORDER) add("border ${pack.shape.border} is outside 0..$MAX_BORDER")
         if (pack.glow !in 0f..1f) add("glow ${pack.glow} is outside 0..1")
+        if (pack.motion !in 0.5f..2f) add("motion ${pack.motion} is outside 0.5..2")
+        val art = pack.background.art
+        if (pack.background.engine == BackgroundEngine.ART) {
+            if (art == null || art.layers.isEmpty()) add("art needs at least one layer")
+            if (art != null && art.layers.size > MAX_LAYERS) add("art has ${art.layers.size} layers, over $MAX_LAYERS")
+            art?.layers?.forEachIndexed { i, l ->
+                val sky = minOf(pack.light.sky.size, pack.dark.sky.size)
+                if (l.colors.isEmpty() || l.colors.any { it !in 0 until sky }) add("art layer $i uses a color outside the sky")
+                if (l.params.size > MAX_PARAMS || l.params.any { it !in 0f..1f }) add("art layer $i params must be at most $MAX_PARAMS numbers in 0..1")
+                if (l.opacity !in 0f..1f) add("art layer $i opacity is outside 0..1")
+                if (l.speed !in 0f..1f) add("art layer $i speed is outside 0..1")
+            }
+        }
         addAll(paletteProblems("light", pack.light))
         addAll(paletteProblems("dark", pack.dark))
     }

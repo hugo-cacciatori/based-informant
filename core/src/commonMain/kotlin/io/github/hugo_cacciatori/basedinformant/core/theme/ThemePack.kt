@@ -21,6 +21,8 @@ data class ThemePack(
     val shape: ShapeStyle = ShapeStyle(),
     /** 0 none to 1 strong: the soft light around the main button (modern glass, owner 2026-10-30). */
     val glow: Float = 0f,
+    /** How lively the interface moves (theme format v2): 0.5 slow and calm to 2 quick and snappy. */
+    val motion: Float = 1f,
 ) {
     fun palette(dark: Boolean): Palette = if (dark) this.dark else light
 }
@@ -63,7 +65,56 @@ data class Background(
     val engine: BackgroundEngine,
     val speed: Float = 0f,
     val density: Int = 0,
+    /** The layers of the [BackgroundEngine.ART] engine; ignored by the others. */
+    val art: Art? = null,
 )
+
+/**
+ * Procedural 2D art (01-product.md section 10, owner 2026-10-30): layers drawn in order over the first sky color, each
+ * described by numbers only, so a free model can design it and the app draws it. [seed] places what is random.
+ */
+@Serializable
+data class Art(val seed: Int = 0, val layers: List<ArtLayer> = emptyList())
+
+/**
+ * One layer: its [kind], the sky colors it uses (indices into the palette's sky), its [params] (each 0 to 1, their
+ * meaning set by the kind, missing ones taking a middle value), how opaque and how fast it is.
+ */
+@Serializable
+data class ArtLayer(
+    val kind: ArtKind,
+    val colors: List<Int> = listOf(1),
+    val params: List<Float> = emptyList(),
+    val opacity: Float = 0.6f,
+    val speed: Float = 0.3f,
+) {
+    /** Param [i], or [default] when missing; always 0 to 1. */
+    fun p(i: Int, default: Float = 0.5f): Float = params.getOrElse(i) { default }.coerceIn(0f, 1f)
+}
+
+@Serializable
+enum class ArtKind {
+    /** Rolling sine waves from the bottom: count, height, frequency, level. */
+    @SerialName("waves") WAVES,
+
+    /** Soft glowing blobs drifting on loops: count, size, spread. */
+    @SerialName("blobs") BLOBS,
+
+    /** Small dots drifting and wrapping: count, size, direction. */
+    @SerialName("particles") PARTICLES,
+
+    /** Concentric rings breathing: count, thickness, center x, center y. */
+    @SerialName("rings") RINGS,
+
+    /** Slanted bands sliding: count, angle, width. */
+    @SerialName("stripes") STRIPES,
+
+    /** A line grid, flat or in perspective: spacing, line width, perspective. */
+    @SerialName("grid") GRID,
+
+    /** Vertical light ribbons waving: count, height, waviness. */
+    @SerialName("aurora") AURORA,
+}
 
 @Serializable
 enum class BackgroundEngine {
@@ -75,6 +126,9 @@ enum class BackgroundEngine {
 
     /** Stars twinkling over a gradient of the sky colors. */
     @SerialName("starfield") STARFIELD,
+
+    /** Procedural 2D art: the [Background.art] layers (owner, 2026-10-30). */
+    @SerialName("art") ART,
 }
 
 object ThemePacks {
@@ -96,6 +150,9 @@ object BuiltInThemes {
     /** Modern glass is the default look (owner, 2026-10-30). */
     const val DEFAULT = "glass"
     val IDS = listOf(DEFAULT, "plain", "night", "drift")
+
+    /** A theme the settings may hold: a built-in one, or a generated one ([ThemeStudio.ID_PREFIX], owner 2026-10-30). */
+    fun isValidId(id: String) = id in IDS || id.startsWith(ThemeStudio.ID_PREFIX)
 
     /** The pack of [id]; an unknown id gives the default. */
     fun pack(id: String): ThemePack =

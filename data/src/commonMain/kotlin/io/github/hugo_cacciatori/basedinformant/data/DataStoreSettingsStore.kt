@@ -40,7 +40,7 @@ class DataStoreSettingsStore(private val store: DataStore<Preferences>) : Settin
                 time = prefs[REMINDER_TIME]?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: defaults.reminder.time,
             ),
             // A theme a later version removed reads as the default.
-            theme = prefs[THEME]?.takeIf { it in BuiltInThemes.IDS } ?: defaults.theme,
+            theme = prefs[THEME]?.takeIf(BuiltInThemes::isValidId) ?: defaults.theme,
             animations = prefs[ANIMATIONS] ?: defaults.animations,
             based = prefs[BASED] ?: defaults.based,
         )

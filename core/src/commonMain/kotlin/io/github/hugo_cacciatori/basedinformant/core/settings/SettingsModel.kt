@@ -110,7 +110,7 @@ class SettingsModel(
 
     /** Only built-in themes (01-product.md section 10). */
     suspend fun setTheme(id: String): Boolean {
-        if (id !in BuiltInThemes.IDS) return false
+        if (!BuiltInThemes.isValidId(id)) return false
         change { it.copy(theme = id) }
         return true
     }

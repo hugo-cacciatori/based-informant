@@ -17,6 +17,7 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.rfabHttpClient
 import io.github.hugo_cacciatori.basedinformant.data.DataStoreSettingsStore
 import io.github.hugo_cacciatori.basedinformant.data.RoomCallLog
 import io.github.hugo_cacciatori.basedinformant.data.RoomDigestStore
+import io.github.hugo_cacciatori.basedinformant.data.RoomThemeStore
 import io.github.hugo_cacciatori.basedinformant.data.RoomKeywordStore
 import io.github.hugo_cacciatori.basedinformant.data.RoomPresetStore
 import io.github.hugo_cacciatori.basedinformant.data.RoomRunStore
@@ -61,6 +62,7 @@ class BasedInformantApp : Application() {
             openExactAlarmSettings = { ReminderAlarm.openExactAlarmSettings(this) },
             today = ::today,
             now = System::currentTimeMillis,
+            themeStore = RoomThemeStore(database, System::currentTimeMillis),
         )
     }
 

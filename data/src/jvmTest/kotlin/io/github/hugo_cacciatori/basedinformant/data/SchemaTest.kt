@@ -32,7 +32,7 @@ class SchemaTest {
 
     @Test
     fun everyVersionIsExported() {
-        for (version in 1..8) {
+        for (version in 1..9) {
             assertTrue(Files.exists(schemas.resolve(AppDatabase::class.qualifiedName!!).resolve("$version.json")), "missing $version.json")
         }
     }

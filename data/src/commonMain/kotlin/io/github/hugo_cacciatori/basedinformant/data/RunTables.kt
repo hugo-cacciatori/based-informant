@@ -195,3 +195,24 @@ interface TopicDao {
     @Query("DELETE FROM topics WHERE id = :id")
     suspend fun delete(id: Long)
 }
+
+/** A generated theme the owner kept (01-product.md section 10, schema v9): its pack as JSON, as the built-in ones are. */
+@Entity(tableName = "themes")
+data class ThemeEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val json: String,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+)
+
+@Dao
+interface ThemeDao {
+    @Query("SELECT * FROM themes ORDER BY created_at DESC, id DESC")
+    suspend fun all(): List<ThemeEntity>
+
+    @Upsert
+    suspend fun upsert(theme: ThemeEntity)
+
+    @Query("DELETE FROM themes WHERE id = :id")
+    suspend fun delete(id: String)
+}

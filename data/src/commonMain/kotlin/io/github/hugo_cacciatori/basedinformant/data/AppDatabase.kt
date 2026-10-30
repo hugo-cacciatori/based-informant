@@ -28,9 +28,9 @@ import kotlinx.coroutines.IO
 @Database(
     entities = [
         KeywordEntity::class, RunEntity::class, CallEntity::class, CheckEntity::class, DigestEntity::class,
-        PresetEntity::class, TopicEntity::class,
+        PresetEntity::class, TopicEntity::class, ThemeEntity::class,
     ],
-    version = 8,
+    version = 9,
     // v2 only adds tables (2026-10-20); v3 (2026-10-29, template v2) drops the curated memory and two unused call
     // columns, and adds presets, the digests' topic tags and the call mode; v4 (2026-10-29, Share) drops the digests'
     // stored mail and email state; v5 (2026-10-29, Based) adds the Based flag to calls and digests; v6 (2026-10-30,
@@ -44,6 +44,7 @@ import kotlinx.coroutines.IO
         AutoMigration(from = 5, to = 6, spec = Migration5To6::class),
         AutoMigration(from = 6, to = 7, spec = Migration6To7::class),
         AutoMigration(from = 7, to = 8, spec = Migration7To8::class),
+        AutoMigration(from = 8, to = 9),
     ],
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -61,6 +62,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun presets(): PresetDao
 
     abstract fun topics(): TopicDao
+
+    abstract fun themes(): ThemeDao
 
     companion object {
         const val FILE_NAME = "based-informant.db"

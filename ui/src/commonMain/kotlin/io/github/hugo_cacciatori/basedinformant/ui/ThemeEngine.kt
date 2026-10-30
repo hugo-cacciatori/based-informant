@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
@@ -87,6 +88,9 @@ internal fun Palette.colorScheme(dark: Boolean): ColorScheme {
         surfaceContainerHighest = solid,
         outline = color(outline),
         outlineVariant = color(outline),
+        // Tonal buttons and chips take a tint of the theme's primary over its surface, never the base scheme's grey.
+        secondaryContainer = color(primary).copy(alpha = 0.22f).compositeOver(solid),
+        onSecondaryContainer = onSurface,
     )
 }
 
@@ -152,6 +156,7 @@ internal fun ThemeBackground(pack: ThemePack, palette: Palette, moving: Boolean)
                 drawSky(sky)
                 stars.draw(this, starColor, t)
             }
+            BackgroundEngine.ART -> bg.art?.let { drawArt(it, sky, t) } ?: drawSky(sky)
         }
     }
 }

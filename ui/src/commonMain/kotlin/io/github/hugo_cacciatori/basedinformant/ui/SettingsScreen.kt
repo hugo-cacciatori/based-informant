@@ -61,6 +61,9 @@ import io.github.hugo_cacciatori.basedinformant.core.reminder.Reminder
 import io.github.hugo_cacciatori.basedinformant.core.settings.AttentionMode
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_delete
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_generated
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_generate
 import io.github.hugo_cacciatori.basedinformant.ui.resources.animations_hint
 import io.github.hugo_cacciatori.basedinformant.ui.resources.based_hint
 import io.github.hugo_cacciatori.basedinformant.ui.resources.based_section
@@ -163,8 +166,12 @@ fun SettingsScreen(
     snackbar: SnackbarHostState,
     modifier: Modifier = Modifier,
     reminder: ReminderPlatform = ReminderPlatform(),
+    /** AI-generated themes (01-product.md section 10); none in tests unless given. */
+    studio: StudioUi? = null,
 ) {
     LaunchedEffect(Unit) { actions.open() }
+    var studioOpen by rememberSaveable { mutableStateOf(false) }
+    if (studio != null && studioOpen) ThemeStudioDialog(studio.state, studio.actions, onClose = { studioOpen = false })
 
     val tagUndo = state.tagUndo
     LaunchedEffect(tagUndo) {
@@ -231,14 +238,28 @@ fun SettingsScreen(
             ReminderSection(state.settings.reminder, actions::setReminder, reminder, snackbar)
             HorizontalDivider()
         }
+        val generated = studio?.state?.themes.orEmpty()
         Choice(
             title = Res.string.theme_section,
-            options = BuiltInThemes.IDS,
+            options = BuiltInThemes.IDS + generated.map { it.id },
             selected = state.settings.theme,
-            label = { stringResource(themeRes(it).first) },
-            hint = { stringResource(themeRes(it).second) },
+            label = { id -> generated.firstOrNull { it.id == id }?.name ?: stringResource(themeRes(id).first) },
+            hint = { id -> if (generated.any { it.id == id }) stringResource(Res.string.theme_generated) else stringResource(themeRes(id).second) },
             onSelect = actions::setTheme,
         )
+        if (studio != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = { studioOpen = true }, modifier = Modifier.testTag("theme-generate")) {
+                    Text(stringResource(Res.string.theme_generate))
+                }
+                if (generated.any { it.id == state.settings.theme }) {
+                    TextButton(
+                        onClick = { studio.actions.delete(state.settings.theme); actions.setTheme(BuiltInThemes.DEFAULT) },
+                        modifier = Modifier.testTag("theme-delete"),
+                    ) { Text(stringResource(Res.string.theme_delete)) }
+                }
+            }
+        }
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(Res.string.animations_switch))
@@ -466,3 +487,6 @@ internal fun reasonText(reason: NotKnownReason) = stringResource(
         NotKnownReason.OTHER -> Res.string.reason_other
     },
 )
+
+/** The theme studio as Settings shows it: its state and actions. */
+data class StudioUi(val state: io.github.hugo_cacciatori.basedinformant.core.theme.StudioState, val actions: StudioActions)

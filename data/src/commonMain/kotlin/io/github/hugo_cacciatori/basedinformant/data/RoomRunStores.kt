@@ -16,6 +16,9 @@ import io.github.hugo_cacciatori.basedinformant.core.run.RunState
 import io.github.hugo_cacciatori.basedinformant.core.run.RunStore
 import io.github.hugo_cacciatori.basedinformant.core.prompt.EarlierCard
 import io.github.hugo_cacciatori.basedinformant.core.run.SavedTopic
+import io.github.hugo_cacciatori.basedinformant.core.theme.ThemePack
+import io.github.hugo_cacciatori.basedinformant.core.theme.ThemePacks
+import io.github.hugo_cacciatori.basedinformant.core.theme.ThemeStore
 import io.github.hugo_cacciatori.basedinformant.core.run.StoredDigest
 import io.github.hugo_cacciatori.basedinformant.core.run.TopicStore
 import io.github.hugo_cacciatori.basedinformant.core.settings.Preset
@@ -200,4 +203,14 @@ class RoomPresetStore(private val db: AppDatabase, private val now: () -> Long) 
     override suspend fun add(keywords: List<String>): Long = db.presets().insert(PresetEntity(keywords = StoredJson.strings(keywords), createdAtMillis = now()))
 
     override suspend fun delete(id: Long) = db.presets().delete(id)
+}
+
+/** The kept generated themes (01-product.md section 10); a row that no longer reads as a pack is skipped. */
+class RoomThemeStore(private val db: AppDatabase, private val now: () -> Long) : ThemeStore {
+    override suspend fun all(): List<ThemePack> = db.themes().all().mapNotNull { runCatching { ThemePacks.read(it.json) }.getOrNull() }
+
+    override suspend fun save(pack: ThemePack) =
+        db.themes().upsert(ThemeEntity(pack.id, pack.name, StoredJson.json.encodeToString(ThemePack.serializer(), pack), now()))
+
+    override suspend fun delete(id: String) = db.themes().delete(id)
 }

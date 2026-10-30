@@ -59,6 +59,9 @@ import io.github.hugo_cacciatori.basedinformant.core.settings.KeywordsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsModel
 import io.github.hugo_cacciatori.basedinformant.core.settings.SettingsStore
 import io.github.hugo_cacciatori.basedinformant.core.theme.BuiltInThemes
+import io.github.hugo_cacciatori.basedinformant.core.theme.ThemeStudio
+import io.github.hugo_cacciatori.basedinformant.core.theme.NoThemeStore
+import io.github.hugo_cacciatori.basedinformant.core.theme.ThemeStore
 import io.github.hugo_cacciatori.basedinformant.ui.resources.Res
 import io.github.hugo_cacciatori.basedinformant.ui.resources.app_name
 import io.github.hugo_cacciatori.basedinformant.ui.resources.history_missing
@@ -103,6 +106,8 @@ class AppDependencies(
     val openExactAlarmSettings: () -> Unit,
     val today: () -> LocalDate,
     val now: () -> Long,
+    /** The kept AI-generated themes (01-product.md section 10). */
+    val themeStore: ThemeStore = NoThemeStore,
 )
 
 /** The three screens of the navigation bar (01-product.md section 3). */
@@ -157,13 +162,29 @@ fun App(
             askNotifications = { askNotifications {} },
         )
     }
+    val studio = viewModel {
+        ThemeStudioViewModel(
+            ThemeStudio(
+                deps.themeStore, deps.secrets, deps.clientFor,
+                select = { id -> settings.setTheme(id) },
+                newId = { ThemeStudio.ID_PREFIX + deps.now() },
+            ),
+        )
+    }
+    LaunchedEffect(Unit) { studio.load() }
+    val studioState by studio.state.collectAsStateWithLifecycle()
     // The look: the stored settings at start, then Settings' own state once it has loaded them.
     val stored by produceState<AppSettings?>(null) { value = deps.settingsStore.load() }
     val settingsState by settings.state.collectAsStateWithLifecycle()
     val look = if (settingsState.loaded) settingsState.settings else stored ?: AppSettings()
-    AppTheme(BuiltInThemes.pack(look.theme), look.animations) {
+    // A kept generated theme, else a built-in one (an unknown id gives the default).
+    val pack = studioState.themes.firstOrNull { it.id == look.theme } ?: BuiltInThemes.pack(look.theme)
+    AppTheme(pack, look.animations) {
         val requested by openDigest.collectAsStateWithLifecycle()
-        AppShell(keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened, deps.shareEmail, reminder)
+        AppShell(
+            keywords, settings, generate, presets, history, deps.notificationsAllowed, requested, onDigestOpened, deps.shareEmail, reminder,
+            studio = StudioUi(studioState, studio),
+        )
     }
 }
 
@@ -180,6 +201,7 @@ fun AppShell(
     onDigestOpened: () -> Unit = {},
     shareEmail: (RenderedDigest) -> Boolean = { false },
     reminder: ReminderPlatform = ReminderPlatform(),
+    studio: StudioUi? = null,
 ) {
     var screen by rememberSaveable { mutableStateOf(Screen.KEYWORDS) }
     val snackbar = remember { SnackbarHostState() }
@@ -282,7 +304,7 @@ fun AppShell(
             }
             Screen.SETTINGS -> {
                 val state by settings.state.collectAsStateWithLifecycle()
-                SettingsScreen(state, settings, snackbar, modifier, reminder)
+                SettingsScreen(state, settings, snackbar, modifier, reminder, studio)
             }
         }
     }

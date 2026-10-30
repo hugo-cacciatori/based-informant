@@ -27,6 +27,7 @@ import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchRequest
 import io.github.hugo_cacciatori.basedinformant.core.search.WikipediaEvents
+import io.github.hugo_cacciatori.basedinformant.core.theme.ThemeGenerator
 import io.github.hugo_cacciatori.basedinformant.core.settings.Persona
 import io.github.hugo_cacciatori.basedinformant.core.writer.Briefing
 import io.github.hugo_cacciatori.basedinformant.core.writer.FactCheck
@@ -88,6 +89,9 @@ sealed interface LabCommand {
 
     /** Based's free feeds (02-ai-call.md section 4): what they give today, as stories for the keywords of [input]. */
     data class Feeds(val input: String?) : LabCommand
+
+    /** Free: one AI-generated theme through the app's chain (01-product.md section 10). */
+    data class Theme(val idea: String?) : LabCommand
 
     /** The free outlet check of Based (02-ai-call.md section 4) on a saved search answer. */
     data class OutletCheck(val model: String, val searchAnswer: String) : LabCommand
@@ -159,6 +163,7 @@ sealed interface LabCommand {
                     flags["--broken"] ?: throw LabUsageError("--repair needs --broken <file>"),
                 )
                 "--feeds" in flags -> Feeds(flags["--input"])
+                "--theme" in flags -> Theme(flags["--idea"])
                 "--outlet-check" in flags -> OutletCheck(
                     flags.getValue("--outlet-check")!!,
                     flags["--search-answer"] ?: throw LabUsageError("--outlet-check needs --search-answer <file>"),
@@ -173,12 +178,12 @@ sealed interface LabCommand {
             }
         }
 
-        private val MODES = listOf("--write", "--search-call", "--fact-check", "--repair", "--outlet-check", "--feeds", "--probe", "--check-input", "--models", "--balance")
+        private val MODES = listOf("--write", "--search-call", "--fact-check", "--repair", "--outlet-check", "--feeds", "--theme", "--probe", "--check-input", "--models", "--balance")
         private val VALUED = setOf(
-            "--write", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken", "--outlet-check",
+            "--write", "--search-answer", "--articles", "--input", "--persona", "--model", "--keyword", "--list", "--fact-check", "--run", "--answer", "--repair", "--broken", "--outlet-check", "--idea",
         )
         private val SWITCHES = setOf(
-            "--search-call", "--feeds", "--persona-research", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--fetch-articles", "--models", "--balance", "--help",
+            "--search-call", "--feeds", "--theme", "--persona-research", "--probe", "--check-input", "--dry-run", "--confirm-paid", "--fetch-articles", "--models", "--balance", "--help",
         )
 
         val USAGE = """
@@ -250,6 +255,7 @@ class Lab(
         is LabCommand.Repair -> repair(command)
         is LabCommand.OutletCheck -> outletCheck(command)
         is LabCommand.Feeds -> feeds(command)
+        is LabCommand.Theme -> theme(command)
         is LabCommand.Probe -> probe(command)
         is LabCommand.CheckInput -> checkInput(command)
         LabCommand.Models -> models()
@@ -498,6 +504,27 @@ class Lab(
         }
         report.write(out)
         return 0
+    }
+
+    /** One AI theme, free: the brief, which steps answered, the problems left, and theme.json to look at. */
+    private suspend fun theme(command: LabCommand.Theme): Int {
+        val key = loadKey() ?: return noKey()
+        out.println(KeyLoader.describe(key))
+        val dir = outDir("theme")
+        val report = Report(dir).line("mode: theme, idea \"${command.idea.orEmpty()}\"")
+        val outcome = ThemeGenerator(clientFor(key)).generate(command.idea.orEmpty(), "lab") { report.line("stage: $it") }
+        when (outcome) {
+            is ThemeGenerator.Outcome.Designed -> {
+                report.line("brief: ${outcome.brief.mood} (${outcome.brief.description}), numbers ${outcome.brief.numbers}, seed ${outcome.brief.seed}")
+                report.line("reviewed by the critic: ${outcome.reviewed}; name: ${outcome.pack.name}; layers: ${outcome.pack.background.art?.layers?.map { it.kind }}")
+                dir.resolve("theme.json").writeText(pretty.encodeToString(io.github.hugo_cacciatori.basedinformant.core.theme.ThemePack.serializer(), outcome.pack))
+                report.line("written: theme.json")
+            }
+            ThemeGenerator.Outcome.NoFreeModel -> report.line("no free model answered")
+            is ThemeGenerator.Outcome.Refused -> outcome.problems.forEach { report.line("problem: $it") }
+        }
+        report.write(out)
+        return if (outcome is ThemeGenerator.Outcome.Designed) 0 else 1
     }
 
     /**
