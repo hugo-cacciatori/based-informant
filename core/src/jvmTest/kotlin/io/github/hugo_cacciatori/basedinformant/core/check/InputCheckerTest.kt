@@ -94,6 +94,15 @@ class InputCheckerTest {
     }
 
     @Test
+    fun anAnswerRfabReroutedIsNotUsed() {
+        // 2026-10-30: rfab served a fact check from another, weaker model; the next chosen model is asked instead.
+        val rerouted = RfabResult.Ok(ChatResponse(success = true, content = "{\"refused\": []}", tokensBilled = 0, servedVia = "other:model", rerouted = true), "{}")
+        val rfab = ScriptedRfab(mapOf(models[0] to rerouted, models[1] to answer("{\"refused\": []}")))
+        val outcome = assertIs<CheckOutcome.Passed>(check(rfab))
+        assertEquals(listOf(Result.REROUTED, Result.ANSWERED), outcome.attempts.map { it.result })
+    }
+
+    @Test
     fun noModelsListNoCheck() {
         val rfab = ScriptedRfab(emptyMap(), error(RfabError.NETWORK))
         val outcome = assertIs<CheckOutcome.NoAnswer>(check(rfab))

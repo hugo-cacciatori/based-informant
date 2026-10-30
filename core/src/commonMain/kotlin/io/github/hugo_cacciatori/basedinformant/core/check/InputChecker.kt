@@ -6,7 +6,15 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
 
 /** What one model did in a check, for the call history. */
 data class CheckAttempt(val model: String, val result: Result, val error: RfabError? = null, val tokensBilled: Long? = null) {
-    enum class Result { ANSWERED, NOT_FREE, FAILED, UNREADABLE }
+    enum class Result {
+        ANSWERED,
+        NOT_FREE,
+        FAILED,
+        UNREADABLE,
+
+        /** rfab answered with another model than the one asked (2026-10-30: a weaker one, slow and wrong): not used. */
+        REROUTED,
+    }
 }
 
 /** The check's outcome. Only [Refused] is shown to the owner; the rest lets the run go on (01-product.md section 4.4). */

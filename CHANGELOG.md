@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- With Based on, a persona keeps its own politics and reacts to the right-wing sources as itself; Dog Zapper talks about his dog and openly loves communism.
+- An answer the AI service reroutes to another model is no longer used: the next chosen free model is asked instead.
 - Topic mode no longer lists a chosen topic as missing when a trending card covers it.
 
 - Topic mode: tapping a topic picks it; a Select button switches to deleting, with checkboxes, Cancel and Delete (N).

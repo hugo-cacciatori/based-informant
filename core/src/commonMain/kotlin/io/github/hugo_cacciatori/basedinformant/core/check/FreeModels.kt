@@ -10,7 +10,8 @@ import io.github.hugo_cacciatori.basedinformant.core.rfab.RfabResult
  * One free job tried on a list of models, best first (02-ai-call.md section 12): the input check, the writer, the fact
  * check, the repair. Never spends tokens: a model is used only when [catalog], read just before, shows it at exactly
  * 0x. One request at a time, at most one per model: the client must not retry (`KtorRfabClient(maxAttempts = 1)`), so a
- * model at its usage limit passes to the next at once. A refused key stops the cycle.
+ * model at its usage limit passes to the next at once. A refused key stops the cycle. An answer rfab rerouted to another
+ * model is not used: the owner chose which models do each job (2026-10-29), and a rerouted fact check judged badly.
  */
 object FreeModels {
     data class Result<T>(val value: T?, val model: String?, val attempts: List<CheckAttempt>)
@@ -35,6 +36,10 @@ object FreeModels {
                 }
                 is RfabResult.Ok -> {
                     val billed = response.value.tokensBilled
+                    if (response.value.rerouted == true) {
+                        attempts += CheckAttempt(model, CheckAttempt.Result.REROUTED, tokensBilled = billed)
+                        continue
+                    }
                     val value = response.value.content?.let(parse)
                     if (value == null) {
                         attempts += CheckAttempt(model, CheckAttempt.Result.UNREADABLE, tokensBilled = billed)

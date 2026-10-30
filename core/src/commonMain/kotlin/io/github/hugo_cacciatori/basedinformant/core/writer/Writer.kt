@@ -53,8 +53,12 @@ data class Finding(val issue: Issue, val text: String? = null)
 object Writer {
     const val FILE = "writer.txt"
 
-    /** With Based on (02-ai-call.md section 4): the outlook added to the prompt, and the voice for Persona Off. */
+    /**
+     * With Based on (02-ai-call.md section 4): Persona Off writes in the Based voice with the outlook; a persona keeps its
+     * own worldview and reacts to the right-wing sources as itself (owner, 2026-10-30).
+     */
     const val BASED_OUTLOOK_FILE = "voices/based-outlook.txt"
+    const val BASED_PERSONA_FILE = "voices/based-persona.txt"
     const val BASED_VOICE_FILE = "voices/based.txt"
 
     /** Last in the prompt when a persona is selected: the persona in every card (owner, 2026-10-29). */
@@ -73,7 +77,11 @@ object Writer {
         val writer = files.getValue(FILE).trim()
         val voiceFile = if (input.based && input.persona == Persona.OFF) BASED_VOICE_FILE else TemplateConfig.voiceFile(input.persona)
         val voice = files.getValue(voiceFile).trim()
-        val outlook = if (input.based) "\n\n" + files.getValue(BASED_OUTLOOK_FILE).trim() else ""
+        val outlook = when {
+            !input.based -> ""
+            input.persona == Persona.OFF -> "\n\n" + files.getValue(BASED_OUTLOOK_FILE).trim()
+            else -> "\n\n" + files.getValue(BASED_PERSONA_FILE).trim()
+        }
         val check = if (input.persona == Persona.OFF) "" else "\n\n" + files.getValue(PERSONA_CHECK_FILE).trim()
         val fill = "\n\n" + files.getValue(FILL_CHECK_FILE).trim()
         val data = RunData(

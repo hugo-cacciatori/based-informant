@@ -51,10 +51,11 @@ class WriterTest {
         fun prompt(based: Boolean, persona: Persona) = Writer.request("m", input.copy(based = based, persona = persona), synthetic).systemPrompt
         val files = PromptFiles.all
         val outlook = files.getValue(Writer.BASED_OUTLOOK_FILE).trim()
-        // A persona keeps its voice and gets the outlook.
+        // A persona keeps its voice and its own worldview, reacting to the right-wing sources (owner, 2026-10-30).
         val persona = prompt(based = true, persona = Persona.ROACH_KING)
         assertTrue(files.getValue("voices/roach-king.txt").trim() in persona)
-        assertTrue(outlook in persona)
+        assertTrue(files.getValue(Writer.BASED_PERSONA_FILE).trim() in persona)
+        assertTrue(outlook !in persona)
         assertTrue(
             persona.endsWith(files.getValue(Writer.PERSONA_CHECK_FILE).trim() + "\n\n" + files.getValue(Writer.FILL_CHECK_FILE).trim()),
             "the persona check, then the fill check, come last",
@@ -63,6 +64,7 @@ class WriterTest {
         // Persona Off: the Based voice replaces the neutral one.
         val off = prompt(based = true, persona = Persona.OFF)
         assertTrue(files.getValue(Writer.BASED_VOICE_FILE).trim() in off)
+        assertTrue(outlook in off)
         assertTrue(files.getValue("voices/neutral.txt").trim() !in off)
         // Based off: the prompt is what it was before Based.
         assertTrue("BASED OUTLOOK" !in prompt(based = false, persona = Persona.ROACH_KING))
