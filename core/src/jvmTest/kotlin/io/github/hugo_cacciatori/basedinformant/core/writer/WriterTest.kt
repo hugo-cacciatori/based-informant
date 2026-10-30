@@ -238,8 +238,8 @@ class WriterTest {
     @Test
     fun `sentences never split after initials or a title`() {
         assertEquals(
-            listOf("Protesters gathered outside the U.S. Embassy in Wandsworth.", "Dr. Smith spoke first.", "Quantum Computing Inc. announced more."),
-            Writer.sentences("Protesters gathered outside the U.S. Embassy in Wandsworth. Dr. Smith spoke first. Quantum Computing Inc. announced more."),
+            listOf("Protesters gathered outside the U.S. Embassy in Wandsworth.", "Dr. Smith spoke first.", "Quantum Computing Inc. announced more.", "BioWare's Oct. 21 closure ended it."),
+            Writer.sentences("Protesters gathered outside the U.S. Embassy in Wandsworth. Dr. Smith spoke first. Quantum Computing Inc. announced more. BioWare's Oct. 21 closure ended it."),
         )
     }
 

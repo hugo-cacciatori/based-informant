@@ -58,6 +58,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_average_unk
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_balance
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_balance_unknown
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_chat_hours
+import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_chat_hour
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_chat_recent
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_go
 import io.github.hugo_cacciatori.basedinformant.ui.resources.confirm_keywords
@@ -417,7 +418,11 @@ private fun ConfirmDialog(step: GenerateStep.Confirm, actions: GenerateActions) 
                 )
                 c.chatBilledHoursAgo?.let { hours ->
                     Text(
-                        if (hours < 1) stringResource(Res.string.confirm_chat_recent) else stringResource(Res.string.confirm_chat_hours, hours.toInt()),
+                        when {
+                            hours < 1 -> stringResource(Res.string.confirm_chat_recent)
+                            hours < 2 -> stringResource(Res.string.confirm_chat_hour)
+                            else -> stringResource(Res.string.confirm_chat_hours, hours.toInt())
+                        },
                         color = MaterialTheme.colorScheme.error,
                     )
                 }

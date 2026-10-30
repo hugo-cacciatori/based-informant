@@ -105,6 +105,7 @@
     <string name="confirm_last">Last digest on this device: %1$s</string>
     <string name="confirm_last_none">No digest on this device yet.</string>
     <string name="confirm_chat_recent">A chat call was billed on your rfab account less than an hour ago, maybe a digest from another device.</string>
+    <string name="confirm_chat_hour">A chat call was billed on your rfab account an hour ago, maybe a digest from another device.</string>
     <string name="confirm_chat_hours">A chat call was billed on your rfab account %1$d hours ago, maybe a digest from another device.</string>
     <string name="confirm_go">Generate</string>
 

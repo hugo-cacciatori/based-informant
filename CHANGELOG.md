@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Sentences are no longer cut after a month such as "Oct.", and the confirmation says "an hour ago".
 - Generate a theme in Settings: free AI models design colors, shapes, motion and moving art (waves, blobs, particles, rings, stripes, grids, aurora) from a mood and your idea; a second model reviews it, the app checks readability, and you preview it before keeping it. No token is spent.
 - The app opens on Today: the latest digest, what the next one will search, Edit (keywords, topics and presets in a panel) and a glowing Generate.
 - A new default theme, Glass: deep moving colors under frosted cards; digests are drawn as cards with the briefing, callouts and the trust line; themes can set corner shapes, light edges and a glow.

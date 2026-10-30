@@ -257,7 +257,7 @@ object Writer {
 
     /**
      * Splits after '.', '!' or '?' only before a capital, digit or quote, so "Quantum Computing Inc. announced" stays
-     * whole, and never after initials or a title ("the U.S. Embassy", "Dr. Smith"; device check, 2026-10-30).
+     * whole, and never after initials, a title or a month ("the U.S. Embassy", "Dr. Smith", "Oct. 21"; device check, 2026-10-30).
      */
     fun sentences(text: String): List<String> {
         val parts = mutableListOf<String>()
@@ -272,7 +272,7 @@ object Writer {
     }
 
     private val BOUNDARY = Regex("(?<=[.!?])\\s+(?=[\\p{Lu}\\p{N}\"“‘(])")
-    private val ABBREVIATION = Regex("(?:\\b(?:\\p{L}\\.){2,}|\\b(?:Mr|Mrs|Ms|Dr|St|Jr|Sr|Gen|Sen|Rep|Gov|Lt|Col|Sgt|Prof|No|Mt|vs)\\.)$")
+    private val ABBREVIATION = Regex("(?:\\b(?:\\p{L}\\.){2,}|\\b(?:Mr|Mrs|Ms|Dr|St|Jr|Sr|Gen|Sen|Rep|Gov|Lt|Col|Sgt|Prof|No|Mt|vs|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\\.)$")
 
     /** Each run of [QUOTE_WORDS] words a written text shares with a persona note, ignoring case and punctuation. */
     fun copiedQuotes(texts: List<String>, notes: List<String>): List<String> {
