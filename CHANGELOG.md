@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Topic mode no longer lists a chosen topic as missing when a trending card covers it.
+
 - Topic mode: tapping a topic picks it; a Select button switches to deleting, with checkboxes, Cancel and Delete (N).
 
 - Long article pages are read in full (GB News articles were cut off), and scraps of a page are no longer used to check facts; the spellcheck accepts streamer and channel names.

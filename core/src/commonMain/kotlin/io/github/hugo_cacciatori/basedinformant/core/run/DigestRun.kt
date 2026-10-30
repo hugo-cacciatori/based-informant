@@ -157,7 +157,10 @@ class DigestRun(
     private fun select(digest: Digest, input: PromptInput): Digest {
         if (input.mode == DigestMode.KEYWORDS) return digest.copy(topics = Selection.select(digest.topics))
         val topics = Selection.select(digest.topics)
-        val missing = input.keywords.filter { tag -> topics.none { t -> t.keywords.any { it.equals(tag.trim(), ignoreCase = true) } } }
+        // A chosen topic is covered by a card matched to it, or filed under it (a feed's trending card reusing its tag).
+        val missing = input.keywords.filter { tag ->
+            topics.none { t -> t.keywords.any { it.equals(tag.trim(), ignoreCase = true) } || t.topicTag?.equals(tag.trim(), ignoreCase = true) == true }
+        }
         return digest.copy(topics = topics, missingTopics = missing.takeIf { topics.isNotEmpty() }.orEmpty())
     }
 

@@ -239,6 +239,26 @@ class DigestRunTest {
     }
 
     @Test
+    fun aTrendingCardFiledUnderAChosenTopicCoversIt() = runBlocking {
+        // 2026-10-30: a feed's trending card reused a chosen topic's tag, yet the topic was listed as missing.
+        val trendingSearch = """{"template_version": 2, "searched_at": "2026-10-18", "stories": [{"keywords": [], "trending": true,
+            "what_happened": "A study ranked straws.", "attention": 30, "sources": [{"title": "Straws study", "publisher": "Example News",
+            "url": "https://news.example.com/2026/10/straws", "language": "en", "published": "2026-10-17", "facts": ["Paper straws scored worse."]}]}]}"""
+        val writer = """{"template_version": 2, "topics": [{"story": 1, "topic_tag": "Paper straws study", "title": "Paper straws lose",
+            "summary": "A study ranked paper straws worse than plastic.", "detail": null, "keywords": [], "relevance": 30, "sources": [1]}]}"""
+        val (_, digestRun) = run(paid = okResponse(trendingSearch, 1_440), free = { model, request ->
+            when {
+                model != "openrouter:minimax/minimax-m3" -> null
+                "SEARCH_REPORT" in request.messages.single().content -> writer
+                else -> """{"cards": [{"card": 1}]}"""
+            }
+        })
+        val topics = snapshot.copy(prompt = snapshot.prompt.copy(mode = DigestMode.TOPICS, keywords = listOf("paper straws study", "Mars exploration")))
+        assertIs<RunOutcome.Stored>(digestRun.execute(topics))
+        assertEquals(listOf("Mars exploration"), digests.saved.single().digest.missingTopics)
+    }
+
+    @Test
     fun topicModeKeepsAChosenTopicWhateverItsScore() = runBlocking {
         val low = written.replace("\"relevance\": 45", "\"relevance\": 0")
         val topics = snapshot.copy(prompt = snapshot.prompt.copy(mode = DigestMode.TOPICS, keywords = listOf("fusion energy", "deep-sea mining")))
