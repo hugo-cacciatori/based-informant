@@ -53,6 +53,23 @@ class ConfirmationTest {
     }
 
     @Test
+    fun thisDevicesOwnDigestAndFreeCallsAreNoWarning() {
+        // now is 2026-10-20T12:00Z; this device stored a digest at 11:50 after a search billed at 11:48.
+        val own = 1_792_497_600_000L - 10 * 60_000L
+        val c = ConfirmationRules.build(
+            balance(
+                120_174,
+                Transaction("a", "USAGE", -1_440, "openrouter:perplexity/sonar", "2026-10-20T11:48:00Z"),
+                Transaction("f", "USAGE", 0, "openrouter:minimax/minimax-m3", "2026-10-20T11:55:00Z"),
+            ),
+            emptyList(),
+            now,
+            ownDigestAt = own,
+        )
+        assertNull(c.chatBilledHoursAgo)
+    }
+
+    @Test
     fun anUnreadableBalanceCannotBeConfirmed() {
         val c = ConfirmationRules.build(RfabResult.Error(RfabError.NETWORK), listOf(1_440), now)
         assertFalse(c.canConfirm)

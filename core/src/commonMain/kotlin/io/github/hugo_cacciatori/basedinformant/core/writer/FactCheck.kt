@@ -80,7 +80,7 @@ object FactCheck {
     /**
      * Applies the check: unsupported sentences go, but only on a card with at least one downloaded page; a card telling
      * two stories loses the second story's sentences, and is dropped when the split is unclear; a check that puts every
-     * sentence in the second story is ignored; a summary left empty takes the detail's sentences; a card left with
+     * sentence in the second story is ignored; a summary that lost its lead sentence takes as many from the detail; a card left with
      * nothing is dropped, and so is a card whose title tells another event than its sentences (owner, 2026-10-30). A card
      * the check did not cover stays as written.
      */
@@ -116,9 +116,11 @@ object FactCheck {
             }
             var keptSummary = summary.filterIndexed { s, _ -> (s + 1) !in delete }
             var keptDetail = detail.filterIndexed { s, _ -> (summary.size + s + 1) !in delete }
-            if (keptSummary.isEmpty()) {
-                keptSummary = keptDetail
-                keptDetail = emptyList()
+            // A summary that lost its lead sentence takes as many from the detail, so it never keeps only a joke (device check, 2026-10-30).
+            val lost = summary.size - keptSummary.size
+            if (1 in delete && lost > 0 && keptDetail.isNotEmpty()) {
+                keptSummary = keptDetail.take(lost) + keptSummary
+                keptDetail = keptDetail.drop(lost)
             }
             if (keptSummary.isEmpty()) return@mapIndexedNotNull null.also { findings += finding(Issue.Kind.TOPIC_DROPPED_EMPTY, text = t.title) }
             t.copy(summary = keptSummary.joinToString(" "), detail = keptDetail.joinToString(" ").ifEmpty { null })

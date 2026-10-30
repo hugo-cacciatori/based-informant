@@ -30,8 +30,14 @@ object ConfirmationRules {
     const val AVERAGE_OF = 5
     const val RECENT_CHAT_HOURS = 24L
 
-    /** [balance] comes from the free balance call made when Generate is pressed; [recentCosts] newest first. */
-    fun build(balance: RfabResult<Balance>, recentCosts: List<Long>, nowMillis: Long): Confirmation {
+    /** How long before this device's own last digest a charge counts as that digest's (its search and its run). */
+    const val OWN_RUN_MILLIS = 15 * 60_000L
+
+    /**
+     * [balance] comes from the free balance call made when Generate is pressed; [recentCosts] newest first;
+     * [ownDigestAt] is when this device stored its last digest, whose own charge is no warning (device check, 2026-10-30).
+     */
+    fun build(balance: RfabResult<Balance>, recentCosts: List<Long>, nowMillis: Long, ownDigestAt: Long? = null): Confirmation {
         val average = recentCosts.take(AVERAGE_OF).takeIf { it.isNotEmpty() }?.let { it.sum() / it.size }
         return when (balance) {
             is RfabResult.Error -> Confirmation(
@@ -48,7 +54,7 @@ object ConfirmationRules {
                     balanceNotKnown = null,
                     averageCost = average,
                     lowBalance = average != null && tokens < 2 * average,
-                    chatBilledHoursAgo = lastChatHoursAgo(balance.value, nowMillis),
+                    chatBilledHoursAgo = lastChatHoursAgo(balance.value, nowMillis, ownDigestAt),
                 )
             }
         }
@@ -68,12 +74,14 @@ object ConfirmationRules {
 
     /**
      * A chat call shows as a `USAGE` row naming the model (checked 2026-10-19). A chat in rfab's web app looks the
-     * same, so the dialog says "a chat call", never "a digest". Rows without a readable time are skipped.
+     * same, so the dialog says "a chat call", never "a digest". Rows without a readable time are skipped, and so are
+     * rows that cost nothing (the free models' calls) and the charges of this device's own last digest.
      */
-    private fun lastChatHoursAgo(balance: Balance, nowMillis: Long): Long? =
+    private fun lastChatHoursAgo(balance: Balance, nowMillis: Long, ownDigestAt: Long?): Long? =
         balance.recentTransactions
-            .filter { it.type == "USAGE" }
+            .filter { it.type == "USAGE" && (it.amount ?: -1L) != 0L }
             .mapNotNull { row -> row.createdAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() } }
+            .filterNot { at -> ownDigestAt != null && at in (ownDigestAt - OWN_RUN_MILLIS)..ownDigestAt }
             .map { (nowMillis - it).coerceAtLeast(0) / 3_600_000 }
             .filter { it < RECENT_CHAT_HOURS }
             .minOrNull()

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Sentences are no longer cut after initials such as "U.S.", a summary that loses its lead takes one from the detail, and the voice pass never lengthens a card.
+- Personas use nicknames only where they would name themselves, and never joke about deaths or victims.
+- The confirmation no longer warns about another device after this phone's own digest; the History tab always opens on the list; the Based description is up to date.
 - Without Based, the phone reads Wikipedia's Current events for free, so digests fill up to five cards with the day's news.
 - When the search cites a homepage or a listing page, the app finds the matching article on it; the search asks for top stories from several outlets, so digests without Based fill up to five cards too.
 - With a persona on, a second free pass rewrites every card in its voice before the fact check.

@@ -183,6 +183,8 @@ fun AppShell(
     val snackbar = remember { SnackbarHostState() }
 
     fun show(target: Screen) {
+        // The History tab always opens on the list, also after a digest was viewed (device check, 2026-10-30).
+        if (target == Screen.HISTORY) history.close()
         if (target == screen) return
         screen = target
         // Each time the main screen opens: a key may have changed in Settings, and the balance is read again.

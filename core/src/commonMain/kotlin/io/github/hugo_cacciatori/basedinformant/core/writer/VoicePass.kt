@@ -47,10 +47,14 @@ object VoicePass {
         }
     }
 
-    /** Each card takes its rewritten texts; a missing or blank one keeps the writer's, and a card without a detail gets none. */
+    /**
+     * Each card takes its rewritten texts; a missing, blank or longer one (more than [MAX_GROWTH] of the words, device
+     * check 2026-10-30) keeps the writer's, and a card without a detail gets none.
+     */
     fun apply(written: WriterAnswer, answer: VoicePassAnswer): WriterAnswer {
         val byCard = answer.cards.associateBy { it.card }
-        fun pick(new: String?, old: String) = new?.trim()?.takeUnless { it.isEmpty() || it == "null" } ?: old
+        fun pick(new: String?, old: String) =
+            new?.trim()?.takeUnless { it.isEmpty() || it == "null" || words(it) > words(old) * MAX_GROWTH + 2 } ?: old
         return written.copy(
             topics = written.topics.mapIndexed { i, t ->
                 val card = byCard[i + 1] ?: return@mapIndexed t
@@ -59,6 +63,11 @@ object VoicePass {
             },
         )
     }
+
+    /** How much longer a rewritten text may be than the writer's. */
+    const val MAX_GROWTH = 1.15
+
+    private fun words(text: String) = text.split(Regex("\\s+")).count { it.isNotEmpty() }
 
     private val json = Json { explicitNulls = false }
     private val lenient = Json { ignoreUnknownKeys = true; isLenient = true }

@@ -128,10 +128,12 @@ class GenerateModel(
                 return
             }
         }
+        val lastDigestAt = digests.lastGeneratedAt()
         val confirmation = ConfirmationRules.build(
             clientFor(key).balance(),
             runs.recentCosts(current.model, ConfirmationRules.AVERAGE_OF),
             now(),
+            lastDigestAt,
         )
         val snapshot = RunSnapshot(
             prompt = PromptInput(
@@ -147,7 +149,7 @@ class GenerateModel(
             ),
             personaDisplayName = personaName(current.persona),
         )
-        _state.update { it.copy(step = GenerateStep.Confirm(confirmation, snapshot, digests.lastGeneratedAt())) }
+        _state.update { it.copy(step = GenerateStep.Confirm(confirmation, snapshot, lastDigestAt)) }
     }
 
     /** The confirm button: acts once, then the runner owns the run. False when the runner refused it (nothing sent). */

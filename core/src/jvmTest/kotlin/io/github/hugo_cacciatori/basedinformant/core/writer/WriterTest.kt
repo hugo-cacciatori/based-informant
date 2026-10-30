@@ -204,6 +204,25 @@ class WriterTest {
     }
 
     @Test
+    fun `sentences never split after initials or a title`() {
+        assertEquals(
+            listOf("Protesters gathered outside the U.S. Embassy in Wandsworth.", "Dr. Smith spoke first.", "Quantum Computing Inc. announced more."),
+            Writer.sentences("Protesters gathered outside the U.S. Embassy in Wandsworth. Dr. Smith spoke first. Quantum Computing Inc. announced more."),
+        )
+    }
+
+    @Test
+    fun `a summary that lost its lead takes it from the detail, and the voice pass never lengthens a text`() {
+        val card = written.copy(topics = listOf(topic(1, "A plasma lasted 40 minutes. Ha, cool.", "The lab plans more. It cost 2 billion.", listOf(1))))
+        val checked = FactCheck.apply(card, withPages, check(FactCheckAnswer.Card(1, unsupported = listOf(FactCheckAnswer.Unsupported(1))))).first
+        assertEquals("The lab plans more. Ha, cool.", checked.topics.single().summary, "never a summary with only the joke")
+        assertEquals("It cost 2 billion.", checked.topics.single().detail)
+
+        val long = VoicePassAnswer(listOf(VoicePassAnswer.Card(1, summary = "A plasma lasted 40 minutes, which logically, hypothetically and for the sake of argument is long. Ha, cool, and then some more words.")))
+        assertEquals(card.topics.single().summary, VoicePass.apply(card, long).topics.single().summary)
+    }
+
+    @Test
     fun `a title telling another event drops the card, and an old answer without the field keeps it`() {
         val off = FactCheck.apply(written, withPages, check(FactCheckAnswer.Card(1, titleOff = true), FactCheckAnswer.Card(2)))
         assertEquals(listOf("Title 2"), off.first.topics.map { it.title })

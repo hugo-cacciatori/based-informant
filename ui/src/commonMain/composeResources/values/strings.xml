@@ -212,7 +212,7 @@
 
     <!-- Based (01-product.md section 3, owner 2026-10-29) -->
     <string name="based_section">Based</string>
-    <string name="based_hint">Right-wing sources only. Claims in the digest stay neutral either way.</string>
+    <string name="based_hint">Right-wing sources only, read with a right-wing outlook in the voice you picked.</string>
 
     <!-- Look (01-product.md section 10) -->
     <string name="theme_section">Theme</string>
