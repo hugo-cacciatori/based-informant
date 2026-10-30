@@ -114,6 +114,8 @@ fun KeywordsScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     run: RunUi = RunUi(),
+    /** False inside Today's inputs panel (owner, 2026-10-30): Today holds Generate, its progress and its dialogs. */
+    standalone: Boolean = true,
 ) {
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
     var presetsOpen by rememberSaveable { mutableStateOf(false) }
@@ -208,7 +210,9 @@ fun KeywordsScreen(
                 HorizontalDivider()
             }
         }
-        if (run.progress is RunProgress.Running) {
+        if (!standalone) {
+            // Today shows Generate under the panel.
+        } else if (run.progress is RunProgress.Running) {
             ProgressCard(run.notificationsAllowed)
         } else {
             val blocks = if (mode == DigestMode.TOPICS) {
@@ -226,7 +230,7 @@ fun KeywordsScreen(
         }
     }
 
-    RunDialogs(run)
+    if (standalone) RunDialogs(run)
     if (presetsOpen) {
         PresetsDialog(
             run.presets,
@@ -255,7 +259,7 @@ fun KeywordsScreen(
 }
 
 @Composable
-private fun FirstRunCard(onOpenSettings: () -> Unit, modifier: Modifier = Modifier) {
+internal fun FirstRunCard(onOpenSettings: () -> Unit, modifier: Modifier = Modifier) {
     val uri = LocalUriHandler.current
     Card(modifier.fillMaxWidth().testTag("first-run")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -348,15 +352,16 @@ private fun EditKeywordDialog(
  * Above it, once a key is saved, the balance line; tapping it opens Settings (01-product.md section 3).
  */
 @Composable
-private fun GenerateBar(
+internal fun GenerateBar(
     state: KeywordsState,
+    padding: androidx.compose.ui.unit.Dp = 16.dp,
     blocks: List<GenerateBlock>,
     preparing: Boolean,
     onGenerate: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val block = blocks.firstOrNull().takeIf { state.loaded }
-    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = padding, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (state.loaded && state.hasKey) {
             val balance = state.balance
             Text(
@@ -365,16 +370,17 @@ private fun GenerateBar(
                     is BalanceDisplay.Known -> stringResource(Res.string.balance_line_known, groupThousands(balance.tokens))
                     is BalanceDisplay.NotKnown -> stringResource(Res.string.balance_line_not_known, reasonText(balance.reason))
                 },
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenSettings).padding(vertical = 12.dp)
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenSettings).padding(vertical = 8.dp)
                     .testTag("balance-line"),
             )
         }
-        Button(
+        GlowButton(
+            text = stringResource(if (preparing) Res.string.generate_preparing else Res.string.generate),
             onClick = onGenerate,
             enabled = state.loaded && block == null && !preparing,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("generate"),
-        ) { Text(stringResource(if (preparing) Res.string.generate_preparing else Res.string.generate)) }
+            modifier = Modifier.testTag("generate"),
+        )
         if (block != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

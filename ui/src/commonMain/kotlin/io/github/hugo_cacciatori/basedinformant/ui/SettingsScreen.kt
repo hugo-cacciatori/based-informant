@@ -66,6 +66,8 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.based_hint
 import io.github.hugo_cacciatori.basedinformant.ui.resources.based_section
 import io.github.hugo_cacciatori.basedinformant.ui.resources.animations_switch
 import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_drift
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_glass
+import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_glass_hint
 import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_drift_hint
 import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_night
 import io.github.hugo_cacciatori.basedinformant.ui.resources.theme_night_hint
@@ -397,6 +399,7 @@ private fun <T> Choice(
 private fun themeRes(id: String): Pair<StringResource, StringResource> = when (id) {
     "night" -> Res.string.theme_night to Res.string.theme_night_hint
     "drift" -> Res.string.theme_drift to Res.string.theme_drift_hint
+    "glass" -> Res.string.theme_glass to Res.string.theme_glass_hint
     else -> Res.string.theme_plain to Res.string.theme_plain_hint
 }
 

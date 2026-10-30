@@ -39,6 +39,8 @@ data class HistoryState(
     val open: OpenDigest? = null,
     /** A notification or View pointed at a digest that was deleted meanwhile. */
     val missing: Boolean = false,
+    /** The newest digest, opened, for the Today home (01-product.md section 3, owner 2026-10-30); null before the first. */
+    val latest: OpenDigest? = null,
 )
 
 /** The History tab's logic, platform-free. [personaName] gives the persona's display name, null for Off. */
@@ -48,7 +50,8 @@ class HistoryModel(private val store: HistoryStore, private val personaName: sus
 
     suspend fun load() {
         val cards = store.cards()
-        _state.update { it.copy(loaded = true, cards = cards) }
+        val latest = cards.firstOrNull()?.let { c -> store.get(c.id)?.let { OpenDigest(c.id, it, DigestViews.build(it.digest, meta(it))) } }
+        _state.update { it.copy(loaded = true, cards = cards, latest = latest) }
     }
 
     /** Opens the viewer, or says the digest is no longer available and shows the list. */

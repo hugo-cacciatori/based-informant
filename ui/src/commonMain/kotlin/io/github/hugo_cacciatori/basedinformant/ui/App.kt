@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +65,7 @@ import io.github.hugo_cacciatori.basedinformant.ui.resources.history_missing
 import io.github.hugo_cacciatori.basedinformant.ui.resources.share_no_mail_app
 import io.github.hugo_cacciatori.basedinformant.ui.resources.settings
 import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_history
-import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_keywords
+import io.github.hugo_cacciatori.basedinformant.ui.resources.tab_today
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
@@ -222,15 +224,19 @@ fun AppShell(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(stringResource(if (screen == Screen.SETTINGS) Res.string.settings else Res.string.app_name))
-                },
-            )
+            // Today has its own large title (owner, 2026-10-30); the bar lets the theme's background through.
+            if (screen != Screen.KEYWORDS) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(stringResource(if (screen == Screen.SETTINGS) Res.string.settings else Res.string.app_name))
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent, scrolledContainerColor = Color.Transparent),
+                )
+            }
         },
         bottomBar = {
-            NavigationBar {
-                NavItem(Screen.KEYWORDS, screen, ::show, Icons.AutoMirrored.Filled.List, Res.string.tab_keywords)
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                NavItem(Screen.KEYWORDS, screen, ::show, Icons.Filled.Home, Res.string.tab_today)
                 NavItem(Screen.HISTORY, screen, ::show, Icons.Filled.DateRange, Res.string.tab_history)
                 NavItem(Screen.SETTINGS, screen, ::show, Icons.Filled.Settings, Res.string.settings)
             }
@@ -262,7 +268,13 @@ fun AppShell(
                     onView = ::view,
                     onShareEmail = ::shareByEmail,
                 )
-                KeywordsScreen(state, keywords, snackbar, onOpenSettings = { show(Screen.SETTINGS) }, modifier = modifier, run = run)
+                // Today, the home (owner, 2026-10-30): the latest digest, read again whenever a run ends.
+                val historyState by history.state.collectAsStateWithLifecycle()
+                LaunchedEffect(progress) { history.load() }
+                TodayScreen(
+                    state, keywords, historyState.latest, snackbar,
+                    onOpenSettings = { show(Screen.SETTINGS) }, onShareEmail = ::shareByEmail, modifier = modifier, run = run,
+                )
             }
             Screen.HISTORY -> {
                 val state by history.state.collectAsStateWithLifecycle()

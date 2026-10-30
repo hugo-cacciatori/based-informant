@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The app opens on Today: the latest digest, what the next one will search, Edit (keywords, topics and presets in a panel) and a glowing Generate.
+- A new default theme, Glass: deep moving colors under frosted cards; digests are drawn as cards with the briefing, callouts and the trust line; themes can set corner shapes, light edges and a glow.
+- The privacy note in Settings now lists everything the app reads and sends.
 - Every digest opens with a three-line briefing; cards on topics you read before say what is new since then; cards from several outlets say how they frame the story; every card shows how many outlets report it, whether it was fact-checked, and the site behind a mislabelled outlet.
 - Sentences are no longer cut after initials such as "U.S.", a summary that loses its lead takes one from the detail, and the voice pass never lengthens a card.
 - Personas use nicknames only where they would name themselves, and never joke about deaths or victims.

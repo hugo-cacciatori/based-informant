@@ -15,6 +15,8 @@ object PackCheck {
 
     const val MAX_SPEED = 1f
     const val MAX_DENSITY = 400
+    const val MAX_CORNER = 32
+    const val MAX_BORDER = 3f
 
     /** [folder] is the pack's folder name; [fileSizes] the size in bytes of every file in it. */
     fun problems(pack: ThemePack, folder: String, fileSizes: Map<String, Long>): List<String> = buildList {
@@ -25,6 +27,9 @@ object PackCheck {
         if (pack.background.speed !in 0f..MAX_SPEED) add("background speed ${pack.background.speed} is outside 0..$MAX_SPEED")
         if (pack.background.density !in 0..MAX_DENSITY) add("background density ${pack.background.density} is outside 0..$MAX_DENSITY")
         if (pack.background.engine == BackgroundEngine.STARFIELD && pack.background.density == 0) add("a starfield needs a density")
+        if (pack.shape.corner !in 0..MAX_CORNER) add("corner ${pack.shape.corner} is outside 0..$MAX_CORNER")
+        if (pack.shape.border !in 0f..MAX_BORDER) add("border ${pack.shape.border} is outside 0..$MAX_BORDER")
+        if (pack.glow !in 0f..1f) add("glow ${pack.glow} is outside 0..1")
         addAll(paletteProblems("light", pack.light))
         addAll(paletteProblems("dark", pack.dark))
     }

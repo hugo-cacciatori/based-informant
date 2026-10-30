@@ -17,9 +17,17 @@ data class ThemePack(
     val light: Palette,
     val dark: Palette,
     val background: Background,
+    /** Corners and edges of cards, buttons and chips (theme format v2, owner 2026-10-30). */
+    val shape: ShapeStyle = ShapeStyle(),
+    /** 0 none to 1 strong: the soft light around the main button (modern glass, owner 2026-10-30). */
+    val glow: Float = 0f,
 ) {
     fun palette(dark: Boolean): Palette = if (dark) this.dark else light
 }
+
+/** [corner] radius in dp of cards and buttons; [border] the width in dp of the light edge of translucent cards (0: none). */
+@Serializable
+data class ShapeStyle(val corner: Int = 12, val border: Float = 0f)
 
 /** System font families only: a pack ships no font files. */
 @Serializable
@@ -83,10 +91,11 @@ object ThemePacks {
 
 class ThemePackException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
-/** The built-in themes, in the order Settings lists them (owner, 2026-10-29), read from `core/themes/<id>/`. */
+/** The built-in themes, in the order Settings lists them (owner, 2026-10-29 and 2026-10-30), read from `core/themes/<id>/`. */
 object BuiltInThemes {
-    const val DEFAULT = "plain"
-    val IDS = listOf(DEFAULT, "night", "drift")
+    /** Modern glass is the default look (owner, 2026-10-30). */
+    const val DEFAULT = "glass"
+    val IDS = listOf(DEFAULT, "plain", "night", "drift")
 
     /** The pack of [id]; an unknown id gives the default. */
     fun pack(id: String): ThemePack =

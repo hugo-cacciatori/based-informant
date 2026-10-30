@@ -34,7 +34,7 @@ class ThemeEngineTest {
     @AfterTest
     fun resetDispatcher() = Dispatchers.resetMain()
 
-    private val plain = BuiltInThemes.pack(BuiltInThemes.DEFAULT)
+    private val plain = BuiltInThemes.pack("plain")
     private val starfield = plain.copy(background = Background(BackgroundEngine.STARFIELD, speed = 1f, density = 200))
     private val drift = plain.copy(
         dark = plain.dark.copy(sky = listOf("#101820", "#3A6EA5", "#A53A6E")),

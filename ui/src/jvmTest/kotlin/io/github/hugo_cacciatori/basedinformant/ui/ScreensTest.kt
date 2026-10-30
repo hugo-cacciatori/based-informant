@@ -247,7 +247,7 @@ class ScreensTest {
         onNodeWithTag("balance-line").performClick()
         waitForIdle()
         onNodeWithTag("key-status").assertTextContains("Saved key ending in wxyz")
-        onNodeWithText("Keywords").performClick()
+        onNodeWithText("Today").performClick()
         waitForIdle()
         onNodeWithTag("balance-line").assertTextContains("Balance: 120,174 tokens")
     }

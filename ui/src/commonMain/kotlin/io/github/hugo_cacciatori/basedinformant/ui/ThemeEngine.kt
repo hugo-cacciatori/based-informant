@@ -10,6 +10,8 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -49,10 +51,13 @@ fun AppTheme(
     content: @Composable () -> Unit,
 ) {
     val palette = pack.palette(dark)
-    MaterialTheme(colorScheme = palette.colorScheme(dark), typography = typography(pack.font)) {
-        Box(Modifier.fillMaxSize()) {
-            ThemeBackground(pack, palette, moving = animations && systemMotionAllowed())
-            content()
+    val look = Look(pack.shape.corner.dp, pack.shape.border.dp, pack.glow)
+    CompositionLocalProvider(LocalLook provides look) {
+        MaterialTheme(colorScheme = palette.colorScheme(dark), typography = typography(pack.font), shapes = look.shapes()) {
+            Box(Modifier.fillMaxSize()) {
+                ThemeBackground(pack, palette, moving = animations && systemMotionAllowed())
+                content()
+            }
         }
     }
 }

@@ -1,0 +1,28 @@
+{
+  "id": "glass",
+  "name": "Glass",
+  "font": "sans",
+  "light": {
+    "primary": "#5B3FD6",
+    "onPrimary": "#FFFFFF",
+    "background": "#F4F1FF",
+    "onBackground": "#17142B",
+    "surface": "#A6FFFFFF",
+    "onSurface": "#17142B",
+    "outline": "#6E6890",
+    "sky": ["#EEE9FF", "#C9B8FF", "#A9E4F5", "#FFD3E8", "#BFD0FF"]
+  },
+  "dark": {
+    "primary": "#B9A6FF",
+    "onPrimary": "#1B0F4A",
+    "background": "#0B0A1A",
+    "onBackground": "#F1EEFF",
+    "surface": "#7A15132E",
+    "onSurface": "#F1EEFF",
+    "outline": "#8D86B5",
+    "sky": ["#0B0A1A", "#4A22C0", "#0B7AA8", "#A02478", "#2440C0"]
+  },
+  "background": { "engine": "gradient", "speed": 0.35 },
+  "shape": { "corner": 24, "border": 1.0 },
+  "glow": 0.8
+}

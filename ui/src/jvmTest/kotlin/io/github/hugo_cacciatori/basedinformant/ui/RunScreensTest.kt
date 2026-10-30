@@ -12,6 +12,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckEntry
 import io.github.hugo_cacciatori.basedinformant.core.check.CheckOutcome
@@ -244,7 +249,8 @@ class RunScreensTest {
         f.controller.claim(RunJob.Recover)
         runBlocking { f.release.complete(Unit); f.controller.runClaimed() }
         waitForIdle()
-        onNodeWithTag("share").performClick()
+        // The run's dialog has its own Share, next to View; Today's latest digest has another.
+        onNode(hasTestTag("share") and hasAnyAncestor(isDialog())).performClick()
         waitForIdle()
         onNodeWithTag("share-email").performClick()
         waitForIdle()
@@ -366,6 +372,8 @@ class RunScreensTest {
     @Test
     fun topicModeWithoutSavedTopicsOffersAnAllTrendingDigest() = runComposeUiTest {
         show(RunFixture())
+        onNodeWithTag("inputs-open").performClick()
+        waitForIdle()
         onNodeWithTag("mode-topics").assertIsEnabled().performClick()
         waitForIdle()
         onNodeWithText("No saved topics yet", substring = true).assertExists()
@@ -377,6 +385,8 @@ class RunScreensTest {
         val f = RunFixture(topics = listOf("Stellarator research"))
         show(f)
         f.generateVm.reload()
+        waitForIdle()
+        onNodeWithTag("inputs-open").performClick()
         waitForIdle()
         onNodeWithTag("mode-topics").performClick()
         waitForIdle()
@@ -391,6 +401,8 @@ class RunScreensTest {
         val f = RunFixture(topics = listOf("Stellarator research", "Club chess"))
         show(f)
         f.generateVm.reload()
+        waitForIdle()
+        onNodeWithTag("inputs-open").performClick()
         waitForIdle()
         onNodeWithTag("mode-topics").performClick()
         waitForIdle()
@@ -408,10 +420,12 @@ class RunScreensTest {
         show(f)
         f.generateVm.reload()
         waitForIdle()
+        onNodeWithTag("inputs-open").performClick()
+        waitForIdle()
         onNodeWithTag("mode-topics").performClick()
         waitForIdle()
         // A tap picks; deleting needs Select first (owner, 2026-10-30).
-        onNodeWithText("Club chess").performClick()
+        onNode(hasText("Club chess") and hasClickAction()).performClick()
         waitForIdle()
         assertEquals(listOf("Club chess"), f.generateVm.state.value.chosen)
         onNodeWithTag("topics-select").performClick()
@@ -419,8 +433,8 @@ class RunScreensTest {
         onNodeWithTag("topics-cancel").performClick()
         onNodeWithTag("topics-delete").assertDoesNotExist()
         onNodeWithTag("topics-select").performClick()
-        onNodeWithText("Club chess").performClick()
-        onNodeWithText("Seabed rules").performClick()
+        onNode(hasText("Club chess") and hasClickAction()).performClick()
+        onNode(hasText("Seabed rules") and hasClickAction()).performClick()
         onNodeWithText("2 selected").assertExists()
         onNodeWithTag("topics-delete").assertTextContains("Delete (2)").performClick()
         waitForIdle()
