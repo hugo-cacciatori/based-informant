@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- When the search cites a homepage, the app finds the matching article on it; the search asks for top stories from several outlets, so digests without Based fill up to five cards too.
 - With a persona on, a second free pass rewrites every card in its voice before the fact check.
 - Trending cards fill free slots with one card per subject.
 - Keyword digests say which keywords found no article, as topic digests do.

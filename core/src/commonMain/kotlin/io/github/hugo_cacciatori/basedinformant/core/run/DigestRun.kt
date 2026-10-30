@@ -23,6 +23,7 @@ import io.github.hugo_cacciatori.basedinformant.core.search.SearchAnswer
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.BasedFeeds
 import io.github.hugo_cacciatori.basedinformant.core.search.FeedFetcher
+import io.github.hugo_cacciatori.basedinformant.core.search.HomepageRescue
 import io.github.hugo_cacciatori.basedinformant.core.search.OutletCheck
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchLinks
 import io.github.hugo_cacciatori.basedinformant.core.search.SearchParser
@@ -46,7 +47,7 @@ class DigestRun(
     private val calls: CallLog,
     private val client: RfabClient,
     private val linkChecker: LinkChecker,
-    /** Based's free feeds (02-ai-call.md section 4); none in tests unless given. */
+    /** Free page reads: Based's feeds and the homepages of the homepage rescue (02-ai-call.md sections 4 and 8); none in tests unless given. */
     private val feeds: FeedFetcher = FeedFetcher { null },
     /** Milliseconds since the epoch. */
     private val now: () -> Long,
@@ -116,10 +117,12 @@ class DigestRun(
             ?: catalog?.let { repair(it, content) }?.also { issues += Issue(Issue.Kind.ANSWER_REPAIRED) }
             ?: return unreadable(record) to Report(issues)
         val context = ValidationContext(snapshot.prompt.keywords.map(KeywordRules::normalize), snapshot.prompt.today)
+        // A homepage cited for a headline becomes the article it links to (owner, 2026-10-30).
+        val (rescued, rescueIssues) = HomepageRescue.apply(parsed, feeds)
         // Based: the free feeds' items join the paid answer and go through the same checks (owner, 2026-10-30).
         val (fed, feedIssues) = if (snapshot.prompt.based) BasedFeeds.stories(feeds, context.keywords, context.today) else emptyList<SearchAnswer.Story>() to emptyList()
-        issues += feedIssues
-        val (checked, checkIssues) = SearchCheck.apply(parsed.copy(stories = parsed.stories + fed), context)
+        issues += rescueIssues + feedIssues
+        val (checked, checkIssues) = SearchCheck.apply(rescued.copy(stories = rescued.stories + fed), context)
         val (sourced, outletIssues) = if (snapshot.prompt.based) outlets(checked, catalog) else checked to emptyList()
         val linked = SearchLinks.apply(sourced, linkChecker, context.today)
         issues += checkIssues + outletIssues + linked.issues

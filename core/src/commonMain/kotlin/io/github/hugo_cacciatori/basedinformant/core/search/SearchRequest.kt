@@ -27,6 +27,12 @@ object SearchRequest {
     /** The owner's examples as sites, named in the search request when Based is on (02-ai-call.md section 4). */
     const val BASED_SITES = "foxnews.com, gbnews.com, x.com (Elon Musk) and truthsocial.com (Donald Trump)"
 
+    /**
+     * The trending fill as the search reads it (owner, 2026-10-30): with Based off no feed fills the digest, so the
+     * request asks for several outlets and their article pages, which the search otherwise left as homepages.
+     */
+    private const val TOP_STORIES = "today's most popular news stories, from several different outlets, each cited by the link to its own article page"
+
     /** Added to the system prompt when Based is on (02-ai-call.md section 4). */
     const val BASED_FILE = "based.txt"
 
@@ -55,9 +61,9 @@ object SearchRequest {
         // Keywords are quoted, with quotes and angle brackets removed, so they read as topics and cannot forge a marker.
         val topics = keywords.joinToString("; ") { "\"" + it.replace(Regex("[\"<>\\r\\n]"), " ").trim() + "\"" }
         val ask = when {
-            input.mode == DigestMode.KEYWORDS -> "Find the most recent news about each of these topics, reading each one in the context of the others: $topics. Then add today's most popular news stories to fill the report."
-            keywords.isEmpty() -> "Find today's most popular news stories."
-            else -> "Find the most recent news on each of these topics, which the reader followed in earlier digests: $topics. Then add today's most popular news stories to fill the report."
+            input.mode == DigestMode.KEYWORDS -> "Find the most recent news about each of these topics, reading each one in the context of the others: $topics. Then add $TOP_STORIES to fill the report."
+            keywords.isEmpty() -> "Find $TOP_STORIES."
+            else -> "Find the most recent news on each of these topics, which the reader followed in earlier digests: $topics. Then add $TOP_STORIES to fill the report."
         }
         // The search is built from this message, so Based must be in it too.
         // Naming the example sites steers the search towards them (owner, 2026-10-30): the wording alone did not.

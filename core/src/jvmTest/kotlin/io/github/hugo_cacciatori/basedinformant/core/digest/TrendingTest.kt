@@ -70,7 +70,7 @@ class TrendingTest {
         assertTrue("\nTRENDING\n" in keywords.systemPrompt)
 
         val none = assertIs<SearchRequest.Result.Built>(SearchRequest.build(input.copy(keywords = emptyList(), mode = DigestMode.TOPICS))).request
-        assertTrue(none.messages.single().content.startsWith("Find today's most popular news stories."))
+        assertTrue(none.messages.single().content.startsWith("Find today's most popular news stories, from several different outlets, each cited by the link to its own article page."))
         // Keyword mode still needs one keyword.
         assertIs<SearchRequest.Result.OverLimit>(SearchRequest.build(input.copy(keywords = emptyList())))
     }
