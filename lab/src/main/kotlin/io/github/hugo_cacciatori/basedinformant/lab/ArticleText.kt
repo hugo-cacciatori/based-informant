@@ -12,8 +12,6 @@ import java.time.Duration
  * [PageText]. In the app the link check reads each page once and keeps the text.
  */
 object ArticleText {
-    private const val MAX_PAGE_BYTES = 300_000
-
     fun extract(html: String): String? = PageText.extract(html)
 
     private val http: HttpClient by lazy {
@@ -30,7 +28,7 @@ object ArticleText {
             response.body().close()
             null
         } else {
-            val bytes = response.body().use { it.readNBytes(MAX_PAGE_BYTES) }
+            val bytes = response.body().use { it.readNBytes(PageText.MAX_PAGE_BYTES) }
             extract(String(bytes, Charsets.UTF_8))
         }
     } catch (_: Exception) {

@@ -8,9 +8,15 @@ package io.github.hugo_cacciatori.basedinformant.core.digest
  * short heading such as a volcano's name stays, so each status line keeps its subject.
  */
 object PageText {
+    /** Read per page: GB News puts an article's text past 340 KB (2026-10-30), so 300 KB read only its logo. */
+    const val MAX_PAGE_BYTES = 1_500_000
+
     /** Sent per source: enough for the facts, small enough for every free model (lab, 2026-10-23). */
     const val MAX_CHARS = 4_000
     const val MIN_LINE_CHARS = 8
+
+    /** Less readable text than this is no page text: a cut or script-built page gives scraps the fact check must not use. */
+    const val MIN_TEXT_CHARS = 200
 
     private val DROPPED = Regex(
         "<(script|style|noscript|svg|nav|header|footer|aside|form|figure|button|template|iframe)\\b[^>]*>.*?</\\1\\s*>",
@@ -24,6 +30,9 @@ object PageText {
         RegexOption.IGNORE_CASE,
     )
     private val TAG = Regex("<[^>]+>")
+
+    /** A tag cut off at the end of a page read only in part. */
+    private val CUT_TAG = Regex("<[^>]*$")
     private val SPACE = Regex("[ \\t\\u00A0]+")
     private val NUMERIC = Regex("&#(x?)([0-9a-fA-F]+);")
     private val NAMED = mapOf(
@@ -37,12 +46,12 @@ object PageText {
     fun extract(html: String, maxChars: Int = MAX_CHARS): String? {
         val cleaned = DROPPED.replace(COMMENT.replace(html, " "), " ")
         val scope = ARTICLE.find(cleaned)?.groupValues?.get(1) ?: BODY.find(cleaned)?.groupValues?.get(1) ?: cleaned
-        val lines = TAG.replace(BREAK.replace(scope, "\n"), " ").lines()
+        val lines = TAG.replace(CUT_TAG.replace(BREAK.replace(scope, "\n"), " "), " ").lines()
             .map { SPACE.replace(decode(it), " ").trim() }
             .filter { it.length >= MIN_LINE_CHARS }
             .distinct()
         val text = lines.joinToString("\n")
-        if (text.isBlank()) return null
+        if (text.length < MIN_TEXT_CHARS) return null
         if (text.length <= maxChars) return text
         val cut = text.take(maxChars)
         val end = cut.lastIndexOfAny(listOf(". ", ".\n", "? ", "! ", "\n"))

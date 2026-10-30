@@ -114,7 +114,7 @@ class HttpLinkChecker(
     }
 
     /**
-     * Reads a live page, at most [MAX_PAGE_BYTES] (the head comes first): an empty 200 is dead; an empty answer with
+     * Reads a live page, at most [PageText.MAX_PAGE_BYTES] (the head comes first): an empty 200 is dead; an empty answer with
      * another 2xx code is unknown (CloudFront answers a real page with an empty 202 as a bot challenge, 2026-10-18);
      * otherwise alive with the date in its metadata. A failed read stays alive.
      */
@@ -122,7 +122,7 @@ class HttpLinkChecker(
         http.prepareGet(url) { header(HttpHeaders.UserAgent, USER_AGENT) }.execute { response ->
             val code = response.status.value
             if (code !in 200..299) return@execute LinkResult(LinkStatus.ALIVE, "HTTP $status")
-            val text = response.bodyAsChannel().readRemaining(MAX_PAGE_BYTES).readByteArray().decodeToString()
+            val text = response.bodyAsChannel().readRemaining(PageText.MAX_PAGE_BYTES.toLong()).readByteArray().decodeToString()
             when {
                 text.isNotBlank() -> LinkResult(LinkStatus.ALIVE, "HTTP $status", PageDate.extract(text), PageText.extract(text))
                 code == 200 -> LinkResult(LinkStatus.DEAD, "empty page")
@@ -166,7 +166,6 @@ class HttpLinkChecker(
 
     companion object {
         private const val USER_AGENT = "BasedInformant-LinkCheck"
-        private const val MAX_PAGE_BYTES = 300_000L
         private const val DNS_FAILURE = -1
         private const val OTHER_FAILURE = -2
         private val REDIRECTS = setOf(301, 302, 303, 307, 308)

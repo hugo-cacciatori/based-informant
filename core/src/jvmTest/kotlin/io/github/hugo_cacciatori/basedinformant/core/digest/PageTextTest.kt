@@ -18,12 +18,22 @@ class PageTextTest {
         val html = """<html><nav><p>Home | World | Sport | a long navigation paragraph that should go away</p></nav>
             <script>var x = "<p>not text</p>";</script>
             <article><h1>Stellarator record &amp; more</h1><p>The stellarator held a stable plasma for 40 minutes, the lab said on Tuesday.</p>
-            <p>Short.</p><p>Engineers credit a new tungsten wall coating &#8212; it sheds less material.</p></article>
+            <p>Short.</p><p>Engineers credit a new tungsten wall coating &#8212; it sheds less material.</p>
+            <p>Two outside physicists called the result real but incremental, and net energy gain is still years away.</p></article>
             <footer><p>Copyright notice that is long enough to count as a paragraph here.</p></footer></html>"""
         val text = PageText.extract(html)!!
         assertTrue("40 minutes" in text && "tungsten wall coating — it sheds" in text && "Stellarator record & more" in text)
         assertFalse("navigation" in text || "not text" in text || "Copyright" in text || "Short." in text)
         assertNull(PageText.extract("<html><body><div>nothing</div></body></html>"))
+    }
+
+    @Test
+    fun aPageReadOnlyInPartGivesNoScraps() {
+        // GB News, 2026-10-30: the read stopped inside the logo, and "<path d=..." became the page text.
+        val cut = """<html><body><header><a><svg viewBox="0 0 153 55"><g><path d="M37.7926 39.5561C35.0524 41.5993 31.3933 42.6209 27"""
+        assertNull(PageText.extract(cut))
+        // Under the floor: scraps, not an article.
+        assertNull(PageText.extract("<html><body><p>Cookie settings and a short line here.</p></body></html>"))
     }
 
     @Test
@@ -58,8 +68,13 @@ class PageTextTest {
     fun theLinkCheckKeepsThePageText() = runBlocking {
         val checker = HttpLinkChecker(linkCheckHttpClient(MockEngine { req ->
             if (req.method == HttpMethod.Head) respond("", HttpStatusCode.OK)
-            else respond("<html><body><p>The council agreed on Monday to vote on a moratorium.</p></body></html>", HttpStatusCode.OK)
+            else respond("<html><body><p>$ARTICLE</p></body></html>", HttpStatusCode.OK)
         }), retryDelayMillis = 0)
-        assertEquals("The council agreed on Monday to vote on a moratorium.", checker.check("https://news.example.com/2026/10/vote").pageText)
+        assertEquals(ARTICLE, checker.check("https://news.example.com/2026/10/vote").pageText)
+    }
+
+    private companion object {
+        const val ARTICLE = "The council agreed on Monday to vote on a ten-year moratorium on commercial deep-sea mining at its November session. " +
+            "Twelve member states back the pause, and two companies holding exploration contracts said it would breach existing agreements."
     }
 }
